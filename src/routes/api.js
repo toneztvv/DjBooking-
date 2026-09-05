@@ -1,6 +1,7 @@
 const express = require('express');
 const { db, getSetting, normalizeKey } = require('../db');
 const { liveQrBuffer } = require('../qr');
+const { sendInquiryNotification } = require('../mail');
 
 const router = express.Router();
 
@@ -46,6 +47,10 @@ router.post('/inquiries', (req, res) => {
       (name, email, phone, event_date, event_type, location, guest_count, message)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(name, email, phone, eventDate, eventType, location, guestCount, message);
+
+  sendInquiryNotification({ name, email, phone, eventDate, eventType, location, guestCount, message }).catch(
+    (err) => console.error('Failed to send inquiry notification email:', err.message)
+  );
 
   if (req.headers.accept && req.headers.accept.includes('application/json')) {
     return res.status(201).json({ ok: true });

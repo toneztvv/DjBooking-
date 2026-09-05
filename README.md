@@ -37,6 +37,19 @@ For auto-reload during development: `npm run dev` (uses nodemon).
 4. As you play a song, click **Mark Played** next to it on the dashboard — it moves to "Recently Played" with a timestamp, and a fresh request for the same song later starts a new entry.
 5. Click **End Live Event** when you're done. Click **Clear Board** any time you want to reset the request list without ending the event.
 
+## Email notifications for new bookings
+
+When someone submits the booking form, `/admin` always shows it — but you can also have it email you on Gmail the moment it comes in, using your own Gmail account (no third-party email service needed).
+
+1. Turn on **2-Step Verification** on the Gmail account you want to use, if it isn't already: [myaccount.google.com/security](https://myaccount.google.com/security).
+2. Generate an **App Password**: [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) → create one named something like "DJXpress" → copy the 16-character password it gives you (your normal Gmail password won't work for this).
+3. Set two environment variables:
+   - `GMAIL_USER` → your full Gmail address
+   - `GMAIL_APP_PASSWORD` → the 16-character App Password from step 2
+   - Locally: add them to `.env`. On Render: service → **Environment** tab → add both → save (this restarts the service automatically).
+
+Once set, every new booking inquiry emails that Gmail address with all the details, and it's already set up so hitting **Reply** in Gmail goes straight to the customer, not back to yourself. Leave these two variables unset and the site works exactly the same — inquiries just won't trigger an email, only show up in `/admin`.
+
 ## Printing the QR code ahead of time
 
 Once `SITE_URL` in `.env` is set to your real domain, generate a high-resolution QR code for print:
