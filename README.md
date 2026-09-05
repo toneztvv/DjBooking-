@@ -48,15 +48,45 @@ npm run generate-qr
 
 This saves `djxpress-qr.png` in the project root, pointing at `<SITE_URL>/live`. You can also grab it any time from the admin dashboard ("Download High-Res PNG").
 
-## Deploying
+## Deploying to dj-xpress.com (Render, free tier)
 
-This app needs a persistent Node process (not a serverless/static host) because the live request board is shared, real-time state backed by a SQLite file on disk. Good options:
+This repo includes `render.yaml`, so Render can build and configure the whole app automatically — you just need to create the account and add DNS records at your registrar (things only you can do, since they need your own logins).
 
-- **Render / Railway / Fly.io** — deploy as a Node web service, attach a small persistent disk mounted at `./data` (or set `DATA_DIR` — see below), set the env vars from `.env.example` in the dashboard.
-- **A basic VPS** — `git clone`, `npm install --production`, run with a process manager like `pm2` (`pm2 start server.js --name djxpress`) behind Nginx/Caddy for HTTPS.
+**1. Create the service**
+
+1. Go to [render.com](https://render.com) and sign up (the "Sign up with GitHub" option is fastest, and lets Render see your repos without a separate password).
+2. Click **New → Blueprint**.
+3. Select the `toneztvv/DjBooking-` repository and the branch you want live (e.g. `claude/djxpress-booking-live-requests-a569sk`, or `main` if you've merged it there). Render reads `render.yaml` and pre-fills everything.
+4. When prompted for environment variables, enter:
+   - `SITE_URL` → `https://dj-xpress.com`
+   - `ADMIN_USER` → a username of your choice for the DJ dashboard
+   - `ADMIN_PASSWORD` → a strong password — this protects `/admin`, don't skip it
+5. Click **Apply** / **Deploy**. First build takes a few minutes. When it's done, Render gives you a working URL like `djxpress.onrender.com` — check that it loads before moving on.
+
+**2. Point dj-xpress.com at it**
+
+1. In the Render dashboard, open the `djxpress` service → **Settings → Custom Domains → Add Custom Domain**.
+2. Enter `dj-xpress.com` (add `www.dj-xpress.com` too if you want both to work).
+3. At your domain registrar (wherever you bought `dj-xpress.com`), open its DNS settings and add:
+
+   | Type  | Name/Host | Value                       |
+   |-------|-----------|------------------------------|
+   | `A`   | `@` (root)| `216.24.57.1`                |
+   | `CNAME` | `www`   | `djxpress.onrender.com` (use the exact `.onrender.com` hostname Render shows you) |
+
+   Remove any existing `AAAA` record on the root domain — Render doesn't use IPv6, and a leftover `AAAA` record will break this.
+4. DNS changes typically take a few minutes to a few hours to propagate. Render auto-issues an SSL certificate once it sees the domain pointing correctly — no extra step needed.
+5. Once it's live, visit `https://dj-xpress.com` to confirm, then regenerate the QR code (`npm run generate-qr`, or grab it from `/admin`) so it's pointing at the real domain.
+
+**One thing to know about the free tier:** Render's free web services spin down after 15 minutes of no traffic (about a 1-minute wake-up on the next visit) and don't keep a persistent disk — so the SQLite database resets whenever the service restarts or redeploys. That's fine for getting the real site live and testing it now. When you're ready to keep bookings and requests permanently (worth doing before relying on this for a real event), the fix is either upgrading the Render plan to Starter (~$7/mo) and attaching a small persistent disk, or pointing the app at a free hosted Postgres database (e.g. Neon) instead of the local SQLite file — either is a small, contained change whenever you want to make it.
+
+### Other hosting options
+
+If you'd rather not use Render:
+
+- **Railway / Fly.io** — similar Node + persistent-disk setup, usage-based pricing (no meaningful free tier anymore on either).
+- **A basic VPS** (DigitalOcean, Hetzner) — `git clone`, `npm install --production`, run with `pm2 start server.js --name djxpress` behind Nginx/Caddy for HTTPS. Cheapest ongoing cost, most manual setup.
 - **Docker** — build your own image (`node:20-slim` base, `npm ci --production`, `CMD ["node", "server.js"]`) and mount a volume at `/app/data`.
-
-After deploying, update `SITE_URL` in your environment to the real `https://` domain so the QR code and share links point to the right place, then regenerate the QR code for print.
 
 ### Environment variables
 
