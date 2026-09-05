@@ -39,16 +39,18 @@ For auto-reload during development: `npm run dev` (uses nodemon).
 
 ## Email notifications for new bookings
 
-When someone submits the booking form, `/admin` always shows it — but you can also have it email you on Gmail the moment it comes in, using your own Gmail account (no third-party email service needed).
+When someone submits the booking form, `/admin` always shows it — but you can also have it email you the moment it comes in.
 
-1. Turn on **2-Step Verification** on the Gmail account you want to use, if it isn't already: [myaccount.google.com/security](https://myaccount.google.com/security).
-2. Generate an **App Password**: [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) → create one named something like "DJXpress" → copy the 16-character password it gives you (your normal Gmail password won't work for this).
+This uses [Resend](https://resend.com) (a transactional email API, free for up to 3,000 emails/month, no credit card needed) rather than sending directly through Gmail's own servers — most hosts, Render included, block or time out direct SMTP connections, so a plain HTTPS API call is the reliable option.
+
+1. Create a free account at [resend.com](https://resend.com).
+2. Go to [resend.com/api-keys](https://resend.com/api-keys) → **Create API Key** → copy it (you won't be able to see it again after leaving the page).
 3. Set two environment variables:
-   - `GMAIL_USER` → your full Gmail address
-   - `GMAIL_APP_PASSWORD` → the 16-character App Password from step 2
-   - Locally: add them to `.env`. On Render: service → **Environment** tab → add both → save (this restarts the service automatically).
+   - `RESEND_API_KEY` → the key from step 2
+   - `GMAIL_USER` → the email address that should *receive* the notifications (any address works despite the name — it doesn't have to be Gmail)
+   - Locally: add them to `.env`. On Render: service → **Environment** tab → add both (or use **Add from .env** to paste several at once) → save (this restarts the service automatically).
 
-Once set, every new booking inquiry emails that Gmail address with all the details, and it's already set up so hitting **Reply** in Gmail goes straight to the customer, not back to yourself. Leave these two variables unset and the site works exactly the same — inquiries just won't trigger an email, only show up in `/admin`.
+Once set, every new booking inquiry emails that address with all the details, and hitting **Reply** goes straight to the customer, not back to yourself. Leave these two variables unset and the site works exactly the same — inquiries just won't trigger an email, only show up in `/admin`.
 
 ## Printing the QR code ahead of time
 
