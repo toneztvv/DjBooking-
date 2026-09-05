@@ -7,11 +7,8 @@ services:
     startCommand: npm start
     envVars:
       - key: SITE_URL
-        value: https://dj-xpress.com
         sync: false
       - key: ADMIN_USER
-        value: admin
         sync: false
       - key: ADMIN_PASSWORD
-        value: changeme
         sync: false

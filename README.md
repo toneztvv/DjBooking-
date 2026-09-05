@@ -56,7 +56,7 @@ This repo includes `render.yaml`, so Render can build and configure the whole ap
 
 1. Go to [render.com](https://render.com) and sign up (the "Sign up with GitHub" option is fastest, and lets Render see your repos without a separate password).
 2. Click **New → Blueprint**.
-3. Select the `toneztvv/DjBooking-` repository and the branch you want live (e.g. `claude/djxpress-booking-live-requests-a569sk`, or `main` if you've merged it there). Render reads `render.yaml` and pre-fills everything.
+3. Select the `toneztvv/DjBooking-` repository and the branch you want live (e.g. `claude/djxpress-booking-live-requests-a569sk`, or `main` if you've merged it there). Render reads `render.yaml` and sets up the build/start commands and free plan automatically.
 4. When prompted for environment variables, enter:
    - `SITE_URL` → `https://dj-xpress.com`
    - `ADMIN_USER` → a username of your choice for the DJ dashboard
