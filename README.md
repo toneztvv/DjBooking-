@@ -2,6 +2,8 @@
 
 A booking + live song-request website for DJXpress.
 
+**Just want to click around right now?** This repo includes a static demo at `docs/index.html` you can view on GitHub Pages with zero setup — see [Static demo on GitHub Pages](#static-demo-on-github-pages) below. It's a demo only: each visitor's browser keeps its own private copy of the data. For a real event where every guest's phone shares the same live board, deploy the real app described in the rest of this README.
+
 - **Home page** — intro, services, genres, calls to action.
 - **Book Now** — booking inquiry form (name, contact info, event details) saved to a database you can review.
 - **Live Requests** (`/live`) — when the DJ is live, guests scan a QR code to open this page on their phone and request songs. It shows:
@@ -69,6 +71,22 @@ After deploying, update `SITE_URL` in your environment to the real `https://` do
 
 All data lives in `data/djxpress.sqlite` (created automatically on first run). Back this file up periodically if you want to keep a permanent history of bookings and requests — it is not committed to git.
 
+## Static demo on GitHub Pages
+
+`docs/index.html` is a **self-contained, no-backend copy** of the same site — same pages, same look, same forms and buttons. It's there so anyone can see and click through the whole experience straight from GitHub Pages with no setup at all.
+
+**The tradeoff:** it has no server, so it can't share data between visitors. Everything (song requests, the live board, booking inquiries) is saved with `localStorage` inside each visitor's own browser. Open it on two different phones and you'll see two different boards — a guest's request never reaches the DJ's screen. It's good for showing someone what the site looks like and how it behaves; it is **not** what you'd actually run at an event (use the real app above for that).
+
+### Enable it
+
+1. Push this repo to GitHub (already done if you're reading this from GitHub).
+2. Go to **Settings → Pages** in the repository.
+3. Under **Build and deployment**, set **Source** to "Deploy from a branch".
+4. Pick your branch (e.g. `main`) and folder **`/docs`**, then **Save**.
+5. GitHub gives you a URL like `https://<your-username>.github.io/<repo-name>/` within a minute or two.
+
+Everything on that page — Home, Live Requests, Book Now, and the DJ Panel (open here, no password, since there's nothing sensitive behind it) — works immediately, seeded with example data so it doesn't look empty on first load.
+
 ## Project structure
 
 ```
@@ -82,4 +100,5 @@ src/routes/admin.js       Admin dashboard + actions (protected)
 views/                    EJS templates
 public/                   CSS, client-side JS, static assets
 scripts/generate-qr.js    CLI to generate a printable QR code PNG
+docs/index.html           Static, no-backend demo for GitHub Pages (see above)
 ```

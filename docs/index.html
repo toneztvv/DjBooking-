@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DJXpress — Booking &amp; Live Song Requests (Demo)</title>
+<meta name="description" content="DJXpress — professional DJ for weddings, parties &amp; events. Browse the site, submit a booking inquiry, and try the live song-request board. Static demo: data stays in your browser only.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;900&family=Sora:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a13;
+    --bg-hero: #0d0d1a;
+    --surface: #15151f;
+    --surface-2: #1c1c29;
+    --border: #2a2a3a;
+    --text: #f4f3fa;
+    --text-dim: #9d9bb8;
+    --text-faint: #6b6986;
+    --accent: #ff3d9a;
+    --accent-dim: #c22b78;
+    --accent-soft: rgba(255, 61, 154, 0.14);
+    --onair: #ff4d5e;
+    --onair-soft: rgba(255, 77, 94, 0.14);
+    --success: #33d17a;
+    --success-soft: rgba(51, 209, 122, 0.14);
+    --warning: #ffb648;
+    --warning-soft: rgba(255, 182, 72, 0.14);
+    --mono-ink: #bfe0ff;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --maxw: 1040px;
+    --font-display: 'Unbounded', 'Arial Black', sans-serif;
+    --font-body: 'Sora', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Consolas', monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.12;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  p { margin: 0; }
+  a { color: inherit; }
+
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  ::selection { background: var(--accent); color: #0a0a13; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+
+  /* ---------- Top bar & demo strip ---------- */
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(10, 10, 19, 0.88);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .topbar-inner {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    letter-spacing: 0.02em;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    background: linear-gradient(140deg, var(--accent), #8b2fd6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    box-shadow: 0 0 22px -4px var(--accent);
+  }
+
+  .brand .x { color: var(--accent); }
+
+  .tabs {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px;
+    gap: 2px;
+  }
+
+  .tab-btn {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    background: transparent;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { background: var(--accent); color: #1a0510; }
+  .tab-btn .dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--onair);
+    margin-right: 6px;
+    box-shadow: 0 0 8px var(--onair);
+  }
+
+  .demo-strip {
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: var(--text-faint);
+    text-align: center;
+    padding: 8px 16px;
+  }
+  .demo-strip strong { color: var(--text-dim); }
+  .demo-strip a { color: var(--accent); text-decoration: underline; }
+
+  /* ---------- Layout helpers ---------- */
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .btn {
+    font-family: var(--font-body);
+    font-weight: 700;
+    font-size: 0.92rem;
+    border: none;
+    border-radius: 999px;
+    padding: 13px 24px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.12s ease;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #b23fe0); color: #1a0510; box-shadow: 0 10px 26px -10px var(--accent-soft); }
+  .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .btn-onair { background: var(--onair); color: #200506; }
+  .btn-success { background: var(--success); color: #06210f; }
+  .btn-block { width: 100%; }
+  .btn-sm { padding: 8px 16px; font-size: 0.78rem; }
+
+  /* ---------- Home / hero ---------- */
+
+  .hero {
+    position: relative;
+    padding: 74px 20px 56px;
+    text-align: center;
+    overflow: hidden;
+    background: var(--bg-hero);
+    border-bottom: 1px solid var(--border);
+  }
+
+  #eq-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .hero-content { position: relative; max-width: 680px; margin: 0 auto; }
+  .hero h1 { font-size: clamp(2.1rem, 5.4vw, 3.5rem); margin: 14px 0 16px; }
+  .grad { background: linear-gradient(120deg, var(--accent), #9b6bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero .lead { color: var(--text-dim); font-size: 1.05rem; max-width: 520px; margin: 0 auto 30px; }
+  .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  section { padding: 54px 20px; }
+  .section-head { text-align: center; max-width: 520px; margin: 0 auto 34px; }
+  .section-head h2 { font-size: clamp(1.5rem, 3.4vw, 2rem); margin-bottom: 10px; }
+  .section-head p { color: var(--text-dim); }
+
+  .feature-card .num { font-family: var(--font-mono); color: var(--accent); font-size: 0.78rem; margin-bottom: 10px; display: block; }
+  .feature-card h3 { font-size: 1.02rem; margin-bottom: 8px; font-family: var(--font-body); font-weight: 700; }
+  .feature-card p { color: var(--text-dim); font-size: 0.92rem; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+  }
+
+  .cta-card { text-align: center; padding: 46px 30px; }
+  .cta-card h2 { margin-bottom: 12px; font-size: clamp(1.4rem, 3vw, 1.9rem); }
+  .cta-card p { color: var(--text-dim); max-width: 440px; margin: 0 auto 22px; }
+
+  /* ---------- Forms ---------- */
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 0.78rem; font-weight: 600; color: var(--text-dim); }
+
+  input, select, textarea {
+    font-family: var(--font-body);
+    font-size: 0.94rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+    padding: 11px 13px;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  textarea { resize: vertical; font-family: var(--font-body); }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+
+  .alert { padding: 13px 16px; border-radius: var(--radius-sm); font-size: 0.88rem; font-weight: 600; }
+  .alert-success { background: var(--success-soft); color: var(--success); border: 1px solid rgba(51,209,122,0.35); }
+  .alert-error { background: var(--onair-soft); color: #ff8b95; border: 1px solid rgba(255,77,94,0.35); }
+  .alert-info { background: var(--surface-2); color: var(--text-dim); border: 1px solid var(--border); }
+
+  /* ---------- Live page ---------- */
+
+  .live-hero { text-align: center; padding: 40px 20px 10px; }
+
+  .onair-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    padding: 7px 16px;
+    border-radius: 999px;
+    background: var(--onair-soft);
+    color: var(--onair);
+    border: 1px solid rgba(255,77,94,0.4);
+  }
+  .onair-pill.offline { background: var(--surface-2); color: var(--text-faint); border-color: var(--border); }
+
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--onair); position: relative; }
+  .pulse::after {
+    content: ''; position: absolute; inset: -5px; border-radius: 50%;
+    border: 1.5px solid var(--onair); animation: pulse 1.5s ease-out infinite;
+  }
+  .onair-pill.offline .pulse { background: var(--text-faint); }
+  .onair-pill.offline .pulse::after { display: none; }
+  @keyframes pulse { from { transform: scale(0.5); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
+
+  .live-hero h1 { font-size: clamp(1.8rem, 4.6vw, 2.6rem); margin: 16px 0 6px; }
+  .event-name { color: var(--text-dim); font-family: var(--font-mono); font-size: 0.9rem; }
+
+  .board-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 22px; }
+  .board-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .board-head h3 { font-size: 1rem; font-family: var(--font-body); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-faint); padding: 0 8px 10px; border-bottom: 1px solid var(--border);
+  }
+  td { padding: 11px 8px; border-bottom: 1px solid var(--border); font-size: 0.88rem; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  .song-title { font-weight: 700; }
+  .song-artist { color: var(--text-faint); font-size: 0.78rem; }
+  .requesters { color: var(--text-dim); font-size: 0.84rem; }
+  .time-read { font-family: var(--font-mono); color: var(--mono-ink); font-size: 0.82rem; }
+
+  .count-pill {
+    font-family: var(--font-mono);
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: inline-block;
+  }
+
+  .empty-row td { text-align: center; color: var(--text-faint); font-style: italic; padding: 26px 8px; }
+  .table-scroll { overflow-x: auto; }
+
+  .qr-card { text-align: center; }
+  .qr-box { background: #fff; border-radius: 12px; padding: 14px; display: inline-block; }
+  .qr-box canvas, .qr-box img { display: block; }
+  .qr-caption { color: var(--text-faint); font-size: 0.78rem; margin-top: 10px; max-width: 280px; margin-left: auto; margin-right: auto; }
+  .qr-url { font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-dim); word-break: break-all; margin-top: 8px; }
+
+  /* ---------- Admin ---------- */
+
+  .admin-topline { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 26px; }
+
+  .status-readout {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono); font-size: 0.82rem;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 8px 16px; border-radius: 999px;
+  }
+
+  .preview-flag {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-faint);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 24px;
+  }
+  .preview-flag strong { color: var(--text-dim); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 28px 20px 40px;
+    text-align: center;
+    color: var(--text-faint);
+    font-size: 0.8rem;
+  }
+  footer a { color: var(--text-dim); }
+
+  @media (max-width: 640px) {
+    .topbar-inner { flex-direction: column; align-items: stretch; }
+    .tabs { justify-content: center; }
+    .admin-topline { flex-direction: column; align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-mark">DJ</span><span>DJ<span class="x">X</span>press</span></div>
+    <div class="tabs" role="tablist">
+      <button class="tab-btn" data-view="home">Home</button>
+      <button class="tab-btn" data-view="live"><span class="dot" id="tab-live-dot" hidden></span>Live Requests</button>
+      <button class="tab-btn" data-view="book">Book Now</button>
+      <button class="tab-btn" data-view="admin">DJ Panel</button>
+    </div>
+  </div>
+</div>
+<div class="demo-strip">
+  <strong>Static demo</strong> — requests and bookings are saved only in this browser, not shared between devices. For a real event, deploy the full app in this repo (see README).
+</div>
+
+<!-- ===================== HOME ===================== -->
+<div class="view" id="view-home">
+  <div class="hero">
+    <canvas id="eq-canvas"></canvas>
+    <div class="hero-content">
+      <span class="eyebrow">Weddings &middot; Parties &middot; Clubs &middot; Corporate</span>
+      <h1>DJ<span class="grad">Xpress</span> keeps the floor moving.</h1>
+      <p class="lead">Book a professional DJ for your event, browse the vibe, and once the set starts — request a song live, straight from your phone.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" data-goto="book">Book Your Event</button>
+        <button class="btn btn-ghost" data-goto="live">Try Live Requests</button>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">The set</span>
+        <h2>What DJXpress brings</h2>
+        <p>Every event gets a custom-built set, clean sound, and a floor that doesn't stop.</p>
+      </div>
+      <div class="grid-3">
+        <div class="card feature-card"><span class="num">01</span><h3>Any genre, any crowd</h3><p>Hip-Hop, R&amp;B, Top 40, Latin, Reggaet&oacute;n, House, Afrobeats, Old School — blended live to read the room.</p></div>
+        <div class="card feature-card"><span class="num">02</span><h3>Live song requests</h3><p>Guests scan a QR code at the event and request songs from their phone — no more shouting over the speakers.</p></div>
+        <div class="card feature-card"><span class="num">03</span><h3>Pro sound &amp; lighting</h3><p>Clean, powerful sound and dance-floor lighting that scales from a backyard party to a full ballroom.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0;">
+    <div class="wrap">
+      <div class="card" style="text-align:center;">
+        <div class="section-head" style="margin-bottom:22px;">
+          <span class="eyebrow">On rotation</span>
+          <h2>Music for every occasion</h2>
+        </div>
+        <div class="chip-row">
+          <span class="chip">Weddings</span><span class="chip">Quincea&ntilde;eras</span><span class="chip">Birthdays</span>
+          <span class="chip">Corporate</span><span class="chip">Club Nights</span><span class="chip">Hip-Hop &amp; R&amp;B</span>
+          <span class="chip">Top 40</span><span class="chip">Latin &amp; Reggaet&oacute;n</span><span class="chip">House &amp; EDM</span>
+          <span class="chip">Old School</span><span class="chip">Open Format</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">How it works</span>
+        <h2>Live requests, in three steps</h2>
+      </div>
+      <div class="grid-3">
+        <div class="card feature-card"><span class="num">STEP 1</span><h3>Scan the QR code</h3><p>Posted at the booth — any phone camera opens it, no app required.</p></div>
+        <div class="card feature-card"><span class="num">STEP 2</span><h3>Send a request</h3><p>Song title, your name, and an optional shoutout or dedication.</p></div>
+        <div class="card feature-card"><span class="num">STEP 3</span><h3>Watch it live</h3><p>The board updates in real time — who asked for what, and how many times.</p></div>
+      </div>
+      <div style="text-align:center; margin-top:30px;">
+        <button class="btn btn-primary" data-goto="live">Open the Live Board</button>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0;">
+    <div class="wrap">
+      <div class="card cta-card">
+        <h2>Ready to book DJXpress?</h2>
+        <p>Tell us about your event and we'll follow up with availability and pricing.</p>
+        <button class="btn btn-primary" data-goto="book">Start Your Booking</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== LIVE ===================== -->
+<div class="view" id="view-live">
+  <div class="live-hero">
+    <span class="onair-pill offline" id="onair-pill"><span class="pulse"></span><span id="onair-label">OFFLINE</span></span>
+    <h1>Request a <span class="grad">Song</span></h1>
+    <p class="event-name" id="event-name-label"></p>
+  </div>
+
+  <section style="padding-top:26px;">
+    <div class="wrap">
+      <div class="grid-2" style="align-items:start;">
+        <div class="stack">
+          <div class="card" id="request-form-card">
+            <h3 style="font-family:var(--font-body); margin-bottom:16px;">Send a request</h3>
+            <div id="live-form-msg"></div>
+            <form id="request-form" class="stack" style="gap:14px;">
+              <div class="form-grid">
+                <div class="field"><label for="req-name">Your name *</label><input id="req-name" required maxlength="60" placeholder="e.g. Priya"></div>
+                <div class="field"><label for="req-song">Song title *</label><input id="req-song" required maxlength="120" placeholder="e.g. Levitating"></div>
+              </div>
+              <div class="form-grid">
+                <div class="field"><label for="req-artist">Artist</label><input id="req-artist" maxlength="120" placeholder="e.g. Dua Lipa"></div>
+                <div class="field"><label for="req-dedication">Shoutout (optional)</label><input id="req-dedication" maxlength="140" placeholder="e.g. For the bride!"></div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block" id="req-submit-btn">Request Song</button>
+            </form>
+          </div>
+
+          <div class="card qr-card">
+            <h3 style="font-family:var(--font-body); margin-bottom:6px;">Scan at the event</h3>
+            <p style="color:var(--text-dim); font-size:0.86rem; margin-bottom:16px;">Opens this Live Requests tab on the scanning device.</p>
+            <div class="qr-box" id="qr-box"></div>
+            <p class="qr-url" id="qr-url"></p>
+            <p class="qr-caption">Remember: this static demo doesn't sync between devices — each phone sees its own copy of the board.</p>
+          </div>
+        </div>
+
+        <div class="board-cols" style="margin-top:0;">
+          <div class="card">
+            <div class="board-head"><h3>&#127925; Up Next</h3></div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Song</th><th>Requested by</th><th>Times</th></tr></thead>
+                <tbody id="pending-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="board-head"><h3>&#9989; Recently Played</h3></div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Song</th><th>Requested by</th><th>Played</th><th>Times</th></tr></thead>
+                <tbody id="played-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== BOOK ===================== -->
+<div class="view" id="view-book">
+  <section style="padding-bottom:0;">
+    <div class="wrap" style="text-align:center; max-width:600px;">
+      <span class="eyebrow">Booking inquiry</span>
+      <h1 style="font-size:clamp(1.8rem,4.4vw,2.6rem); margin:14px 0 10px;">Let's book your <span class="grad">event</span></h1>
+      <p style="color:var(--text-dim);">Fill this out and DJXpress will follow up with availability and pricing.</p>
+    </div>
+  </section>
+  <section style="padding-top:0;">
+    <div class="wrap" style="max-width:640px;">
+      <div class="card">
+        <div id="book-form-msg"></div>
+        <form id="book-form" class="stack" style="gap:16px;">
+          <div class="form-grid">
+            <div class="field"><label for="bk-name">Full name *</label><input id="bk-name" required maxlength="80"></div>
+            <div class="field"><label for="bk-email">Email *</label><input id="bk-email" type="email" required maxlength="120"></div>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label for="bk-phone">Phone</label><input id="bk-phone" maxlength="40"></div>
+            <div class="field"><label for="bk-date">Event date</label><input id="bk-date" type="date"></div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="bk-type">Event type</label>
+              <select id="bk-type">
+                <option value="">Select one</option>
+                <option>Wedding</option><option>Birthday</option><option>Quincea&ntilde;era</option>
+                <option>Corporate Event</option><option>Club / Nightlife</option><option>Private Party</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field"><label for="bk-guests">Estimated guests</label><input id="bk-guests" maxlength="20"></div>
+          </div>
+          <div class="field"><label for="bk-venue">Venue / location</label><input id="bk-venue" maxlength="140"></div>
+          <div class="field"><label for="bk-message">Tell us about your event</label><textarea id="bk-message" rows="4" maxlength="1000" placeholder="Music style, timeline, special requests..."></textarea></div>
+          <button type="submit" class="btn btn-primary btn-block" id="book-submit-btn">Send Booking Inquiry</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===================== ADMIN ===================== -->
+<div class="view" id="view-admin">
+  <section>
+    <div class="wrap">
+      <div class="preview-flag"><strong>Demo note:</strong> this DJ Panel is open here so you can try it, and it isn't shared between devices. On the real deployed site, it's password-protected and every viewer sees the same live board.</div>
+
+      <div class="admin-topline">
+        <div><h1 style="font-size:1.5rem;">DJ Control Panel</h1><p style="color:var(--text-dim); font-size:0.88rem;">Manage the live event and booking inquiries.</p></div>
+        <div class="status-readout"><span class="pulse" id="admin-pulse" style="background:var(--text-faint);"></span><span id="admin-status-label">OFFLINE</span></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:30px;">
+        <div class="card">
+          <h3 style="font-family:var(--font-body); margin-bottom:14px;">Event control</h3>
+          <div id="admin-live-controls"></div>
+          <button class="btn btn-ghost btn-block btn-sm" id="clear-board-btn" style="margin-top:10px;">Clear Board (keep event live)</button>
+        </div>
+        <div class="card qr-card">
+          <h3 style="font-family:var(--font-body); margin-bottom:6px;">QR Code</h3>
+          <p style="color:var(--text-dim); font-size:0.86rem; margin-bottom:14px;">Guests scan this to open the live request page.</p>
+          <div class="qr-box" id="qr-box-admin"></div>
+          <p class="qr-url" id="qr-url-admin"></p>
+        </div>
+      </div>
+
+      <div class="board-cols" style="margin-bottom:34px;">
+        <div class="card">
+          <div class="board-head"><h3>&#127925; Up Next</h3></div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Song</th><th>Requested by</th><th>Times</th><th></th></tr></thead>
+              <tbody id="admin-pending-body"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="board-head"><h3>&#9989; Recently Played</h3></div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Song</th><th>Requested by</th><th>Played</th><th>Times</th></tr></thead>
+              <tbody id="admin-played-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="font-size:1.2rem; margin-bottom:14px;">Booking inquiries</h2>
+      <div class="card">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Received</th><th>Name</th><th>Contact</th><th>Event</th><th>Status</th></tr></thead>
+            <tbody id="inquiries-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>DJXpress &mdash; static demo. <a href="https://github.com/toneztvv/DjBooking-" target="_blank" rel="noopener">View the full project on GitHub</a></footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------------- View routing ----------------
+  var views = ['home', 'live', 'book', 'admin'];
+  function showView(name) {
+    if (views.indexOf(name) === -1) name = 'home';
+    views.forEach(function (v) {
+      document.getElementById('view-' + v).classList.toggle('active', v === name);
+    });
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.view === name);
+    });
+    if (history.replaceState) history.replaceState(null, '', '#' + name);
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { showView(btn.dataset.view); });
+  });
+  document.querySelectorAll('[data-goto]').forEach(function (btn) {
+    btn.addEventListener('click', function () { showView(btn.dataset.goto); });
+  });
+  showView((location.hash || '').replace('#', '') || 'home');
+
+  // ---------------- Ambient equalizer canvas ----------------
+  var canvas = document.getElementById('eq-canvas');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (canvas && !reduceMotion) {
+    var ctx = canvas.getContext('2d');
+    var bars = [];
+    function sizeCanvas() {
+      var rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      var count = Math.floor(rect.width / 26);
+      bars = [];
+      for (var i = 0; i < count; i++) {
+        bars.push({ phase: Math.random() * Math.PI * 2, speed: 0.02 + Math.random() * 0.03 });
+      }
+    }
+    sizeCanvas();
+    window.addEventListener('resize', sizeCanvas);
+    function draw() {
+      var w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      var barW = w / bars.length;
+      bars.forEach(function (bar, i) {
+        bar.phase += bar.speed;
+        var amp = (Math.sin(bar.phase) * 0.5 + 0.5) * 0.7 + 0.08;
+        var barH = amp * h * 0.4;
+        var x = i * barW;
+        var grad = ctx.createLinearGradient(0, h, 0, h - barH);
+        grad.addColorStop(0, 'rgba(255,61,154,0.55)');
+        grad.addColorStop(1, 'rgba(155,107,255,0.05)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x + 2, h - barH, barW - 4, barH);
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  // ---------------- Helpers ----------------
+  function esc(str) {
+    var d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
+  }
+  function normalizeKey(title, artist) {
+    return (title + '::' + (artist || '')).trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+  function fmtTime(ts) {
+    if (!ts) return '';
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  function fmtDateTime(ts) {
+    if (!ts) return '';
+    return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ---------------- Local storage-backed store (demo only, per-browser) ----------------
+  var STORAGE_KEY = 'djxpress-demo-v1';
+  var storageAvailable = true;
+  try { localStorage.setItem('__djx_test__', '1'); localStorage.removeItem('__djx_test__'); } catch (e) { storageAvailable = false; }
+
+  function defaultState() {
+    var now = Date.now();
+    var uptownKey = normalizeKey('Uptown Funk', 'Bruno Mars');
+    var levitatingKey = normalizeKey('Levitating', 'Dua Lipa');
+    var kuduroKey = normalizeKey('Danza Kuduro', 'Don Omar');
+    return {
+      isLive: true,
+      eventName: 'Example: Friday Night — Skyline Rooftop',
+      eventId: 1,
+      nextId: 6,
+      requests: [
+        { id: 'seed1', eventId: 1, songTitle: 'Levitating', artist: 'Dua Lipa', normalizedKey: levitatingKey, requestedBy: 'Priya', dedication: null, status: 'pending', createdAt: now - 8 * 60000, playedAt: null },
+        { id: 'seed2', eventId: 1, songTitle: 'Levitating', artist: 'Dua Lipa', normalizedKey: levitatingKey, requestedBy: 'Marcus', dedication: null, status: 'pending', createdAt: now - 6 * 60000, playedAt: null },
+        { id: 'seed3', eventId: 1, songTitle: 'Danza Kuduro', artist: 'Don Omar', normalizedKey: kuduroKey, requestedBy: 'Sam', dedication: 'For the bride!', status: 'pending', createdAt: now - 5 * 60000, playedAt: null },
+        { id: 'seed4', eventId: 1, songTitle: 'Uptown Funk', artist: 'Bruno Mars', normalizedKey: uptownKey, requestedBy: 'Alex', dedication: null, status: 'played', createdAt: now - 20 * 60000, playedAt: now - 12 * 60000 },
+        { id: 'seed5', eventId: 1, songTitle: 'Uptown Funk', artist: 'Bruno Mars', normalizedKey: uptownKey, requestedBy: 'Maria', dedication: null, status: 'played', createdAt: now - 19 * 60000, playedAt: now - 12 * 60000 },
+      ],
+      inquiries: [
+        { id: 'seedinq1', name: 'Jane Smith (example)', email: 'jane@example.com', phone: '555-1234', eventDate: '2026-10-10', eventType: 'Wedding', guestCount: '150', location: 'The Grand Hall', message: 'We want lots of Latin and open format, ceremony at 4pm.', status: 'new', createdAt: now - 3 * 3600000 },
+      ],
+    };
+  }
+
+  function loadState() {
+    if (storageAvailable) {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch (e) {}
+    }
+    var seeded = defaultState();
+    saveState(seeded);
+    return seeded;
+  }
+
+  function saveState(s) {
+    if (!storageAvailable) return;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
+  }
+
+  var state = loadState();
+
+  function persistAndRenderAll() { saveState(state); renderAll(); }
+  function persistAndRenderBoards() { saveState(state); renderBoards(); }
+
+  window.addEventListener('storage', function (e) {
+    if (e.key === STORAGE_KEY) {
+      state = loadState();
+      renderAll();
+    }
+  });
+
+  // ---------------- Rendering ----------------
+  function renderLiveHeader() {
+    var pillLive = document.getElementById('onair-pill');
+    var label = document.getElementById('onair-label');
+    var eventLabel = document.getElementById('event-name-label');
+    var tabDot = document.getElementById('tab-live-dot');
+    var formCard = document.getElementById('request-form-card');
+    var adminPulse = document.getElementById('admin-pulse');
+    var adminLabel = document.getElementById('admin-status-label');
+
+    pillLive.classList.toggle('offline', !state.isLive);
+    label.textContent = state.isLive ? 'LIVE NOW' : 'OFFLINE';
+    eventLabel.textContent = state.isLive && state.eventName ? state.eventName : (state.isLive ? '' : "DJXpress isn't live right now — try going live from the DJ Panel.");
+    tabDot.hidden = !state.isLive;
+
+    adminPulse.style.background = state.isLive ? 'var(--onair)' : 'var(--text-faint)';
+    adminLabel.textContent = state.isLive ? 'LIVE NOW' + (state.eventName ? ' — ' + state.eventName : '') : 'OFFLINE';
+
+    var msgBox = document.getElementById('live-form-msg');
+    if (!state.isLive) {
+      formCard.querySelector('form').hidden = true;
+      msgBox.innerHTML = '<div class="alert alert-info">DJXpress isn\'t live right now. Requests open once the DJ Panel goes live.</div>';
+    } else {
+      formCard.querySelector('form').hidden = false;
+      if (msgBox.dataset.locked !== '1') msgBox.innerHTML = '';
+    }
+  }
+
+  function groupRequests() {
+    var pendingMap = {};
+    var playedMap = {};
+    state.requests.forEach(function (r) {
+      if (r.eventId !== state.eventId) return;
+      var map = r.status === 'played' ? playedMap : pendingMap;
+      var key = r.status === 'played' ? r.normalizedKey + '::' + r.playedAt : r.normalizedKey;
+      if (!map[key]) {
+        map[key] = {
+          songTitle: r.songTitle, artist: r.artist, normalizedKey: r.normalizedKey,
+          count: 0, requesters: [], firstRequestedAt: r.createdAt, playedAt: r.playedAt,
+        };
+      }
+      map[key].count += 1;
+      if (map[key].requesters.indexOf(r.requestedBy) === -1) map[key].requesters.push(r.requestedBy);
+      map[key].firstRequestedAt = Math.min(map[key].firstRequestedAt, r.createdAt);
+    });
+    var pending = Object.values(pendingMap).sort(function (a, b) {
+      return b.count - a.count || a.firstRequestedAt - b.firstRequestedAt;
+    });
+    var played = Object.values(playedMap).sort(function (a, b) { return b.playedAt - a.playedAt; });
+    return { pending: pending, played: played };
+  }
+
+  function rowHtml(r, kind) {
+    var artistLine = r.artist ? '<div class="song-artist">' + esc(r.artist) + '</div>' : '';
+    if (kind === 'pending') {
+      return '<tr><td><div class="song-title">' + esc(r.songTitle) + '</div>' + artistLine + '</td>' +
+        '<td class="requesters">' + esc(r.requesters.join(', ')) + '</td>' +
+        '<td><span class="count-pill">' + r.count + '&times;</span></td></tr>';
+    }
+    return '<tr><td><div class="song-title">' + esc(r.songTitle) + '</div>' + artistLine + '</td>' +
+      '<td class="requesters">' + esc(r.requesters.join(', ')) + '</td>' +
+      '<td class="time-read">' + fmtTime(r.playedAt) + '</td>' +
+      '<td><span class="count-pill">' + r.count + '&times;</span></td></tr>';
+  }
+
+  function adminRowHtml(r) {
+    var artistLine = r.artist ? '<div class="song-artist">' + esc(r.artist) + '</div>' : '';
+    return '<tr><td><div class="song-title">' + esc(r.songTitle) + '</div>' + artistLine + '</td>' +
+      '<td class="requesters">' + esc(r.requesters.join(', ')) + '</td>' +
+      '<td><span class="count-pill">' + r.count + '&times;</span></td>' +
+      '<td><button class="btn btn-success btn-sm" data-mark-played="' + esc(r.normalizedKey) + '">Mark Played</button></td></tr>';
+  }
+
+  function renderBoards() {
+    var g = groupRequests();
+
+    var pendingBody = document.getElementById('pending-body');
+    var playedBody = document.getElementById('played-body');
+    var adminPendingBody = document.getElementById('admin-pending-body');
+    var adminPlayedBody = document.getElementById('admin-played-body');
+
+    pendingBody.innerHTML = g.pending.length ? g.pending.map(function (r) { return rowHtml(r, 'pending'); }).join('') : '<tr class="empty-row"><td colspan="3">No requests yet — be the first!</td></tr>';
+    playedBody.innerHTML = g.played.length ? g.played.map(function (r) { return rowHtml(r, 'played'); }).join('') : '<tr class="empty-row"><td colspan="4">Nothing played yet.</td></tr>';
+    adminPendingBody.innerHTML = g.pending.length ? g.pending.map(adminRowHtml).join('') : '<tr class="empty-row"><td colspan="4">No pending requests.</td></tr>';
+    adminPlayedBody.innerHTML = g.played.length ? g.played.map(function (r) { return rowHtml(r, 'played'); }).join('') : '<tr class="empty-row"><td colspan="4">Nothing played yet.</td></tr>';
+
+    adminPendingBody.querySelectorAll('[data-mark-played]').forEach(function (btn) {
+      btn.addEventListener('click', function () { markPlayed(btn.getAttribute('data-mark-played')); });
+    });
+  }
+
+  function renderInquiries() {
+    var body = document.getElementById('inquiries-body');
+    if (!state.inquiries.length) {
+      body.innerHTML = '<tr class="empty-row"><td colspan="5">No inquiries yet.</td></tr>';
+      return;
+    }
+    var sorted = state.inquiries.slice().sort(function (a, b) { return b.createdAt - a.createdAt; });
+    body.innerHTML = sorted.map(function (inq) {
+      var status = inq.status || 'new';
+      return '<tr>' +
+        '<td class="time-read">' + fmtDateTime(inq.createdAt) + '</td>' +
+        '<td><strong>' + esc(inq.name) + '</strong></td>' +
+        '<td>' + esc(inq.email) + (inq.phone ? '<br><span class="song-artist">' + esc(inq.phone) + '</span>' : '') + '</td>' +
+        '<td>' + esc(inq.eventType || '—') + (inq.eventDate ? '<br><span class="song-artist">' + esc(inq.eventDate) + '</span>' : '') + '</td>' +
+        '<td><select data-inquiry-status="' + inq.id + '" class="mono" style="padding:6px 8px; font-size:0.78rem;">' +
+          ['new', 'contacted', 'booked', 'declined'].map(function (s) {
+            return '<option value="' + s + '"' + (s === status ? ' selected' : '') + '>' + s + '</option>';
+          }).join('') +
+        '</select></td></tr>';
+    }).join('');
+    body.querySelectorAll('[data-inquiry-status]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        updateInquiryStatus(sel.getAttribute('data-inquiry-status'), sel.value);
+      });
+    });
+  }
+
+  function renderAdminControls() {
+    var box = document.getElementById('admin-live-controls');
+    if (!state.isLive) {
+      box.innerHTML =
+        '<div class="field" style="margin-bottom:12px;"><label for="event-name-input">Event name (optional)</label>' +
+        '<input id="event-name-input" placeholder="e.g. Smith Wedding Reception"></div>' +
+        '<button class="btn btn-success btn-block" id="go-live-btn">Go Live &amp; Start Fresh Board</button>';
+      document.getElementById('go-live-btn').addEventListener('click', function () {
+        var name = document.getElementById('event-name-input').value.trim().slice(0, 120);
+        goLive(name);
+      });
+    } else {
+      box.innerHTML =
+        '<p style="color:var(--text-dim); font-size:0.88rem; margin-bottom:12px;">Currently live' + (state.eventName ? ': <strong>' + esc(state.eventName) + '</strong>' : '') + '</p>' +
+        '<button class="btn btn-onair btn-block" id="end-live-btn">End Live Event</button>';
+      document.getElementById('end-live-btn').addEventListener('click', endLive);
+    }
+  }
+
+  function renderAll() {
+    renderLiveHeader();
+    renderBoards();
+    renderInquiries();
+    renderAdminControls();
+  }
+
+  // ---------------- QR codes ----------------
+  function renderQr() {
+    var liveUrl = location.href.split('#')[0] + '#live';
+    ['qr-box', 'qr-box-admin'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && !el.dataset.rendered && window.QRCode) {
+        el.dataset.rendered = '1';
+        new QRCode(el, { text: liveUrl, width: 168, height: 168, colorDark: '#0a0a13', colorLight: '#ffffff' });
+      }
+    });
+    var u1 = document.getElementById('qr-url'), u2 = document.getElementById('qr-url-admin');
+    if (u1) u1.textContent = liveUrl;
+    if (u2) u2.textContent = liveUrl;
+  }
+  renderQr();
+
+  // ---------------- Actions ----------------
+  function goLive(eventName) {
+    state.eventId = (state.eventId || 0) + 1;
+    state.eventName = eventName || '';
+    state.isLive = true;
+    persistAndRenderAll();
+  }
+  function endLive() {
+    state.isLive = false;
+    persistAndRenderAll();
+  }
+  document.getElementById('clear-board-btn').addEventListener('click', function () {
+    state.eventId = (state.eventId || 0) + 1;
+    persistAndRenderAll();
+  });
+
+  function markPlayed(normalizedKey) {
+    var now = Date.now();
+    state.requests.forEach(function (r) {
+      if (r.eventId === state.eventId && r.status === 'pending' && r.normalizedKey === normalizedKey) {
+        r.status = 'played';
+        r.playedAt = now;
+      }
+    });
+    persistAndRenderBoards();
+  }
+
+  function updateInquiryStatus(id, status) {
+    state.inquiries.forEach(function (inq) { if (inq.id === id) inq.status = status; });
+    saveState(state);
+    renderInquiries();
+  }
+
+  // ---------------- Form handlers ----------------
+  document.getElementById('request-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var msgBox = document.getElementById('live-form-msg');
+    var name = document.getElementById('req-name').value.trim().slice(0, 60);
+    var song = document.getElementById('req-song').value.trim().slice(0, 120);
+    var artist = document.getElementById('req-artist').value.trim().slice(0, 120);
+    var dedication = document.getElementById('req-dedication').value.trim().slice(0, 140);
+
+    if (!name || !song) {
+      msgBox.innerHTML = '<div class="alert alert-error">Please enter your name and a song title.</div>';
+      return;
+    }
+
+    state.requests.push({
+      id: 'r' + (state.nextId++), eventId: state.eventId, songTitle: song, artist: artist || null,
+      normalizedKey: normalizeKey(song, artist), requestedBy: name, dedication: dedication || null,
+      status: 'pending', createdAt: Date.now(), playedAt: null,
+    });
+    saveState(state);
+    renderBoards();
+
+    msgBox.dataset.locked = '1';
+    msgBox.innerHTML = '<div class="alert alert-success">Request sent! Watch the board below.</div>';
+    document.getElementById('request-form').reset();
+    setTimeout(function () { msgBox.dataset.locked = ''; msgBox.innerHTML = ''; }, 4000);
+  });
+
+  document.getElementById('book-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var msgBox = document.getElementById('book-form-msg');
+    var name = document.getElementById('bk-name').value.trim().slice(0, 80);
+    var email = document.getElementById('bk-email').value.trim().slice(0, 120);
+    var emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    if (!name || !emailOk) {
+      msgBox.innerHTML = '<div class="alert alert-error">Please provide a valid name and email address.</div>';
+      return;
+    }
+
+    state.inquiries.push({
+      id: 'inq' + (state.nextId++), name: name, email: email,
+      phone: document.getElementById('bk-phone').value.trim().slice(0, 40),
+      eventDate: document.getElementById('bk-date').value,
+      eventType: document.getElementById('bk-type').value,
+      guestCount: document.getElementById('bk-guests').value.trim().slice(0, 20),
+      location: document.getElementById('bk-venue').value.trim().slice(0, 140),
+      message: document.getElementById('bk-message').value.trim().slice(0, 1000),
+      status: 'new', createdAt: Date.now(),
+    });
+    saveState(state);
+    renderInquiries();
+
+    msgBox.innerHTML = '<div class="alert alert-success">Thanks! Your inquiry has been sent. DJXpress will reach out soon.</div>';
+    document.getElementById('book-form').reset();
+  });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
