@@ -1,0 +1,93 @@
+<%- include('partials/header', { page, title: 'Book DJXpress | Get a Quote' }) %>
+
+<section class="hero" style="padding: 60px 0 30px;">
+  <div class="container">
+    <span class="eyebrow">Booking Inquiry</span>
+    <h1 style="font-size: clamp(2rem, 5vw, 3rem);">Let's Book Your <span class="gradient">Event</span></h1>
+    <p class="lead">Fill out the form below and DJXpress will follow up with availability and pricing.</p>
+  </div>
+</section>
+
+<section style="padding-top: 0;">
+  <div class="container">
+    <div class="form-card">
+      <% if (typeof submitted !== 'undefined' && submitted) { %>
+        <div class="alert alert-success">Thanks! Your inquiry has been sent. DJXpress will reach out soon.</div>
+      <% } %>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert alert-error"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/api/inquiries">
+        <!-- Honeypot field, hidden from real users -->
+        <div class="honeypot" aria-hidden="true">
+          <label for="company_website">Website</label>
+          <input type="text" id="company_website" name="company_website" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="name">Full Name *</label>
+            <input type="text" id="name" name="name" required maxlength="120"
+              value="<%= typeof values !== 'undefined' ? values.name : '' %>" />
+          </div>
+          <div class="field">
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" required maxlength="200"
+              value="<%= typeof values !== 'undefined' ? values.email : '' %>" />
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" maxlength="60"
+              value="<%= typeof values !== 'undefined' ? values.phone : '' %>" />
+          </div>
+          <div class="field">
+            <label for="event_date">Event Date</label>
+            <input type="date" id="event_date" name="event_date"
+              value="<%= typeof values !== 'undefined' ? values.eventDate : '' %>" />
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label for="event_type">Event Type</label>
+            <select id="event_type" name="event_type">
+              <option value="">Select one</option>
+              <option>Wedding</option>
+              <option>Birthday</option>
+              <option>Quinceañera</option>
+              <option>Corporate Event</option>
+              <option>Club / Nightlife</option>
+              <option>Private Party</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="guest_count">Estimated Guest Count</label>
+            <input type="text" id="guest_count" name="guest_count" maxlength="60"
+              value="<%= typeof values !== 'undefined' ? values.guestCount : '' %>" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="location">Venue / Location</label>
+          <input type="text" id="location" name="location" maxlength="200"
+            value="<%= typeof values !== 'undefined' ? values.location : '' %>" />
+        </div>
+
+        <div class="field">
+          <label for="message">Tell us about your event</label>
+          <textarea id="message" name="message" rows="5" maxlength="2000"
+            placeholder="Music style, timeline, special requests..."><%= typeof values !== 'undefined' ? values.message : '' %></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Send Booking Inquiry</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

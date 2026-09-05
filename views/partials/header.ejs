@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== 'undefined' ? title : 'DJXpress | Book Your DJ & Request Live Songs' %></title>
+  <meta name="description" content="DJXpress — professional DJ for weddings, parties & events. Book now or request a song live at the event." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="nav-inner">
+      <a href="/" class="brand">
+        <span class="brand-mark">DJ</span>
+        <span><span class="brand-x">X</span>press</span>
+      </a>
+      <button class="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+      <div class="nav-links">
+        <a href="/" class="<%= page === 'home' ? 'active' : '' %>">Home</a>
+        <a href="/live" class="<%= page === 'live' ? 'active' : '' %>">Live Requests</a>
+        <a href="/book" class="<%= page === 'book' ? 'active' : '' %>">Book Now</a>
+      </div>
+    </div>
+  </nav>
+  <main>

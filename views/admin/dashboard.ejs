@@ -1,0 +1,118 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="admin-header">
+      <div>
+        <h1 style="margin: 0 0 6px;">DJ Control Panel</h1>
+        <p class="small-muted" style="margin:0;">Manage your live event, requests and bookings.</p>
+      </div>
+      <div class="status-chip">
+        <span class="pulse-dot <%= isLive ? '' : 'offline' %>" style="width:10px;height:10px;"></span>
+        <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom: 30px;">
+      <div class="card">
+        <h3>Event Control</h3>
+        <form method="POST" action="/admin/live/toggle">
+          <% if (!isLive) { %>
+            <div class="field">
+              <label for="event_name">Event Name (optional)</label>
+              <input type="text" id="event_name" name="event_name" maxlength="120" placeholder="e.g. Smith Wedding Reception" />
+            </div>
+            <button type="submit" class="btn btn-success btn-block">Go Live &amp; Start Fresh Board</button>
+          <% } else { %>
+            <p class="small-muted">Currently live<% if (eventName) { %>: <strong><%= eventName %></strong><% } %></p>
+            <button type="submit" class="btn btn-danger btn-block">End Live Event</button>
+          <% } %>
+        </form>
+        <form method="POST" action="/admin/requests/clear" style="margin-top: 12px;"
+          onsubmit="return confirm('Clear the current request board? This starts a fresh board but keeps history.');">
+          <button type="submit" class="btn btn-ghost btn-block btn-sm">Clear Board</button>
+        </form>
+      </div>
+
+      <div class="card" style="text-align:center;">
+        <h3>QR Code</h3>
+        <p class="small-muted">Guests scan this to open the live request page.</p>
+        <div class="qr-box">
+          <img src="/api/qrcode.png?size=400" alt="QR code linking to the live request page" />
+        </div>
+        <p class="small-muted" style="word-break: break-all; margin-top: 12px;"><%= liveUrl %></p>
+        <a href="/api/qrcode/download" class="btn btn-secondary btn-sm">Download High-Res PNG</a>
+      </div>
+    </div>
+
+    <div class="flex-between" style="margin-bottom: 16px;">
+      <h2 style="margin:0;">Booking Inquiries</h2>
+      <a href="/admin/inquiries" class="btn btn-secondary btn-sm">
+        View All <% if (newInquiries > 0) { %>(<%= newInquiries %> new)<% } %>
+      </a>
+    </div>
+
+    <div class="board">
+      <div class="card">
+        <h3>&#127925; Up Next</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Song</th>
+                <th>Requested By</th>
+                <th>Times</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pending.forEach(function(r) { %>
+                <tr>
+                  <td><strong><%= r.song_title %></strong><% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %></td>
+                  <td><%= r.requesters %></td>
+                  <td><span class="count-pill"><%= r.times_requested %></span></td>
+                  <td>
+                    <form method="POST" action="/admin/requests/mark-played">
+                      <input type="hidden" name="normalized_key" value="<%= r.normalized_key %>" />
+                      <button type="submit" class="btn btn-success btn-sm">Mark Played</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+          <% if (!pending.length) { %><div class="empty-state">No pending requests.</div><% } %>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>&#9989; Recently Played</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Song</th>
+                <th>Requested By</th>
+                <th>Played At</th>
+                <th>Times</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recentlyPlayed.forEach(function(r) { %>
+                <tr>
+                  <td><strong><%= r.song_title %></strong><% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %></td>
+                  <td><%= r.requesters %></td>
+                  <td><%= r.played_at %></td>
+                  <td><span class="count-pill"><%= r.times_requested %></span></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+          <% if (!recentlyPlayed.length) { %><div class="empty-state">Nothing played yet.</div><% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

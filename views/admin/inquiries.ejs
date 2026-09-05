@@ -1,0 +1,60 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Inquiries' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 20px;">
+      <h1 style="margin:0;">Booking Inquiries</h1>
+      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Received</th>
+              <th>Name</th>
+              <th>Contact</th>
+              <th>Event</th>
+              <th>Details</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% inquiries.forEach(function(inq) { %>
+              <tr>
+                <td><%= inq.created_at %></td>
+                <td><strong><%= inq.name %></strong></td>
+                <td>
+                  <a href="mailto:<%= inq.email %>"><%= inq.email %></a>
+                  <% if (inq.phone) { %><br><span class="small-muted"><%= inq.phone %></span><% } %>
+                </td>
+                <td>
+                  <%= inq.event_type || '—' %>
+                  <% if (inq.event_date) { %><br><span class="small-muted"><%= inq.event_date %></span><% } %>
+                  <% if (inq.location) { %><br><span class="small-muted"><%= inq.location %></span><% } %>
+                  <% if (inq.guest_count) { %><br><span class="small-muted"><%= inq.guest_count %> guests</span><% } %>
+                </td>
+                <td style="max-width: 260px; white-space: pre-wrap;"><%= inq.message %></td>
+                <td>
+                  <span class="badge badge-<%= inq.status %>"><%= inq.status %></span>
+                  <form method="POST" action="/admin/inquiries/<%= inq.id %>/status" class="inline-form" style="margin-top:8px;">
+                    <select name="status" onchange="this.form.submit()">
+                      <option value="new" <%= inq.status === 'new' ? 'selected' : '' %>>New</option>
+                      <option value="contacted" <%= inq.status === 'contacted' ? 'selected' : '' %>>Contacted</option>
+                      <option value="booked" <%= inq.status === 'booked' ? 'selected' : '' %>>Booked</option>
+                      <option value="declined" <%= inq.status === 'declined' ? 'selected' : '' %>>Declined</option>
+                    </select>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <% if (!inquiries.length) { %><div class="empty-state">No inquiries yet.</div><% } %>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

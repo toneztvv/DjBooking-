@@ -1,0 +1,103 @@
+<%- include('partials/header', { page, title: 'DJXpress | Live Song Requests' }) %>
+
+<section class="hero" style="padding: 60px 0 20px;">
+  <div class="container">
+    <div class="live-status">
+      <span id="live-status-dot" class="pulse-dot <%= isLive ? '' : 'offline' %>"></span>
+      <span id="live-status-label" class="live-badge <%= isLive ? '' : 'offline' %>">
+        <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
+      </span>
+    </div>
+    <h1 style="font-size: clamp(2rem, 5vw, 3rem);">Request a <span class="gradient">Song</span></h1>
+    <p id="live-event-name" class="lead" style="display: <%= isLive && eventName ? 'block' : 'none' %>;">
+      <%= eventName %>
+    </p>
+    <p class="lead" style="<%= isLive && eventName ? 'display:none;' : '' %>">
+      Scan the QR code at the DJ booth or use this page to request a song while DJXpress is live.
+    </p>
+  </div>
+</section>
+
+<section style="padding-top: 0;">
+  <div class="container">
+    <div id="offline-notice" class="alert alert-info" style="display: <%= isLive ? 'none' : 'block' %>; max-width: 640px; margin: 0 auto 30px;">
+      DJXpress isn't live right now. Check back during your event &mdash; this page updates automatically once requests open up.
+    </div>
+
+    <div id="request-form-wrap" style="display: <%= isLive ? 'block' : 'none' %>;">
+      <div class="form-card">
+        <h3 style="margin-top:0;">Send a Request</h3>
+        <div id="form-message"></div>
+        <form id="request-form">
+          <div class="honeypot" aria-hidden="true">
+            <label for="company_website">Website</label>
+            <input type="text" id="company_website" name="company_website" tabindex="-1" autocomplete="off" />
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="requested_by">Your Name *</label>
+              <input type="text" id="requested_by" name="requested_by" required maxlength="80" />
+            </div>
+            <div class="field">
+              <label for="song_title">Song Title *</label>
+              <input type="text" id="song_title" name="song_title" required maxlength="150" />
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="artist">Artist</label>
+              <input type="text" id="artist" name="artist" maxlength="150" />
+            </div>
+            <div class="field">
+              <label for="dedication">Shoutout / Dedication</label>
+              <input type="text" id="dedication" name="dedication" maxlength="300" />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Request Song</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="card">
+        <h3>&#127925; Up Next</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Song</th>
+                <th>Requested By</th>
+                <th>First Requested</th>
+                <th>Times</th>
+              </tr>
+            </thead>
+            <tbody id="pending-body"></tbody>
+          </table>
+          <div id="pending-empty" class="empty-state">No requests yet &mdash; be the first!</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>&#9989; Recently Played</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Song</th>
+                <th>Requested By</th>
+                <th>Played At</th>
+                <th>Times</th>
+              </tr>
+            </thead>
+            <tbody id="played-body"></tbody>
+          </table>
+          <div id="played-empty" class="empty-state">Nothing played yet tonight.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="/js/live.js"></script>
+
+<%- include('partials/footer') %>
