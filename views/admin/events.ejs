@@ -26,7 +26,7 @@
               <tr>
                 <td>
                   <strong><%= ev.name || 'Untitled Event' %></strong>
-                  <% if (ev.id === currentEventId && !ev.ended_at) { %>
+                  <% if (ev.id === currentEventId && isLive) { %>
                     <br><span class="badge badge-live">Live Now</span>
                   <% } %>
                 </td>

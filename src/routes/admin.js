@@ -88,7 +88,9 @@ router.post('/live/toggle', (req, res) => {
   const currentEventId = Number(getSetting('current_event_id') || '1');
 
   if (!isLive) {
-    // Going live: start a fresh event with its own history record.
+    // Going live: close out any dangling unended event left over from a
+    // "Clear Board" done while offline, then start a fresh one.
+    endEvent(currentEventId);
     const newEventId = startNewEvent(nextEventName);
     setSetting('current_event_id', newEventId);
     setSetting('is_live', '1');
@@ -177,7 +179,9 @@ router.get('/events', (req, res) => {
     )
     .all(currentEventId);
 
-  res.render('admin/events', { page: 'admin', events, currentEventId });
+  const isLive = getSetting('is_live') === '1';
+
+  res.render('admin/events', { page: 'admin', events, currentEventId, isLive });
 });
 
 router.get('/events/:id', (req, res) => {
