@@ -8,8 +8,12 @@ function getLiveUrl() {
   return `${getSiteUrl()}/live`;
 }
 
+function getQrTargetUrl() {
+  return `${getSiteUrl()}/`;
+}
+
 async function liveQrBuffer(size = 512) {
-  return QRCode.toBuffer(getLiveUrl(), {
+  return QRCode.toBuffer(getQrTargetUrl(), {
     type: 'png',
     width: size,
     margin: 2,
@@ -20,4 +24,4 @@ async function liveQrBuffer(size = 512) {
   });
 }
 
-module.exports = { getSiteUrl, getLiveUrl, liveQrBuffer };
+module.exports = { getSiteUrl, getLiveUrl, getQrTargetUrl, liveQrBuffer };

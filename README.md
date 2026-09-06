@@ -6,7 +6,7 @@ A booking + live song-request website for DJXpress.
 
 - **Home page** — intro, services, genres, calls to action.
 - **Book Now** — booking inquiry form (name, contact info, event details) saved to a database you can review.
-- **Live Requests** (`/live`) — when the DJ is live, guests scan a QR code to open this page on their phone and request songs. It shows:
+- **Live Requests** (`/live`) — reachable from the homepage's nav, or directly when the DJ is live. Guests request songs here. It shows:
   - **Up Next**: every pending song, who requested it, when it was first requested, and how many times.
   - **Recently Played**: the same, once the DJ marks a song as played, with the time it was played.
   - The page auto-refreshes every 5 seconds for everyone watching — no login needed.
@@ -33,7 +33,7 @@ For auto-reload during development: `npm run dev` (uses nodemon).
 ## Using it at an event
 
 1. In `/admin`, click **Go Live** (optionally name the event, e.g. "Smith Wedding").
-2. Guests scan the QR code shown on the dashboard (or printed ahead of time — see below) which opens `/live` on their phone.
+2. Guests scan the QR code shown on the dashboard (or printed ahead of time — see below), which opens the homepage on their phone. From there they can tap **Book Now** or **Live Requests**.
 3. Guests submit song requests; the board updates for everyone in real time.
 4. As you play a song, click **Mark Played** next to it on the dashboard — it moves to "Recently Played" with a timestamp, and a fresh request for the same song later starts a new entry.
 5. Click **End Live Event** when you're done. Click **Clear Board** any time you want to reset the request list without ending the event.

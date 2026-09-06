@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /*
- * Generates a printable QR code PNG pointing at the live song-request page.
+ * Generates a printable QR code PNG pointing at the site homepage.
  * Usage: node scripts/generate-qr.js [output-path] [size]
  */
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
-const { getLiveUrl } = require('../src/qr');
+const { getQrTargetUrl } = require('../src/qr');
 
 async function main() {
   const outputPath = process.argv[2] || path.join(__dirname, '..', 'djxpress-qr.png');
   const size = Number(process.argv[3]) || 1200;
-  const url = getLiveUrl();
+  const url = getQrTargetUrl();
 
   await QRCode.toFile(outputPath, url, {
     type: 'png',

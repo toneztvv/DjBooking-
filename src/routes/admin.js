@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const { db, getSetting, setSetting, normalizeKey } = require('../db');
 const adminAuth = require('../middleware/adminAuth');
-const { getLiveUrl } = require('../qr');
+const { getLiveUrl, getQrTargetUrl } = require('../qr');
 const { recognizeAudio } = require('../audd');
 const { getSetupGuideText } = require('../setupGuide');
 
@@ -88,7 +88,7 @@ router.get('/', (req, res) => {
     eventName: currentEvent ? currentEvent.name || '' : '',
     pending: getPendingBoard(eventId),
     recentlyPlayed: getPlayedSetlist(eventId, 'DESC').slice(0, 50),
-    liveUrl: getLiveUrl(),
+    liveUrl: getQrTargetUrl(),
     newInquiries,
   });
 });

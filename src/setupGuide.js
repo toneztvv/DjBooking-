@@ -16,9 +16,10 @@ WHAT THIS WEBSITE IS
 =====================================================================
 A booking + live song-request site for DJXpress:
   - A home page and a booking form for new clients
-  - A live page (${siteUrl}/live) guests scan a QR code to reach during an
-    event, where they can request songs and watch a live "Up Next" /
-    "Recently Played" board
+  - The QR code (shown on the admin dashboard) points to the homepage
+    (${siteUrl}/), so guests can choose Book Now or Live Requests
+  - A live page (${siteUrl}/live) where guests request songs and watch a
+    live "Up Next" / "Recently Played" board
 
 EVERY TOOL AND ACCOUNT THIS SITE TOUCHES, AT A GLANCE
   Claude Code (claude.ai/code)  The AI coding assistant used to write,
