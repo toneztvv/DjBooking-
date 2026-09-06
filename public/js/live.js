@@ -16,18 +16,22 @@
   const chatEmpty = document.getElementById('chat-empty');
   const chatError = document.getElementById('chat-error');
   const chatForm = document.getElementById('chat-form');
-  const chatNameInput = document.getElementById('chat-name');
   const chatMessageInput = document.getElementById('chat-message');
-  const CHAT_NAME_KEY = 'djxpress_chat_name';
   let lastChatId = 0;
   let chatPollTimer = null;
 
-  if (chatNameInput) {
+  const CHAT_CLIENT_ID_KEY = 'djxpress_chat_client_id';
+  function getChatClientId() {
     try {
-      const savedName = localStorage.getItem(CHAT_NAME_KEY);
-      if (savedName) chatNameInput.value = savedName;
+      let id = localStorage.getItem(CHAT_CLIENT_ID_KEY);
+      if (!id) {
+        id = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem(CHAT_CLIENT_ID_KEY, id);
+      }
+      return id;
     } catch (err) {
-      // localStorage can be unavailable (private mode); chat still works, just re-asks for a name.
+      // Private browsing / storage disabled — chat still works, just can't be re-identified if banned and rejoining.
+      return null;
     }
   }
 
@@ -128,23 +132,17 @@
       const submitBtn = chatForm.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
 
-      const senderName = chatNameInput.value.trim();
       const message = chatMessageInput.value.trim();
 
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sender_name: senderName, message }),
+          body: JSON.stringify({ message, client_id: getChatClientId() }),
         });
         const data = await res.json();
 
         if (res.ok && data.ok) {
-          try {
-            localStorage.setItem(CHAT_NAME_KEY, senderName);
-          } catch (err) {
-            // Private browsing / storage disabled — chat still works, name just won't be remembered.
-          }
           chatMessageInput.value = '';
           chatMessageInput.focus();
           pollChat();

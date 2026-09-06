@@ -20,7 +20,9 @@ A booking + live song-request site for DJXpress:
     (${siteUrl}/), so guests can choose Book Now or Live Requests
   - A live page (${siteUrl}/live) where guests request songs, watch a
     live "Up Next" / "Recently Played" board, and chat back and forth
-    with the DJ in real time while the event is live
+    with the DJ in real time while the event is live (no name needed to
+    chat; anyone using a banned word is auto-removed from chat, and the
+    DJ can manually ban/unban anyone from the dashboard)
 
 EVERY TOOL AND ACCOUNT THIS SITE TOUCHES, AT A GLANCE
   Claude Code (claude.ai/code)  The AI coding assistant used to write,
@@ -190,6 +192,9 @@ Log in at: ${siteUrl}/admin
                                               Detection, reply in the
                                               live chat, the QR code,
                                               a summary of new inquiries
+  Chat Moderation        /admin/moderation   Everyone banned from live
+                                              chat (automatic or manual),
+                                              with an Unban button
   Event History          /admin/events       Every past event, each with
                                               its full setlist in the
                                               order songs were played,

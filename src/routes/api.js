@@ -3,6 +3,7 @@ const { db, getSetting, normalizeKey } = require('../db');
 const { liveQrBuffer } = require('../qr');
 const { sendInquiryNotification } = require('../mail');
 const { sendSms } = require('../sms');
+const { containsBannedWord } = require('../moderation');
 
 const router = express.Router();
 
@@ -199,21 +200,37 @@ router.post('/chat', (req, res) => {
     return res.status(201).json({ ok: true });
   }
 
-  const senderName = clean(body.sender_name, 60);
+  const clientId = clean(body.client_id, 100) || null;
+  const ip = req.ip;
+
+  if (clientId && db.prepare(`SELECT 1 FROM banned_chatters WHERE client_id = ?`).get(clientId)) {
+    return res.status(403).json({ ok: false, error: 'You’ve been removed from chat for breaking the chat rules.' });
+  }
+
+  const senderName = clean(body.sender_name, 60) || 'Guest';
   const message = clean(body.message, 500);
 
-  if (!senderName || !message) {
-    return res.status(400).json({ ok: false, error: 'Please enter your name and a message.' });
+  if (!message) {
+    return res.status(400).json({ ok: false, error: 'Please enter a message.' });
+  }
+
+  if (containsBannedWord(message)) {
+    if (clientId) {
+      db.prepare(
+        `INSERT OR IGNORE INTO banned_chatters (client_id, ip, reason) VALUES (?, ?, ?)`
+      ).run(clientId, ip, 'Automatically banned: used a banned word in chat');
+    }
+    return res.status(403).json({ ok: false, error: 'That message broke the chat rules — you’ve been removed from chat.' });
   }
 
   const eventId = Number(getSetting('current_event_id') || '1');
 
   const result = db
     .prepare(
-      `INSERT INTO chat_messages (event_id, sender_name, message, is_dj)
-       VALUES (?, ?, ?, 0)`
+      `INSERT INTO chat_messages (event_id, sender_name, message, is_dj, client_id, ip)
+       VALUES (?, ?, ?, 0, ?, ?)`
     )
-    .run(eventId, senderName, message);
+    .run(eventId, senderName, message, clientId, ip);
 
   const saved = db
     .prepare(`SELECT id, sender_name, message, is_dj, created_at FROM chat_messages WHERE id = ?`)

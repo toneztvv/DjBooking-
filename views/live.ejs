@@ -65,18 +65,9 @@
         <div id="chat-log" class="chat-log"></div>
         <div id="chat-empty" class="empty-state" style="display:none;">No messages yet &mdash; say hi!</div>
         <div id="chat-error" class="alert alert-error" style="display:none; margin-top:12px;"></div>
-        <form id="chat-form" style="margin-top:14px;">
-          <div class="form-grid">
-            <div class="field" style="margin-bottom:0;">
-              <label for="chat-name">Your Name</label>
-              <input type="text" id="chat-name" name="sender_name" required maxlength="60" />
-            </div>
-            <div class="field" style="margin-bottom:0;">
-              <label for="chat-message">Message</label>
-              <input type="text" id="chat-message" name="message" required maxlength="500" autocomplete="off" />
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary btn-block" style="margin-top:14px;">Send</button>
+        <form id="chat-form" style="margin-top:14px; display:flex; gap:10px;">
+          <input type="text" id="chat-message" name="message" placeholder="Type a message..." required maxlength="500" autocomplete="off" style="flex:1;" />
+          <button type="submit" class="btn btn-primary">Send</button>
         </form>
       </div>
     </div>
