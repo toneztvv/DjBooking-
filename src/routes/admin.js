@@ -4,6 +4,7 @@ const { db, getSetting, setSetting, normalizeKey } = require('../db');
 const adminAuth = require('../middleware/adminAuth');
 const { getLiveUrl } = require('../qr');
 const { recognizeAudio } = require('../audd');
+const { getSetupGuideText } = require('../setupGuide');
 
 const router = express.Router();
 
@@ -368,11 +369,22 @@ const EXTERNAL_SERVICES = [
     purpose: 'Texts your phone for new bookings and new song requests.',
     cost: '~$1/month for the number, plus ~1¢ per text',
     url: 'https://console.twilio.com',
+    status: 'Coming soon — built, not turned on yet (requires adding a card)',
   },
 ];
 
 router.get('/services', (req, res) => {
   res.render('admin/services', { page: 'admin', services: EXTERNAL_SERVICES });
+});
+
+router.get('/setup-guide', (req, res) => {
+  res.render('admin/setup-guide', { page: 'admin', guideText: getSetupGuideText() });
+});
+
+router.get('/setup-guide/download', (req, res) => {
+  res.set('Content-Type', 'text/plain; charset=utf-8');
+  res.set('Content-Disposition', 'attachment; filename="djxpress-setup-guide.txt"');
+  res.send(getSetupGuideText());
 });
 
 module.exports = router;

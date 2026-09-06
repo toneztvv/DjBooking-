@@ -16,11 +16,20 @@
           <h3 style="margin-bottom: 6px;"><%= s.name %></h3>
           <p class="small-muted" style="margin-bottom: 10px;"><%= s.purpose %></p>
           <p class="small-muted" style="margin-bottom: 16px;"><strong>Cost:</strong> <%= s.cost %></p>
+          <% if (s.status) { %>
+            <p style="margin-bottom: 16px;"><span class="badge badge-contacted"><%= s.status %></span></p>
+          <% } %>
           <a href="<%= s.url %>" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
             Open <%= s.name %> Dashboard &rarr;
           </a>
         </div>
       <% }); %>
+    </div>
+
+    <div class="card" style="margin-top: 24px; text-align:center;">
+      <h3 style="margin-bottom: 6px;">Full Setup Guide</h3>
+      <p class="small-muted" style="margin-bottom: 16px;">A step-by-step record of everything that was built and subscribed to, so anyone can retrace or redo it.</p>
+      <a href="/admin/setup-guide" class="btn btn-secondary btn-sm">View Setup Guide</a>
     </div>
   </div>
 </section>

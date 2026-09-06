@@ -1,0 +1,22 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Setup Guide' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 8px;">
+      <h1 style="margin:0;">Setup Guide</h1>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="/admin/setup-guide/download" class="btn btn-primary btn-sm">Download as .txt</a>
+        <a href="/admin/services" class="btn btn-secondary btn-sm">&larr; Back to Services</a>
+      </div>
+    </div>
+    <p class="small-muted" style="margin-bottom: 24px;">
+      Everything that was built, bought, and subscribed to for this website to work — step by step, so it can be retraced or handed off to anyone.
+    </p>
+
+    <div class="card">
+      <pre style="white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono, monospace); font-size: 0.85rem; line-height: 1.6; margin: 0;"><%= guideText %></pre>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>
