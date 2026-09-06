@@ -18,6 +18,7 @@
               <th>Event</th>
               <th>Details</th>
               <th>Status</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -45,6 +46,12 @@
                       <option value="booked" <%= inq.status === 'booked' ? 'selected' : '' %>>Booked</option>
                       <option value="declined" <%= inq.status === 'declined' ? 'selected' : '' %>>Declined</option>
                     </select>
+                  </form>
+                </td>
+                <td>
+                  <form method="POST" action="/admin/inquiries/<%= inq.id %>/delete"
+                    onsubmit="return confirm('Delete this inquiry from <%= inq.name.replace(/'/g, '') %>? This can\'t be undone.');">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                   </form>
                 </td>
               </tr>

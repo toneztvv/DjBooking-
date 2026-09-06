@@ -148,6 +148,14 @@ router.post('/inquiries/:id/status', (req, res) => {
   res.redirect('/admin/inquiries');
 });
 
+router.post('/inquiries/:id/delete', (req, res) => {
+  const id = Number(req.params.id);
+  if (id) {
+    db.prepare(`DELETE FROM inquiries WHERE id = ?`).run(id);
+  }
+  res.redirect('/admin/inquiries');
+});
+
 // --- Event history ---------------------------------------------------------
 
 router.get('/events', (req, res) => {
@@ -194,7 +202,24 @@ router.get('/events/:id', (req, res) => {
     stats,
     setlist: getPlayedSetlist(id, 'ASC'),
     neverPlayed: getPendingBoard(id),
+    currentEventId: Number(getSetting('current_event_id') || '1'),
   });
+});
+
+router.post('/events/:id/delete', (req, res) => {
+  const id = Number(req.params.id);
+  const currentEventId = Number(getSetting('current_event_id') || '1');
+
+  if (id && id !== currentEventId) {
+    const deleteRequests = db.prepare(`DELETE FROM song_requests WHERE event_id = ?`);
+    const deleteEvent = db.prepare(`DELETE FROM events WHERE id = ?`);
+    db.transaction(() => {
+      deleteRequests.run(id);
+      deleteEvent.run(id);
+    })();
+  }
+
+  res.redirect('/admin/events');
 });
 
 module.exports = router;

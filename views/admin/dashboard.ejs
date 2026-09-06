@@ -19,7 +19,8 @@
     <div class="grid grid-2" style="margin-bottom: 30px;">
       <div class="card">
         <h3>Event Control</h3>
-        <form method="POST" action="/admin/live/toggle">
+        <form method="POST" action="/admin/live/toggle"
+          <% if (isLive) { %>onsubmit="return confirm('End the live event? Guests won\'t be able to send requests until you go live again.');"<% } %>>
           <% if (!isLive) { %>
             <div class="field">
               <label for="event_name">Event Name (optional)</label>

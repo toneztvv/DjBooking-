@@ -623,6 +623,22 @@ th {
   color: var(--danger);
 }
 
+.badge-live {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--danger);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badge-live::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
 .inline-form {
   display: inline-flex;
   gap: 6px;

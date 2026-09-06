@@ -9,7 +9,15 @@
           <%= event.started_at %> &mdash; <%= event.ended_at || 'still live' %>
         </p>
       </div>
-      <a href="/admin/events" class="btn btn-secondary btn-sm">&larr; Back to Event History</a>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="/admin/events" class="btn btn-secondary btn-sm">&larr; Back to Event History</a>
+        <% if (event.id !== currentEventId) { %>
+          <form method="POST" action="/admin/events/<%= event.id %>/delete"
+            onsubmit="return confirm('Delete &quot;<%= (event.name || 'Untitled Event').replace(/"/g, '') %>&quot; and its entire setlist? This can\'t be undone.');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete Event</button>
+          </form>
+        <% } %>
+      </div>
     </div>
 
     <div class="grid grid-3" style="margin-bottom: 30px;">
