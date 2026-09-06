@@ -11,9 +11,21 @@
 
   let stream = null;
   let listening = false;
+  let paused = false;
   let currentIntervalMs = BASE_INTERVAL_MS;
   let lastDetectedKey = null;
   let cycleTimer = null;
+  let wakeLock = null;
+
+  async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch (err) {
+      // Not fatal — screen may just dim/lock on its own, which will pause
+      // detection via the visibilitychange handler below.
+    }
+  }
 
   function setStatus(text, tone) {
     statusEl.textContent = text;
@@ -29,16 +41,43 @@
 
   function stopListening(message, tone) {
     listening = false;
+    paused = false;
     if (cycleTimer) clearTimeout(cycleTimer);
     cycleTimer = null;
     if (stream) {
       stream.getTracks().forEach((t) => t.stop());
       stream = null;
     }
+    if (wakeLock) {
+      wakeLock.release().catch(() => {});
+      wakeLock = null;
+    }
     startBtn.hidden = false;
     stopBtn.hidden = true;
     if (message) setStatus(message, tone);
   }
+
+  // Phones (and to a lesser extent laptops) suspend mic access the moment
+  // this tab is backgrounded — switching apps, locking the screen, even
+  // briefly. There's no way around that from a website; the best we can do
+  // is pause cleanly and say so, then pick back up the moment it's visible
+  // again, rather than silently failing or wasting API calls on a doomed
+  // recording.
+  document.addEventListener('visibilitychange', () => {
+    if (!listening) return;
+
+    if (document.hidden) {
+      paused = true;
+      if (cycleTimer) clearTimeout(cycleTimer);
+      cycleTimer = null;
+      setStatus('Paused — bring this tab back to the front to keep listening.', 'error');
+    } else if (paused) {
+      paused = false;
+      requestWakeLock();
+      setStatus('Resuming…');
+      runCycle();
+    }
+  });
 
   function recordOnce() {
     return new Promise((resolve, reject) => {
@@ -126,10 +165,12 @@
     }
 
     listening = true;
+    paused = false;
     currentIntervalMs = BASE_INTERVAL_MS;
     lastDetectedKey = null;
     startBtn.hidden = true;
     stopBtn.hidden = false;
+    requestWakeLock();
     runCycle();
   });
 

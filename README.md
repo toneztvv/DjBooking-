@@ -69,7 +69,8 @@ Manually tapping "Mark Played" for every song works fine, but if you'd rather it
 Leave it unset and the dashboard just won't show the Start Listening button — manually tapping "Mark Played" keeps working exactly as before.
 
 **Worth knowing before relying on it at a real event:**
-- It needs the laptop's mic actually picking up the music, so the browser tab has to stay open near the speakers all night — closing it or letting the laptop sleep stops detection (djaying keeps working fine either way, this only affects auto-tracking).
+- It needs the device's mic actually picking up the music, so the browser tab has to stay **open and visible** near the speakers all night. This matters most on phones: iOS and Android both suspend microphone access the instant you switch apps or lock the screen — that's a platform restriction, not something a website can override. The page requests a screen wake lock (where supported) to help prevent auto-lock, and pauses itself cleanly with a clear "Paused" message rather than silently failing when it does get backgrounded, but there's no way to make it survive being backgrounded on mobile.
+- Practically: this works best left running on the laptop you're already DJing from (djaying keeps working fine either way, this only affects auto-tracking). If you'd rather use a phone, dedicate one just to this — screen unlocked, propped up near the speakers, not used for anything else during the set.
 - Crowd noise and talking can reduce accuracy versus a quiet room.
 - It's a real, if small, ongoing cost tied to your AudD account — check usage anytime at your AudD dashboard.
 

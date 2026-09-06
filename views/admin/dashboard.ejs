@@ -51,7 +51,8 @@
 
       <div class="card">
         <h3>Auto Song Detection</h3>
-        <p class="small-muted">Leave this open on the DJ laptop. It listens through the mic every 30-90s and auto-marks matching requests as played &mdash; anything else played gets logged too, so the setlist is complete.</p>
+        <p class="small-muted">Listens through the mic every 30-90s and auto-marks matching requests as played &mdash; anything else played gets logged too, so the setlist is complete.</p>
+        <p class="small-muted"><strong>Keep this tab open and visible the whole time</strong> &mdash; on a phone, switching apps or locking the screen pauses it (that's iOS/Android, not something a website can override). Works best left running on the laptop you're already DJing from; on a phone, dedicate one just to this, screen unlocked, propped up near the speakers.</p>
         <% if (isLive) { %>
           <button type="button" id="detect-start-btn" class="btn btn-success btn-block">Start Listening</button>
           <button type="button" id="detect-stop-btn" class="btn btn-danger btn-block" hidden>Stop Listening</button>
