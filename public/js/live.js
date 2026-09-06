@@ -11,6 +11,26 @@
   const playedEmpty = document.getElementById('played-empty');
   const formMessage = document.getElementById('form-message');
 
+  const chatWrap = document.getElementById('chat-wrap');
+  const chatLog = document.getElementById('chat-log');
+  const chatEmpty = document.getElementById('chat-empty');
+  const chatError = document.getElementById('chat-error');
+  const chatForm = document.getElementById('chat-form');
+  const chatNameInput = document.getElementById('chat-name');
+  const chatMessageInput = document.getElementById('chat-message');
+  const CHAT_NAME_KEY = 'djxpress_chat_name';
+  let lastChatId = 0;
+  let chatPollTimer = null;
+
+  if (chatNameInput) {
+    try {
+      const savedName = localStorage.getItem(CHAT_NAME_KEY);
+      if (savedName) chatNameInput.value = savedName;
+    } catch (err) {
+      // localStorage can be unavailable (private mode); chat still works, just re-asks for a name.
+    }
+  }
+
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str == null ? '' : String(str);
@@ -64,6 +84,81 @@
       </tr>`
       )
       .join('');
+  }
+
+  function renderChatMessages(messages) {
+    if (!messages || !messages.length) return;
+    const atBottom = chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight < 40;
+
+    messages.forEach((m) => {
+      if (m.id <= lastChatId) return;
+      lastChatId = Math.max(lastChatId, m.id);
+
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble' + (m.is_dj ? ' chat-bubble-dj' : '');
+      bubble.innerHTML = `
+        <span class="chat-sender">${escapeHtml(m.is_dj ? 'DJ' : m.sender_name)}</span>
+        <span class="chat-text">${escapeHtml(m.message)}</span>
+        <span class="chat-time">${formatTime(m.created_at)}</span>`;
+      chatLog.appendChild(bubble);
+    });
+
+    chatEmpty.style.display = chatLog.childElementCount ? 'none' : 'block';
+    if (atBottom) chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
+  async function pollChat() {
+    if (!chatWrap) return;
+    try {
+      const res = await fetch(`/api/chat?afterId=${lastChatId}`, { headers: { Accept: 'application/json' } });
+      if (!res.ok) return;
+      const data = await res.json();
+      chatWrap.style.display = data.isLive ? 'block' : 'none';
+      renderChatMessages(data.messages);
+    } catch (err) {
+      // Silently retry on next interval.
+    }
+  }
+
+  if (chatForm) {
+    chatForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      chatError.style.display = 'none';
+
+      const submitBtn = chatForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
+      const senderName = chatNameInput.value.trim();
+      const message = chatMessageInput.value.trim();
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sender_name: senderName, message }),
+        });
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          try {
+            localStorage.setItem(CHAT_NAME_KEY, senderName);
+          } catch (err) {
+            // Private browsing / storage disabled — chat still works, name just won't be remembered.
+          }
+          chatMessageInput.value = '';
+          chatMessageInput.focus();
+          pollChat();
+        } else {
+          chatError.textContent = data.error || 'Something went wrong. Please try again.';
+          chatError.style.display = 'block';
+        }
+      } catch (err) {
+        chatError.textContent = 'Network error. Please try again.';
+        chatError.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
   }
 
   async function refresh() {
@@ -134,4 +229,9 @@
 
   refresh();
   setInterval(refresh, 5000);
+
+  if (chatWrap) {
+    pollChat();
+    chatPollTimer = setInterval(pollChat, 3000);
+  }
 })();

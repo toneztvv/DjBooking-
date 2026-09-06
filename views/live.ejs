@@ -58,6 +58,29 @@
       </div>
     </div>
 
+    <div id="chat-wrap" style="display: <%= isLive ? 'block' : 'none' %>; margin-bottom: 30px;">
+      <div class="form-card" style="max-width: 100%;">
+        <h3 style="margin-top:0;">&#128172; Live Chat</h3>
+        <p class="small-muted" style="margin-bottom:14px;">Chat with the DJ and everyone else here tonight &mdash; everyone sees every message.</p>
+        <div id="chat-log" class="chat-log"></div>
+        <div id="chat-empty" class="empty-state" style="display:none;">No messages yet &mdash; say hi!</div>
+        <div id="chat-error" class="alert alert-error" style="display:none; margin-top:12px;"></div>
+        <form id="chat-form" style="margin-top:14px;">
+          <div class="form-grid">
+            <div class="field" style="margin-bottom:0;">
+              <label for="chat-name">Your Name</label>
+              <input type="text" id="chat-name" name="sender_name" required maxlength="60" />
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label for="chat-message">Message</label>
+              <input type="text" id="chat-message" name="message" required maxlength="500" autocomplete="off" />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top:14px;">Send</button>
+        </form>
+      </div>
+    </div>
+
     <div class="board">
       <div class="card">
         <h3>&#127925; Up Next</h3>

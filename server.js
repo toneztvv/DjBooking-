@@ -46,6 +46,16 @@ const formLimiter = rateLimit({
 app.use('/api/inquiries', formLimiter);
 app.use('/api/requests', formLimiter);
 
+// Chat is polled via GET every few seconds, so only rate-limit the POSTs
+// (sending a message) — otherwise normal polling would trip the limiter.
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/chat', (req, res, next) => (req.method === 'POST' ? chatLimiter(req, res, next) : next()));
+
 app.use('/', publicRoutes);
 app.use('/api', apiRoutes);
 app.use('/admin', adminRoutes);

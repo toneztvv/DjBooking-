@@ -603,6 +603,55 @@ th {
   letter-spacing: 0.5px;
 }
 
+.chat-log {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 4px 0;
+}
+
+.chat-bubble {
+  background: var(--bg-alt);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.chat-bubble-dj {
+  background: linear-gradient(135deg, rgba(255, 47, 191, 0.14), rgba(124, 77, 255, 0.14));
+  border-color: rgba(255, 47, 191, 0.35);
+}
+
+.chat-sender {
+  font-weight: 700;
+  color: var(--accent-2);
+  font-size: 0.85rem;
+}
+
+.chat-bubble-dj .chat-sender {
+  color: var(--accent);
+}
+
+.chat-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+  color: var(--text);
+}
+
+.chat-time {
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .badge-new {
   background: rgba(51, 224, 255, 0.15);
   color: var(--accent-2);

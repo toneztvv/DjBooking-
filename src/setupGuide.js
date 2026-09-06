@@ -18,8 +18,9 @@ A booking + live song-request site for DJXpress:
   - A home page and a booking form for new clients
   - The QR code (shown on the admin dashboard) points to the homepage
     (${siteUrl}/), so guests can choose Book Now or Live Requests
-  - A live page (${siteUrl}/live) where guests request songs and watch a
-    live "Up Next" / "Recently Played" board
+  - A live page (${siteUrl}/live) where guests request songs, watch a
+    live "Up Next" / "Recently Played" board, and chat back and forth
+    with the DJ in real time while the event is live
 
 EVERY TOOL AND ACCOUNT THIS SITE TOUCHES, AT A GLANCE
   Claude Code (claude.ai/code)  The AI coding assistant used to write,
@@ -37,8 +38,9 @@ EVERY TOOL AND ACCOUNT THIS SITE TOUCHES, AT A GLANCE
   AudD                          Automatic song detection (audio recognition) — section 5
   Twilio                        Text message notifications — coming soon, section 6
   - An admin dashboard (${siteUrl}/admin) for running the event: going
-    live, marking/accepting requests, automatic song detection, viewing
-    past events' full setlists, and managing booking inquiries
+    live, marking/accepting requests, automatic song detection, replying
+    in the live chat, viewing past events' full setlists and chat logs,
+    and managing booking inquiries
 
 =====================================================================
 1. THE WEBSITE'S CODE
@@ -185,11 +187,13 @@ Log in at: ${siteUrl}/admin
   Dashboard              /admin              Go live / end event, clear
                                               the board, accept and mark
                                               requests played, Auto Song
-                                              Detection, the QR code,
+                                              Detection, reply in the
+                                              live chat, the QR code,
                                               a summary of new inquiries
   Event History          /admin/events       Every past event, each with
                                               its full setlist in the
-                                              order songs were played
+                                              order songs were played,
+                                              and its full chat log
   Booking Inquiries      /admin/inquiries    Everyone who's submitted the
                                               booking form, contact info,
                                               and a status you can update

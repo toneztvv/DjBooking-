@@ -52,6 +52,18 @@ function initDb() {
       started_at TEXT NOT NULL DEFAULT (datetime('now')),
       ended_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      sender_name TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_dj INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_chat_event_id
+      ON chat_messages (event_id, id);
   `);
 
   const defaults = {

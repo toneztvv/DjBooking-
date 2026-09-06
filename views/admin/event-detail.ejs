@@ -89,6 +89,20 @@
         <% if (!neverPlayed.length) { %><div class="empty-state">Every requested song got played. 🎉</div><% } %>
       </div>
     </div>
+
+    <h2 style="font-size:1.2rem; margin: 30px 0 14px;">Live Chat Log</h2>
+    <div class="card">
+      <div class="chat-log" style="max-height: 500px;">
+        <% chatLog.forEach(function(m) { %>
+          <div class="chat-bubble<% if (m.is_dj) { %> chat-bubble-dj<% } %>">
+            <span class="chat-sender"><%= m.is_dj ? 'DJ' : m.sender_name %></span>
+            <span class="chat-text"><%= m.message %></span>
+            <span class="chat-time"><%= m.created_at %></span>
+          </div>
+        <% }); %>
+      </div>
+      <% if (!chatLog.length) { %><div class="empty-state">No chat messages during this event.</div><% } %>
+    </div>
   </div>
 </section>
 

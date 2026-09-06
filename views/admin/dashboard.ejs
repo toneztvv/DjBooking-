@@ -64,6 +64,20 @@
       </div>
     </div>
 
+    <% if (isLive) { %>
+    <div class="card" style="margin-bottom: 30px;">
+      <h3>&#128172; Live Chat</h3>
+      <p class="small-muted" style="margin-bottom:14px;">Everyone at the event sees this &mdash; type a reply and it shows up on their phones in a few seconds.</p>
+      <div id="admin-chat-log" class="chat-log" style="max-height: 360px;"></div>
+      <div id="admin-chat-empty" class="empty-state" style="display:none;">No messages yet tonight.</div>
+      <div id="admin-chat-error" class="alert alert-error" style="display:none; margin-top:12px;"></div>
+      <form id="admin-chat-form" style="margin-top:14px; display:flex; gap:10px;">
+        <input type="text" id="admin-chat-message" placeholder="Reply to the crowd..." maxlength="500" required style="flex:1;" />
+        <button type="submit" class="btn btn-primary">Send</button>
+      </form>
+    </div>
+    <% } %>
+
     <div class="flex-between" style="margin-bottom: 16px;">
       <h2 style="margin:0;">Booking Inquiries</h2>
       <a href="/admin/inquiries" class="btn btn-secondary btn-sm">
@@ -153,6 +167,9 @@
   </div>
 </section>
 
-<% if (isLive) { %><script src="/js/detect.js"></script><% } %>
+<% if (isLive) { %>
+<script src="/js/detect.js"></script>
+<script src="/js/admin-chat.js"></script>
+<% } %>
 
 <%- include('../partials/footer') %>

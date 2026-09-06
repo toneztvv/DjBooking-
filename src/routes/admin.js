@@ -242,6 +242,51 @@ router.post('/requests/clear', (req, res) => {
   res.redirect('/admin');
 });
 
+// --- Live chat ---------------------------------------------------------------
+
+router.get('/chat', (req, res) => {
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const afterId = Number(req.query.afterId) || 0;
+
+  const messages = db
+    .prepare(
+      `SELECT id, sender_name, message, is_dj, created_at
+       FROM chat_messages
+       WHERE event_id = ? AND id > ?
+       ORDER BY id ASC
+       LIMIT 200`
+    )
+    .all(eventId, afterId);
+
+  res.json({ messages });
+});
+
+router.post('/chat/reply', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  if (!isLive) {
+    return res.status(409).json({ ok: false, error: 'Go live before replying in chat.' });
+  }
+
+  const message = clean(req.body.message, 500);
+  if (!message) {
+    return res.status(400).json({ ok: false, error: 'Type a message first.' });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const result = db
+    .prepare(
+      `INSERT INTO chat_messages (event_id, sender_name, message, is_dj)
+       VALUES (?, 'DJ', ?, 1)`
+    )
+    .run(eventId, message);
+
+  const saved = db
+    .prepare(`SELECT id, sender_name, message, is_dj, created_at FROM chat_messages WHERE id = ?`)
+    .get(result.lastInsertRowid);
+
+  res.status(201).json({ ok: true, message: saved });
+});
+
 router.get('/inquiries', (req, res) => {
   const inquiries = db
     .prepare(`SELECT * FROM inquiries ORDER BY created_at DESC`)
@@ -311,12 +356,20 @@ router.get('/events/:id', (req, res) => {
     )
     .get(id);
 
+  const chatLog = db
+    .prepare(
+      `SELECT id, sender_name, message, is_dj, created_at
+       FROM chat_messages WHERE event_id = ? ORDER BY id ASC`
+    )
+    .all(id);
+
   res.render('admin/event-detail', {
     page: 'admin',
     event,
     stats,
     setlist: getPlayedSetlist(id, 'ASC'),
     neverPlayed: getPendingBoard(id),
+    chatLog,
     currentEventId: Number(getSetting('current_event_id') || '1'),
   });
 });
@@ -327,9 +380,11 @@ router.post('/events/:id/delete', (req, res) => {
 
   if (id && id !== currentEventId) {
     const deleteRequests = db.prepare(`DELETE FROM song_requests WHERE event_id = ?`);
+    const deleteChat = db.prepare(`DELETE FROM chat_messages WHERE event_id = ?`);
     const deleteEvent = db.prepare(`DELETE FROM events WHERE id = ?`);
     db.transaction(() => {
       deleteRequests.run(id);
+      deleteChat.run(id);
       deleteEvent.run(id);
     })();
   }

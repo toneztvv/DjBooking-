@@ -162,6 +162,66 @@ router.post('/requests', (req, res) => {
   res.status(201).json({ ok: true });
 });
 
+// --- Live chat ---------------------------------------------------------------
+
+function getChatMessages(eventId, afterId) {
+  return db
+    .prepare(
+      `SELECT id, sender_name, message, is_dj, created_at
+       FROM chat_messages
+       WHERE event_id = ? AND id > ?
+       ORDER BY id ASC
+       LIMIT 200`
+    )
+    .all(eventId, afterId || 0);
+}
+
+router.get('/chat', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const afterId = Number(req.query.afterId) || 0;
+
+  res.json({
+    isLive,
+    messages: isLive ? getChatMessages(eventId, afterId) : [],
+  });
+});
+
+router.post('/chat', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  if (!isLive) {
+    return res.status(409).json({ ok: false, error: 'The DJ is not live right now.' });
+  }
+
+  const body = req.body || {};
+
+  if (clean(body.company_website)) {
+    return res.status(201).json({ ok: true });
+  }
+
+  const senderName = clean(body.sender_name, 60);
+  const message = clean(body.message, 500);
+
+  if (!senderName || !message) {
+    return res.status(400).json({ ok: false, error: 'Please enter your name and a message.' });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+
+  const result = db
+    .prepare(
+      `INSERT INTO chat_messages (event_id, sender_name, message, is_dj)
+       VALUES (?, ?, ?, 0)`
+    )
+    .run(eventId, senderName, message);
+
+  const saved = db
+    .prepare(`SELECT id, sender_name, message, is_dj, created_at FROM chat_messages WHERE id = ?`)
+    .get(result.lastInsertRowid);
+
+  res.status(201).json({ ok: true, message: saved });
+});
+
 // --- QR code ---------------------------------------------------------------
 
 router.get('/qrcode.png', async (req, res, next) => {
