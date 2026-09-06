@@ -9,7 +9,6 @@
       </div>
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <a href="/admin/events" class="btn btn-secondary btn-sm">Event History</a>
-        <a href="/admin/moderation" class="btn btn-secondary btn-sm">Chat Moderation</a>
         <a href="/admin/services" class="btn btn-secondary btn-sm">Services &amp; Billing</a>
         <a href="/admin/setup-guide" class="btn btn-secondary btn-sm">Setup Guide</a>
         <div class="status-chip">
@@ -68,7 +67,7 @@
     <% if (isLive) { %>
     <div class="card" style="margin-bottom: 30px;">
       <h3>&#128172; Live Chat</h3>
-      <p class="small-muted" style="margin-bottom:14px;">Everyone at the event sees this &mdash; type a reply and it shows up on their phones in a few seconds. Chat is anonymous, but you can hit <strong>Ban</strong> on any message to remove that person from chat (see <a href="/admin/moderation">Chat Moderation</a>). Certain slurs auto-remove whoever sent them.</p>
+      <p class="small-muted" style="margin-bottom:14px;">Everyone at the event sees this &mdash; type a reply and it shows up on their phones in a few seconds. Messages with inappropriate language are automatically blocked before they're sent.</p>
       <div id="admin-chat-log" class="chat-log" style="max-height: 360px;"></div>
       <div id="admin-chat-empty" class="empty-state" style="display:none;">No messages yet tonight.</div>
       <div id="admin-chat-error" class="alert alert-error" style="display:none; margin-top:12px;"></div>

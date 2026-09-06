@@ -1,6 +1,6 @@
 // Chat is anonymous and open to anyone with the link, so this is a blunt
-// first line of defense: a fixed list of slurs that, if used, auto-remove
-// the sender from chat. Matches whole words only (not substrings), so it
+// first line of defense: a fixed list of slurs that get a message blocked
+// before it's ever sent. Matches whole words only (not substrings), so it
 // won't catch a slur hidden inside an unrelated word. Edit this list any
 // time — no redeploy steps beyond a normal code push.
 const BANNED_WORDS = ['nigger', 'nigga', 'faggot', 'fag', 'pussy', 'gay'];

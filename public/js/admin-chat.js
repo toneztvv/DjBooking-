@@ -23,28 +23,6 @@
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
-  async function banChatter(clientId, btn) {
-    btn.disabled = true;
-    btn.textContent = 'Banning...';
-    try {
-      const res = await fetch('/admin/moderation/ban', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: clientId }),
-      });
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        btn.textContent = 'Banned';
-      } else {
-        btn.disabled = false;
-        btn.textContent = 'Ban';
-      }
-    } catch (err) {
-      btn.disabled = false;
-      btn.textContent = 'Ban';
-    }
-  }
-
   function renderMessages(messages) {
     if (!messages || !messages.length) return;
     const atBottom = chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight < 40;
@@ -59,17 +37,6 @@
         <span class="chat-sender">${escapeHtml(m.is_dj ? 'DJ (you)' : m.sender_name)}</span>
         <span class="chat-text">${escapeHtml(m.message)}</span>
         <span class="chat-time">${formatTime(m.created_at)}</span>`;
-
-      if (!m.is_dj && m.client_id) {
-        const banBtn = document.createElement('button');
-        banBtn.type = 'button';
-        banBtn.className = 'btn btn-danger btn-sm';
-        banBtn.style.padding = '2px 10px';
-        banBtn.style.fontSize = '0.7rem';
-        banBtn.textContent = 'Ban';
-        banBtn.addEventListener('click', () => banChatter(m.client_id, banBtn));
-        bubble.appendChild(banBtn);
-      }
 
       chatLog.appendChild(bubble);
     });

@@ -250,7 +250,7 @@ router.get('/chat', (req, res) => {
 
   const messages = db
     .prepare(
-      `SELECT id, sender_name, message, is_dj, client_id, created_at
+      `SELECT id, sender_name, message, is_dj, created_at
        FROM chat_messages
        WHERE event_id = ? AND id > ?
        ORDER BY id ASC
@@ -285,37 +285,6 @@ router.post('/chat/reply', (req, res) => {
     .get(result.lastInsertRowid);
 
   res.status(201).json({ ok: true, message: saved });
-});
-
-// --- Chat moderation ---------------------------------------------------------
-
-router.get('/moderation', (req, res) => {
-  const banned = db.prepare(`SELECT * FROM banned_chatters ORDER BY banned_at DESC`).all();
-  res.render('admin/moderation', { page: 'admin', banned });
-});
-
-router.post('/moderation/ban', (req, res) => {
-  const clientId = clean(req.body.client_id, 100);
-  const reason = clean(req.body.reason, 200) || 'Manually banned by the DJ';
-
-  if (!clientId) {
-    return res.status(400).json({ ok: false, error: 'Missing chatter id.' });
-  }
-
-  db.prepare(
-    `INSERT INTO banned_chatters (client_id, reason) VALUES (?, ?)
-     ON CONFLICT(client_id) DO UPDATE SET reason = excluded.reason`
-  ).run(clientId, reason);
-
-  res.json({ ok: true });
-});
-
-router.post('/moderation/:id/unban', (req, res) => {
-  const id = Number(req.params.id);
-  if (id) {
-    db.prepare(`DELETE FROM banned_chatters WHERE id = ?`).run(id);
-  }
-  res.redirect('/admin/moderation');
 });
 
 router.get('/inquiries', (req, res) => {

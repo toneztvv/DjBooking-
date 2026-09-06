@@ -10,7 +10,7 @@ A booking + live song-request website for DJXpress.
   - **Up Next**: every pending song, who requested it, when it was first requested, and how many times.
   - **Recently Played**: the same, once the DJ marks a song as played, with the time it was played.
   - The page auto-refreshes every 5 seconds for everyone watching — no login needed.
-  - **Live Chat**: while the DJ is live, guests and the DJ can type back and forth in a shared chat everyone at the event sees, updating every few seconds. Chat needs no name. Anyone using a banned word is automatically removed from chat; the DJ can also manually ban/unban from the dashboard or `/admin/moderation`.
+  - **Live Chat**: while the DJ is live, guests and the DJ can type back and forth in a shared chat everyone at the event sees, updating every few seconds. Chat needs no name. A message containing a banned word (see `src/moderation.js`) is blocked before it's ever sent.
 - **Admin dashboard** (`/admin`) — password protected. Go live / end the event, clear the board for a new event, mark songs as played, reply in the live chat, view/download the QR code, and manage booking inquiries.
 - **Event History** (`/admin/events`) — every event the DJ has ever gone live for, permanently kept: full setlist in the order songs were actually played (with timestamps and who requested them), which requested songs never got played, and the full live chat log. Clicking "Clear Board" mid-event splits it into a new chapter in the history rather than losing the first half.
 

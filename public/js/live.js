@@ -20,21 +20,6 @@
   let lastChatId = 0;
   let chatPollTimer = null;
 
-  const CHAT_CLIENT_ID_KEY = 'djxpress_chat_client_id';
-  function getChatClientId() {
-    try {
-      let id = localStorage.getItem(CHAT_CLIENT_ID_KEY);
-      if (!id) {
-        id = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        localStorage.setItem(CHAT_CLIENT_ID_KEY, id);
-      }
-      return id;
-    } catch (err) {
-      // Private browsing / storage disabled — chat still works, just can't be re-identified if banned and rejoining.
-      return null;
-    }
-  }
-
   function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str == null ? '' : String(str);
@@ -138,7 +123,7 @@
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message, client_id: getChatClientId() }),
+          body: JSON.stringify({ message }),
         });
         const data = await res.json();
 
