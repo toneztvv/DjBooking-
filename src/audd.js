@@ -31,6 +31,14 @@ async function recognizeAudio(buffer, mimeType) {
   const data = await res.json();
 
   if (data.status !== 'success') {
+    const code = data.error && data.error.error_code;
+    // These codes just mean "this clip had nothing fingerprintable" — a
+    // moment of silence between songs, crowd noise, a too-short sample.
+    // Expected during normal polling, not a real problem.
+    const recoverableCodes = [300, 400, 500, 600, 700];
+    if (recoverableCodes.includes(code)) {
+      return null;
+    }
     throw new Error(`AudD API returned an error: ${JSON.stringify(data)}`);
   }
 
