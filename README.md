@@ -53,6 +53,26 @@ This uses [Resend](https://resend.com) (a transactional email API, free for up t
 
 Once set, every new booking inquiry emails that address with all the details, and hitting **Reply** goes straight to the customer, not back to yourself. Leave these two variables unset and the site works exactly the same — inquiries just won't trigger an email, only show up in `/admin`.
 
+## Automatic song detection
+
+Manually tapping "Mark Played" for every song works fine, but if you'd rather it happen on its own, the admin dashboard has a **Start Listening** button (visible while live) that samples audio from the DJ laptop's built-in mic every 30–90 seconds and identifies what's playing via [AudD](https://audd.io) — a music recognition API. There's no way to ask djay Pro (or any DJ software) directly what it's playing, so this works by listening to the room instead, same idea as Shazam.
+
+- A match against a **pending request** auto-marks it played, live, without anyone touching the dashboard.
+- Anything else played gets logged too (labeled "DJ Pick"), so the event history ends up a complete tracklist of the night — not just fulfilled requests.
+- To avoid burning through recognition quota on a song that plays for several minutes, the check backs off (up to 90s between checks) as long as the same song keeps matching, and resets to 30s the moment it changes.
+
+**Setup:**
+1. Create a free account at [audd.io](https://audd.io) — 300 free recognitions, no credit card needed. Past that it's pay-as-you-go, roughly $5 per 1,000 recognitions (a 4-hour set checked every 30s is a few dollars at most).
+2. Grab an API key from your AudD account page.
+3. Set `AUDD_API_KEY` to that key (same place as the other env vars — `.env` locally, Render's Environment tab in production).
+
+Leave it unset and the dashboard just won't show the Start Listening button — manually tapping "Mark Played" keeps working exactly as before.
+
+**Worth knowing before relying on it at a real event:**
+- It needs the laptop's mic actually picking up the music, so the browser tab has to stay open near the speakers all night — closing it or letting the laptop sleep stops detection (djaying keeps working fine either way, this only affects auto-tracking).
+- Crowd noise and talking can reduce accuracy versus a quiet room.
+- It's a real, if small, ongoing cost tied to your AudD account — check usage anytime at your AudD dashboard.
+
 ## Printing the QR code ahead of time
 
 Once `SITE_URL` in `.env` is set to your real domain, generate a high-resolution QR code for print:

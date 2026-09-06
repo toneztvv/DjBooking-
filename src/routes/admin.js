@@ -1,11 +1,20 @@
 const express = require('express');
-const { db, getSetting, setSetting } = require('../db');
+const multer = require('multer');
+const { db, getSetting, setSetting, normalizeKey } = require('../db');
 const adminAuth = require('../middleware/adminAuth');
 const { getLiveUrl } = require('../qr');
+const { recognizeAudio } = require('../audd');
 
 const router = express.Router();
 
 router.use(adminAuth);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 8 * 1024 * 1024 }, // one short audio clip, generous cap
+});
+
+const DJ_PICK_LABEL = 'DJ Pick';
 
 function clean(value, maxLen = 300) {
   if (typeof value !== 'string') return '';
@@ -100,6 +109,90 @@ router.post('/live/toggle', (req, res) => {
   }
 
   res.redirect('/admin');
+});
+
+function applyDetection(eventId, detected) {
+  const { title, artist } = detected;
+  if (!title) return { action: 'ignored' };
+
+  const key = normalizeKey(title, artist);
+
+  // Skip if this is the same song we last logged as played for this event —
+  // a song usually spans several detection cycles, and we don't want a
+  // fresh row (or a wasted API-quota-driven duplicate) for every cycle it's
+  // still playing.
+  const lastPlayed = db
+    .prepare(
+      `SELECT normalized_key FROM song_requests
+       WHERE event_id = ? AND status = 'played'
+       ORDER BY played_at DESC, id DESC LIMIT 1`
+    )
+    .get(eventId);
+
+  if (lastPlayed && lastPlayed.normalized_key === key) {
+    return { action: 'unchanged', title, artist };
+  }
+
+  const pendingMatch = db
+    .prepare(
+      `SELECT COUNT(*) AS c FROM song_requests
+       WHERE event_id = ? AND normalized_key = ? AND status = 'pending'`
+    )
+    .get(eventId, key);
+
+  if (pendingMatch.c > 0) {
+    db.prepare(
+      `UPDATE song_requests
+       SET status = 'played', played_at = datetime('now')
+       WHERE event_id = ? AND normalized_key = ? AND status = 'pending'`
+    ).run(eventId, key);
+    return { action: 'matched_request', title, artist };
+  }
+
+  // Nobody requested this one — log it anyway so the event history is a
+  // complete tracklist of the night, not just fulfilled requests.
+  db.prepare(
+    `INSERT INTO song_requests
+      (event_id, song_title, artist, normalized_key, requested_by, dedication, created_at, played_at, status)
+     VALUES (?, ?, ?, ?, ?, NULL, datetime('now'), datetime('now'), 'played')`
+  ).run(eventId, title, artist || null, key, DJ_PICK_LABEL);
+
+  return { action: 'logged_dj_pick', title, artist };
+}
+
+router.post('/detect/sample', upload.single('audio'), async (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  if (!isLive) {
+    return res.status(409).json({ ok: false, error: 'Not live right now — stop listening.' });
+  }
+  if (!req.file || !req.file.buffer || !req.file.buffer.length) {
+    return res.status(400).json({ ok: false, error: 'No audio received.' });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+
+  try {
+    const result = await recognizeAudio(req.file.buffer, req.file.mimetype);
+    if (!result || !result.title) {
+      return res.json({ ok: true, match: false });
+    }
+    const outcome = applyDetection(eventId, result);
+    return res.json({
+      ok: true,
+      match: true,
+      title: result.title,
+      artist: result.artist,
+      action: outcome.action,
+    });
+  } catch (err) {
+    if (err.code === 'NOT_CONFIGURED') {
+      return res
+        .status(503)
+        .json({ ok: false, error: 'Song detection is not configured (missing AUDD_API_KEY).' });
+    }
+    console.error('Song detection failed:', err.message);
+    return res.status(502).json({ ok: false, error: 'Detection service hiccup — will retry next cycle.' });
+  }
 });
 
 router.post('/requests/mark-played', (req, res) => {

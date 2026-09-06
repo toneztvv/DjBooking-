@@ -47,6 +47,18 @@
         <p class="small-muted" style="word-break: break-all; margin-top: 12px;"><%= liveUrl %></p>
         <a href="/api/qrcode/download" class="btn btn-secondary btn-sm">Download High-Res PNG</a>
       </div>
+
+      <div class="card">
+        <h3>Auto Song Detection</h3>
+        <p class="small-muted">Leave this open on the DJ laptop. It listens through the mic every 30-90s and auto-marks matching requests as played &mdash; anything else played gets logged too, so the setlist is complete.</p>
+        <% if (isLive) { %>
+          <button type="button" id="detect-start-btn" class="btn btn-success btn-block">Start Listening</button>
+          <button type="button" id="detect-stop-btn" class="btn btn-danger btn-block" hidden>Stop Listening</button>
+          <p id="detect-status" class="small-muted" style="margin-top:10px;">Not listening.</p>
+        <% } else { %>
+          <p class="small-muted"><em>Go live first to use auto-detect.</em></p>
+        <% } %>
+      </div>
     </div>
 
     <div class="flex-between" style="margin-bottom: 16px;">
@@ -118,5 +130,7 @@
     </div>
   </div>
 </section>
+
+<% if (isLive) { %><script src="/js/detect.js"></script><% } %>
 
 <%- include('../partials/footer') %>
