@@ -319,4 +319,37 @@ router.post('/events/:id/delete', (req, res) => {
   res.redirect('/admin/events');
 });
 
+// --- Services & billing -----------------------------------------------------
+
+const EXTERNAL_SERVICES = [
+  {
+    name: 'Render',
+    purpose: 'Hosts the website itself — the app, the database, everything.',
+    cost: 'Paid plan + disk, ~$7.25/month',
+    url: 'https://dashboard.render.com',
+  },
+  {
+    name: 'Cloudflare',
+    purpose: 'dj-xpress.com is registered here, and its DNS is managed here.',
+    cost: 'Domain renews yearly, ~$10–12/year',
+    url: 'https://dash.cloudflare.com',
+  },
+  {
+    name: 'Resend',
+    purpose: 'Sends you an email the moment someone submits a booking.',
+    cost: 'Free up to 3,000 emails/month',
+    url: 'https://resend.com/overview',
+  },
+  {
+    name: 'AudD',
+    purpose: 'Powers automatic song detection (identifies what’s playing).',
+    cost: 'Pay-as-you-go, ~$5 per 1,000 recognitions',
+    url: 'https://dashboard.audd.io',
+  },
+];
+
+router.get('/services', (req, res) => {
+  res.render('admin/services', { page: 'admin', services: EXTERNAL_SERVICES });
+});
+
 module.exports = router;

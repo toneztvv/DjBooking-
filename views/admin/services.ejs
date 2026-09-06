@@ -1,0 +1,28 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Services & Billing' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 8px;">
+      <h1 style="margin:0;">Services &amp; Billing</h1>
+      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+    </div>
+    <p class="small-muted" style="margin-bottom: 24px;">
+      Every outside account this website depends on to run or stay paid up, in one place.
+    </p>
+
+    <div class="grid grid-2">
+      <% services.forEach(function(s) { %>
+        <div class="card">
+          <h3 style="margin-bottom: 6px;"><%= s.name %></h3>
+          <p class="small-muted" style="margin-bottom: 10px;"><%= s.purpose %></p>
+          <p class="small-muted" style="margin-bottom: 16px;"><strong>Cost:</strong> <%= s.cost %></p>
+          <a href="<%= s.url %>" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
+            Open <%= s.name %> Dashboard &rarr;
+          </a>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>
