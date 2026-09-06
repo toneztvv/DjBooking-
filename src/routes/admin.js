@@ -29,11 +29,12 @@ function getPendingBoard(eventId) {
               artist,
               COUNT(*) AS times_requested,
               MIN(created_at) AS first_requested_at,
-              GROUP_CONCAT(DISTINCT requested_by) AS requesters
+              GROUP_CONCAT(DISTINCT requested_by) AS requesters,
+              MAX(accepted) AS accepted
        FROM song_requests
        WHERE event_id = ? AND status = 'pending'
        GROUP BY normalized_key
-       ORDER BY times_requested DESC, first_requested_at ASC`
+       ORDER BY accepted DESC, times_requested DESC, first_requested_at ASC`
     )
     .all(eventId);
 }
@@ -205,6 +206,22 @@ router.post('/requests/mark-played', (req, res) => {
        SET status = 'played', played_at = datetime('now')
        WHERE event_id = ? AND normalized_key = ? AND status = 'pending'`
     ).run(eventId, key);
+  }
+
+  res.redirect('/admin');
+});
+
+router.post('/requests/accept', (req, res) => {
+  const key = clean(req.body.normalized_key, 400);
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const accept = req.body.unaccept !== '1';
+
+  if (key) {
+    db.prepare(
+      `UPDATE song_requests
+       SET accepted = ?
+       WHERE event_id = ? AND normalized_key = ? AND status = 'pending'`
+    ).run(accept ? 1 : 0, eventId, key);
   }
 
   res.redirect('/admin');

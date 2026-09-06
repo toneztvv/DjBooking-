@@ -80,6 +80,13 @@ function initDb() {
        VALUES (?, ?, datetime('now'), ${endedAtExpr})`
     ).run(currentEventId, legacyName);
   }
+
+  // Migration: "accepted" lets the DJ flag a pending request as confirmed
+  // (visible to guests) without marking it played yet.
+  const columns = db.prepare(`PRAGMA table_info(song_requests)`).all();
+  if (!columns.some((c) => c.name === 'accepted')) {
+    db.exec(`ALTER TABLE song_requests ADD COLUMN accepted INTEGER NOT NULL DEFAULT 0`);
+  }
 }
 
 function getSetting(key) {

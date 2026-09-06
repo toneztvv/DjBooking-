@@ -37,7 +37,7 @@
       .map(
         (r) => `
       <tr>
-        <td><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}</td>
+        <td><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}${r.accepted ? '<br><span class="badge badge-booked">&#10003; Accepted</span>' : ''}</td>
         <td>${escapeHtml(r.requesters)}</td>
         <td>${formatTime(r.first_requested_at)}</td>
         <td><span class="count-pill">${r.times_requested}</span></td>

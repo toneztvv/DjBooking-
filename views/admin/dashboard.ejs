@@ -86,11 +86,24 @@
             <tbody>
               <% pending.forEach(function(r) { %>
                 <tr>
-                  <td><strong><%= r.song_title %></strong><% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %></td>
+                  <td>
+                    <strong><%= r.song_title %></strong>
+                    <% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %>
+                    <% if (r.accepted) { %><br><span class="badge badge-booked">&#10003; Accepted</span><% } %>
+                  </td>
                   <td><%= r.requesters %></td>
                   <td><span class="count-pill"><%= r.times_requested %></span></td>
-                  <td>
-                    <form method="POST" action="/admin/requests/mark-played">
+                  <td style="white-space:nowrap;">
+                    <form method="POST" action="/admin/requests/accept" style="display:inline;">
+                      <input type="hidden" name="normalized_key" value="<%= r.normalized_key %>" />
+                      <% if (r.accepted) { %>
+                        <input type="hidden" name="unaccept" value="1" />
+                        <button type="submit" class="btn btn-ghost btn-sm">Unaccept</button>
+                      <% } else { %>
+                        <button type="submit" class="btn btn-secondary btn-sm">Accept</button>
+                      <% } %>
+                    </form>
+                    <form method="POST" action="/admin/requests/mark-played" style="display:inline;">
                       <input type="hidden" name="normalized_key" value="<%= r.normalized_key %>" />
                       <button type="submit" class="btn btn-success btn-sm">Mark Played</button>
                     </form>

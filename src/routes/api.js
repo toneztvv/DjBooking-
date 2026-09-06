@@ -68,11 +68,12 @@ function getPendingBoard(eventId) {
               artist,
               COUNT(*) AS times_requested,
               MIN(created_at) AS first_requested_at,
-              GROUP_CONCAT(DISTINCT requested_by) AS requesters
+              GROUP_CONCAT(DISTINCT requested_by) AS requesters,
+              MAX(accepted) AS accepted
        FROM song_requests
        WHERE event_id = ? AND status = 'pending'
        GROUP BY normalized_key
-       ORDER BY times_requested DESC, first_requested_at ASC`
+       ORDER BY accepted DESC, times_requested DESC, first_requested_at ASC`
     )
     .all(eventId);
 }
