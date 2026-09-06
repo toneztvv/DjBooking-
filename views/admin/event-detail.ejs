@@ -1,0 +1,86 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | ' + (event.name || 'Event') }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 20px;">
+      <div>
+        <h1 style="margin:0 0 6px;"><%= event.name || 'Untitled Event' %></h1>
+        <p class="small-muted" style="margin:0;">
+          <%= event.started_at %> &mdash; <%= event.ended_at || 'still live' %>
+        </p>
+      </div>
+      <a href="/admin/events" class="btn btn-secondary btn-sm">&larr; Back to Event History</a>
+    </div>
+
+    <div class="grid grid-3" style="margin-bottom: 30px;">
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= setlist.length %></h3>
+        <p class="small-muted" style="margin:0;">Songs Played</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= stats.total_requests %></h3>
+        <p class="small-muted" style="margin:0;">Total Requests</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= stats.requester_count %></h3>
+        <p class="small-muted" style="margin:0;">Unique Requesters</p>
+      </div>
+    </div>
+
+    <h2 style="font-size:1.2rem; margin-bottom:14px;">Setlist (in the order it was played)</h2>
+    <div class="card" style="margin-bottom: 30px;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Song</th>
+              <th>Requested By</th>
+              <th>Played At</th>
+              <th>Times Requested</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% setlist.forEach(function(r, i) { %>
+              <tr>
+                <td class="small-muted"><%= i + 1 %></td>
+                <td><strong><%= r.song_title %></strong><% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %></td>
+                <td><%= r.requesters %></td>
+                <td><%= r.played_at %></td>
+                <td><span class="count-pill"><%= r.times_requested %></span></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <% if (!setlist.length) { %><div class="empty-state">Nothing was played during this event.</div><% } %>
+      </div>
+    </div>
+
+    <h2 style="font-size:1.2rem; margin-bottom:14px;">Requested but never played</h2>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Song</th>
+              <th>Requested By</th>
+              <th>Times Requested</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% neverPlayed.forEach(function(r) { %>
+              <tr>
+                <td><strong><%= r.song_title %></strong><% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %></td>
+                <td><%= r.requesters %></td>
+                <td><span class="count-pill"><%= r.times_requested %></span></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <% if (!neverPlayed.length) { %><div class="empty-state">Every requested song got played. 🎉</div><% } %>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

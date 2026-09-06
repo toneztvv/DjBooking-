@@ -1,0 +1,49 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Event History' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 20px;">
+      <h1 style="margin:0;">Event History</h1>
+      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Started</th>
+              <th>Ended</th>
+              <th>Songs Played</th>
+              <th>Total Requests</th>
+              <th>Requesters</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% events.forEach(function(ev) { %>
+              <tr>
+                <td>
+                  <strong><%= ev.name || 'Untitled Event' %></strong>
+                  <% if (ev.id === currentEventId && !ev.ended_at) { %>
+                    <br><span class="badge badge-booked">Live Now</span>
+                  <% } %>
+                </td>
+                <td><%= ev.started_at %></td>
+                <td><%= ev.ended_at || '—' %></td>
+                <td><span class="count-pill"><%= ev.songs_played %></span></td>
+                <td><%= ev.total_requests %></td>
+                <td><%= ev.requester_count %></td>
+                <td><a href="/admin/events/<%= ev.id %>" class="btn btn-secondary btn-sm">View Setlist</a></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <% if (!events.length) { %><div class="empty-state">No events yet — go live once and it'll show up here.</div><% } %>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

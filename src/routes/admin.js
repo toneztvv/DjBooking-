@@ -29,7 +29,7 @@ function getPendingBoard(eventId) {
     .all(eventId);
 }
 
-function getRecentlyPlayed(eventId) {
+function getPlayedSetlist(eventId, order = 'DESC') {
   return db
     .prepare(
       `SELECT normalized_key,
@@ -41,16 +41,32 @@ function getRecentlyPlayed(eventId) {
        FROM song_requests
        WHERE event_id = ? AND status = 'played'
        GROUP BY normalized_key, played_at
-       ORDER BY played_at DESC
-       LIMIT 50`
+       ORDER BY played_at ${order === 'ASC' ? 'ASC' : 'DESC'}`
     )
     .all(eventId);
 }
 
+function getEventById(id) {
+  return db.prepare('SELECT * FROM events WHERE id = ?').get(id);
+}
+
+function startNewEvent(name) {
+  const result = db
+    .prepare(`INSERT INTO events (name, started_at) VALUES (?, datetime('now'))`)
+    .run(name || null);
+  return result.lastInsertRowid;
+}
+
+function endEvent(id) {
+  db.prepare(
+    `UPDATE events SET ended_at = datetime('now') WHERE id = ? AND ended_at IS NULL`
+  ).run(id);
+}
+
 router.get('/', (req, res) => {
   const isLive = getSetting('is_live') === '1';
-  const eventName = getSetting('event_name') || '';
   const eventId = Number(getSetting('current_event_id') || '1');
+  const currentEvent = getEventById(eventId);
   const newInquiries = db
     .prepare(`SELECT COUNT(*) AS c FROM inquiries WHERE status = 'new'`)
     .get().c;
@@ -58,9 +74,9 @@ router.get('/', (req, res) => {
   res.render('admin/dashboard', {
     page: 'admin',
     isLive,
-    eventName,
+    eventName: currentEvent ? currentEvent.name || '' : '',
     pending: getPendingBoard(eventId),
-    recentlyPlayed: getRecentlyPlayed(eventId),
+    recentlyPlayed: getPlayedSetlist(eventId, 'DESC').slice(0, 50),
     liveUrl: getLiveUrl(),
     newInquiries,
   });
@@ -69,14 +85,15 @@ router.get('/', (req, res) => {
 router.post('/live/toggle', (req, res) => {
   const isLive = getSetting('is_live') === '1';
   const nextEventName = clean(req.body.event_name, 120);
+  const currentEventId = Number(getSetting('current_event_id') || '1');
 
   if (!isLive) {
-    // Going live: start a fresh request board for the new event.
-    const nextEventId = Number(getSetting('current_event_id') || '1') + 1;
-    setSetting('current_event_id', nextEventId);
-    setSetting('event_name', nextEventName);
+    // Going live: start a fresh event with its own history record.
+    const newEventId = startNewEvent(nextEventName);
+    setSetting('current_event_id', newEventId);
     setSetting('is_live', '1');
   } else {
+    endEvent(currentEventId);
     setSetting('is_live', '0');
   }
 
@@ -99,8 +116,16 @@ router.post('/requests/mark-played', (req, res) => {
 });
 
 router.post('/requests/clear', (req, res) => {
-  const nextEventId = Number(getSetting('current_event_id') || '1') + 1;
-  setSetting('current_event_id', nextEventId);
+  const currentEventId = Number(getSetting('current_event_id') || '1');
+  const currentEvent = getEventById(currentEventId);
+
+  // Close out the current event segment and start a fresh one under the
+  // same name, so "Clear Board" mid-gig still shows up as its own chapter
+  // in the event history rather than silently merging with the next one.
+  endEvent(currentEventId);
+  const newEventId = startNewEvent(currentEvent ? currentEvent.name : null);
+  setSetting('current_event_id', newEventId);
+
   res.redirect('/admin');
 });
 
@@ -121,6 +146,55 @@ router.post('/inquiries/:id/status', (req, res) => {
   }
 
   res.redirect('/admin/inquiries');
+});
+
+// --- Event history ---------------------------------------------------------
+
+router.get('/events', (req, res) => {
+  const currentEventId = Number(getSetting('current_event_id') || '1');
+
+  const events = db
+    .prepare(
+      `SELECT e.id, e.name, e.started_at, e.ended_at,
+              (SELECT COUNT(*) FROM (
+                 SELECT DISTINCT normalized_key, played_at
+                 FROM song_requests
+                 WHERE event_id = e.id AND status = 'played'
+               )) AS songs_played,
+              (SELECT COUNT(*) FROM song_requests WHERE event_id = e.id) AS total_requests,
+              (SELECT COUNT(DISTINCT requested_by) FROM song_requests WHERE event_id = e.id) AS requester_count
+       FROM events e
+       WHERE e.id = ? OR EXISTS (SELECT 1 FROM song_requests WHERE event_id = e.id)
+       ORDER BY e.started_at DESC`
+    )
+    .all(currentEventId);
+
+  res.render('admin/events', { page: 'admin', events, currentEventId });
+});
+
+router.get('/events/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const event = getEventById(id);
+
+  if (!event) {
+    return res.status(404).render('404');
+  }
+
+  const stats = db
+    .prepare(
+      `SELECT COUNT(*) AS total_requests,
+              COUNT(DISTINCT requested_by) AS requester_count
+       FROM song_requests WHERE event_id = ?`
+    )
+    .get(id);
+
+  res.render('admin/event-detail', {
+    page: 'admin',
+    event,
+    stats,
+    setlist: getPlayedSetlist(id, 'ASC'),
+    neverPlayed: getPendingBoard(id),
+  });
 });
 
 module.exports = router;

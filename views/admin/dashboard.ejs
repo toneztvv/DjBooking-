@@ -7,9 +7,12 @@
         <h1 style="margin: 0 0 6px;">DJ Control Panel</h1>
         <p class="small-muted" style="margin:0;">Manage your live event, requests and bookings.</p>
       </div>
-      <div class="status-chip">
-        <span class="pulse-dot <%= isLive ? '' : 'offline' %>" style="width:10px;height:10px;"></span>
-        <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <a href="/admin/events" class="btn btn-secondary btn-sm">Event History</a>
+        <div class="status-chip">
+          <span class="pulse-dot <%= isLive ? '' : 'offline' %>" style="width:10px;height:10px;"></span>
+          <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
+        </div>
       </div>
     </div>
 

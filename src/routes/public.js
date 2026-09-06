@@ -1,5 +1,5 @@
 const express = require('express');
-const { getSetting } = require('../db');
+const { db, getSetting } = require('../db');
 const { getLiveUrl } = require('../qr');
 
 const router = express.Router();
@@ -17,7 +17,9 @@ router.get('/book', (req, res) => {
 
 router.get('/live', (req, res) => {
   const isLive = getSetting('is_live') === '1';
-  const eventName = getSetting('event_name') || '';
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const currentEvent = db.prepare('SELECT name FROM events WHERE id = ?').get(eventId);
+  const eventName = (currentEvent && currentEvent.name) || '';
   res.render('live', {
     page: 'live',
     isLive,

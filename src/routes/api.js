@@ -97,8 +97,9 @@ function getRecentlyPlayed(eventId) {
 
 router.get('/live-state', (req, res) => {
   const isLive = getSetting('is_live') === '1';
-  const eventName = getSetting('event_name') || '';
   const eventId = Number(getSetting('current_event_id') || '1');
+  const currentEvent = db.prepare('SELECT name FROM events WHERE id = ?').get(eventId);
+  const eventName = (currentEvent && currentEvent.name) || '';
 
   res.json({
     isLive,

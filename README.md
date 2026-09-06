@@ -11,6 +11,7 @@ A booking + live song-request website for DJXpress.
   - **Recently Played**: the same, once the DJ marks a song as played, with the time it was played.
   - The page auto-refreshes every 5 seconds for everyone watching — no login needed.
 - **Admin dashboard** (`/admin`) — password protected. Go live / end the event, clear the board for a new event, mark songs as played, view/download the QR code, and manage booking inquiries.
+- **Event History** (`/admin/events`) — every event the DJ has ever gone live for, permanently kept: full setlist in the order songs were actually played (with timestamps and who requested them), plus which requested songs never got played. Clicking "Clear Board" mid-event splits it into a new chapter in the history rather than losing the first half.
 
 ## Tech stack
 

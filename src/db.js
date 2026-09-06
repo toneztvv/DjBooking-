@@ -45,12 +45,18 @@ function initDb() {
 
     CREATE INDEX IF NOT EXISTS idx_requests_event_status
       ON song_requests (event_id, status);
+
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      started_at TEXT NOT NULL DEFAULT (datetime('now')),
+      ended_at TEXT
+    );
   `);
 
   const defaults = {
     is_live: '0',
     current_event_id: '1',
-    event_name: '',
   };
   const insert = db.prepare(
     'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)'
@@ -59,6 +65,21 @@ function initDb() {
     for (const [k, v] of entries) insert.run(k, v);
   });
   seed(Object.entries(defaults));
+
+  // Backfill: earlier versions tracked only a bare event_id counter with no
+  // row in `events`. Make sure the event currently pointed at by settings
+  // actually exists, carrying over the old event_name setting if present.
+  const currentEventId = Number(getSetting('current_event_id') || '1');
+  const existingEvent = db.prepare('SELECT id FROM events WHERE id = ?').get(currentEventId);
+  if (!existingEvent) {
+    const legacyName = getSetting('event_name') || null;
+    const isLive = getSetting('is_live') === '1';
+    const endedAtExpr = isLive ? 'NULL' : "datetime('now')";
+    db.prepare(
+      `INSERT INTO events (id, name, started_at, ended_at)
+       VALUES (?, ?, datetime('now'), ${endedAtExpr})`
+    ).run(currentEventId, legacyName);
+  }
 }
 
 function getSetting(key) {
