@@ -165,26 +165,28 @@ router.post('/requests', (req, res) => {
 
 // --- Live chat ---------------------------------------------------------------
 
-function getChatMessages(eventId, afterId) {
+// Full snapshot every poll (not just new messages since afterId) so a
+// message the DJ deletes actually disappears for guests who already have
+// it rendered, not just stop showing up in future polls.
+function getChatMessages(eventId) {
   return db
     .prepare(
-      `SELECT id, sender_name, message, is_dj, created_at
-       FROM chat_messages
-       WHERE event_id = ? AND id > ?
-       ORDER BY id ASC
-       LIMIT 200`
+      `SELECT id, sender_name, message, is_dj, created_at FROM (
+         SELECT id, sender_name, message, is_dj, created_at
+         FROM chat_messages WHERE event_id = ?
+         ORDER BY id DESC LIMIT 200
+       ) sub ORDER BY id ASC`
     )
-    .all(eventId, afterId || 0);
+    .all(eventId);
 }
 
 router.get('/chat', (req, res) => {
   const isLive = getSetting('is_live') === '1';
   const eventId = Number(getSetting('current_event_id') || '1');
-  const afterId = Number(req.query.afterId) || 0;
 
   res.json({
     isLive,
-    messages: isLive ? getChatMessages(eventId, afterId) : [],
+    messages: isLive ? getChatMessages(eventId) : [],
   });
 });
 

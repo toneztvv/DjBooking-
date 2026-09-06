@@ -246,19 +246,26 @@ router.post('/requests/clear', (req, res) => {
 
 router.get('/chat', (req, res) => {
   const eventId = Number(getSetting('current_event_id') || '1');
-  const afterId = Number(req.query.afterId) || 0;
 
   const messages = db
     .prepare(
-      `SELECT id, sender_name, message, is_dj, created_at
-       FROM chat_messages
-       WHERE event_id = ? AND id > ?
-       ORDER BY id ASC
-       LIMIT 200`
+      `SELECT id, sender_name, message, is_dj, created_at FROM (
+         SELECT id, sender_name, message, is_dj, created_at
+         FROM chat_messages WHERE event_id = ?
+         ORDER BY id DESC LIMIT 200
+       ) sub ORDER BY id ASC`
     )
-    .all(eventId, afterId);
+    .all(eventId);
 
   res.json({ messages });
+});
+
+router.post('/chat/:id/delete', (req, res) => {
+  const id = Number(req.params.id);
+  if (id) {
+    db.prepare(`DELETE FROM chat_messages WHERE id = ?`).run(id);
+  }
+  res.json({ ok: true });
 });
 
 router.post('/chat/reply', (req, res) => {

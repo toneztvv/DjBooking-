@@ -17,7 +17,6 @@
   const chatError = document.getElementById('chat-error');
   const chatForm = document.getElementById('chat-form');
   const chatMessageInput = document.getElementById('chat-message');
-  let lastChatId = 0;
   let chatPollTimer = null;
 
   function escapeHtml(str) {
@@ -75,16 +74,28 @@
       .join('');
   }
 
+  // Full snapshot every poll (not incremental) so a message the DJ deletes
+  // actually disappears here too, not just stop showing up going forward.
   function renderChatMessages(messages) {
-    if (!messages || !messages.length) return;
+    const currentIds = new Set((messages || []).map((m) => String(m.id)));
+
+    Array.from(chatLog.children).forEach((el) => {
+      if (!currentIds.has(el.dataset.id)) el.remove();
+    });
+
+    if (!messages || !messages.length) {
+      chatEmpty.style.display = 'block';
+      return;
+    }
+
     const atBottom = chatLog.scrollHeight - chatLog.scrollTop - chatLog.clientHeight < 40;
 
     messages.forEach((m) => {
-      if (m.id <= lastChatId) return;
-      lastChatId = Math.max(lastChatId, m.id);
+      if (chatLog.querySelector(`[data-id="${m.id}"]`)) return;
 
       const bubble = document.createElement('div');
       bubble.className = 'chat-bubble' + (m.is_dj ? ' chat-bubble-dj' : '');
+      bubble.dataset.id = m.id;
       bubble.innerHTML = `
         <span class="chat-sender">${escapeHtml(m.is_dj ? 'DJ' : m.sender_name)}</span>
         <span class="chat-text">${escapeHtml(m.message)}</span>
@@ -99,7 +110,7 @@
   async function pollChat() {
     if (!chatWrap) return;
     try {
-      const res = await fetch(`/api/chat?afterId=${lastChatId}`, { headers: { Accept: 'application/json' } });
+      const res = await fetch('/api/chat', { headers: { Accept: 'application/json' } });
       if (!res.ok) return;
       const data = await res.json();
       chatWrap.style.display = data.isLive ? 'block' : 'none';
