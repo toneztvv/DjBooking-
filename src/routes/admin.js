@@ -363,6 +363,12 @@ const EXTERNAL_SERVICES = [
     cost: 'Pay-as-you-go, ~$5 per 1,000 recognitions',
     url: 'https://dashboard.audd.io',
   },
+  {
+    name: 'Twilio',
+    purpose: 'Texts your phone for new bookings and new song requests.',
+    cost: '~$1/month for the number, plus ~1¢ per text',
+    url: 'https://console.twilio.com',
+  },
 ];
 
 router.get('/services', (req, res) => {

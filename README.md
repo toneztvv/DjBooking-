@@ -74,6 +74,21 @@ Leave it unset and the dashboard just won't show the Start Listening button — 
 - Crowd noise and talking can reduce accuracy versus a quiet room.
 - It's a real, if small, ongoing cost tied to your AudD account — check usage anytime at your AudD dashboard.
 
+## Text message notifications
+
+On top of email, you can get a text the moment someone submits a booking, or requests a song nobody's already asked for this event (no repeat text if three more guests request the same popular song). Carrier email-to-text gateways (the free way this used to be possible) have been shut down industry-wide — AT&T/Cricket in mid-2025, T-Mobile/Metro in late 2024 — so this uses [Twilio](https://twilio.com) instead, a real SMS service. Unlike Resend/AudD, Twilio does require a card: roughly $1/month for the sending number plus about a cent per text.
+
+**Setup:**
+1. Create a Twilio account at [twilio.com](https://twilio.com).
+2. From the [Twilio Console](https://console.twilio.com), copy your **Account SID** and **Auth Token** (shown right on the main dashboard).
+3. Buy a phone number to send from (Console → Phone Numbers → Buy a number) — this becomes `TWILIO_FROM_NUMBER`.
+4. Set four environment variables:
+   - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` — from step 2
+   - `TWILIO_FROM_NUMBER` — the number from step 3, as `+1XXXXXXXXXX`
+   - `NOTIFY_PHONE_NUMBER` — your real cell number to receive texts, also as `+1XXXXXXXXXX`
+
+Leave any of these unset and the site works exactly the same — no texts sent, email notifications and the live dashboard are unaffected.
+
 ## Printing the QR code ahead of time
 
 Once `SITE_URL` in `.env` is set to your real domain, generate a high-resolution QR code for print:

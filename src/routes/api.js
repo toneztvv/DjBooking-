@@ -2,6 +2,7 @@ const express = require('express');
 const { db, getSetting, normalizeKey } = require('../db');
 const { liveQrBuffer } = require('../qr');
 const { sendInquiryNotification } = require('../mail');
+const { sendSms } = require('../sms');
 
 const router = express.Router();
 
@@ -50,6 +51,10 @@ router.post('/inquiries', (req, res) => {
 
   sendInquiryNotification({ name, email, phone, eventDate, eventType, location, guestCount, message }).catch(
     (err) => console.error('Failed to send inquiry notification email:', err.message)
+  );
+
+  sendSms(`DJXpress: New booking inquiry from ${name}${eventType ? ` (${eventType})` : ''}. Check your email or /admin for details.`).catch(
+    (err) => console.error('Failed to send inquiry notification SMS:', err.message)
   );
 
   if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -134,11 +139,25 @@ router.post('/requests', (req, res) => {
   const eventId = Number(getSetting('current_event_id') || '1');
   const key = normalizeKey(songTitle, artist);
 
+  const alreadyRequested = db
+    .prepare(
+      `SELECT 1 FROM song_requests WHERE event_id = ? AND normalized_key = ? AND status = 'pending' LIMIT 1`
+    )
+    .get(eventId, key);
+
   db.prepare(
     `INSERT INTO song_requests
       (event_id, song_title, artist, normalized_key, requested_by, dedication)
      VALUES (?, ?, ?, ?, ?, ?)`
   ).run(eventId, songTitle, artist || null, key, requestedBy, dedication || null);
+
+  // Only text for the first request of a given song per event — a song
+  // getting re-requested by more guests doesn't need a fresh text each time.
+  if (!alreadyRequested) {
+    sendSms(
+      `DJXpress: New song request — "${songTitle}"${artist ? ` by ${artist}` : ''}, requested by ${requestedBy}.`
+    ).catch((err) => console.error('Failed to send song request SMS:', err.message));
+  }
 
   res.status(201).json({ ok: true });
 });
