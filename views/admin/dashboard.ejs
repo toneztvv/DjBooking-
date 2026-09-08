@@ -9,11 +9,55 @@
       </div>
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <a href="/admin/events" class="btn btn-secondary btn-sm">Event History</a>
+        <a href="/admin/guestbook" class="btn btn-secondary btn-sm">Guestbook</a>
         <a href="/admin/services" class="btn btn-secondary btn-sm">Services &amp; Billing</a>
         <a href="/admin/setup-guide" class="btn btn-secondary btn-sm">Setup Guide</a>
         <div class="status-chip">
           <span class="pulse-dot <%= isLive ? '' : 'offline' %>" style="width:10px;height:10px;"></span>
           <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 30px;">
+      <h3>Live Page Features</h3>
+      <p class="small-muted" style="margin-bottom:14px;">Turn any of these on or off for guests at any time &mdash; before, during, or after an event. Turning one off just hides it from guests; nothing already saved gets deleted, and turning it back on brings everything back.</p>
+      <div class="feature-toggle-grid">
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Guest Counter</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Shows guests how many people are on the live page right now.</p>
+          </div>
+          <form method="POST" action="/admin/features/guest_counter/toggle">
+            <button type="submit" class="btn btn-sm <%= features.guestCounter ? 'btn-success' : 'btn-ghost' %>"><%= features.guestCounter ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Live Reactions</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Tappable emoji buttons that float across everyone's screen.</p>
+          </div>
+          <form method="POST" action="/admin/features/reactions/toggle">
+            <button type="submit" class="btn btn-sm <%= features.reactions ? 'btn-success' : 'btn-ghost' %>"><%= features.reactions ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Quick Polls</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Post a this-or-that question guests vote on live.</p>
+          </div>
+          <form method="POST" action="/admin/features/polls/toggle">
+            <button type="submit" class="btn btn-sm <%= features.polls ? 'btn-success' : 'btn-ghost' %>"><%= features.polls ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Guestbook</strong>
+            <p class="small-muted" style="margin:2px 0 0;">A wall of notes from guests, kept forever as a keepsake.</p>
+          </div>
+          <form method="POST" action="/admin/features/guestbook/toggle">
+            <button type="submit" class="btn btn-sm <%= features.guestbook ? 'btn-success' : 'btn-ghost' %>"><%= features.guestbook ? 'ON' : 'OFF' %></button>
+          </form>
         </div>
       </div>
     </div>
@@ -63,6 +107,48 @@
         <% } %>
       </div>
     </div>
+
+    <% if (isLive && features.polls) { %>
+    <div class="card" style="margin-bottom: 30px;">
+      <h3>&#128202; Quick Poll</h3>
+      <% if (activePoll) { %>
+        <p class="small-muted" style="margin-bottom:14px;"><%= activePoll.question %></p>
+        <% const totalVotes = activePoll.votesA + activePoll.votesB; %>
+        <% const pctA = totalVotes ? Math.round((activePoll.votesA / totalVotes) * 100) : 0; %>
+        <% const pctB = totalVotes ? Math.round((activePoll.votesB / totalVotes) * 100) : 0; %>
+        <div class="poll-bar-row">
+          <div class="poll-bar-label"><%= activePoll.option_a %> &mdash; <%= activePoll.votesA %> (<%= pctA %>%)</div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" style="width: <%= pctA %>%;"></div></div>
+        </div>
+        <div class="poll-bar-row">
+          <div class="poll-bar-label"><%= activePoll.option_b %> &mdash; <%= activePoll.votesB %> (<%= pctB %>%)</div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" style="width: <%= pctB %>%;"></div></div>
+        </div>
+        <form method="POST" action="/admin/polls/<%= activePoll.id %>/close" style="margin-top:14px;">
+          <button type="submit" class="btn btn-danger btn-block btn-sm">Close Poll</button>
+        </form>
+      <% } else { %>
+        <p class="small-muted" style="margin-bottom:14px;">Post a quick this-or-that question. Guests vote live and the results update automatically.</p>
+        <form method="POST" action="/admin/polls">
+          <div class="field">
+            <label for="poll_question">Question</label>
+            <input type="text" id="poll_question" name="question" maxlength="200" required placeholder="e.g. Next: Hip-Hop or Reggaeton?" />
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="poll_option_a">Option A</label>
+              <input type="text" id="poll_option_a" name="option_a" maxlength="60" required placeholder="Hip-Hop" />
+            </div>
+            <div class="field">
+              <label for="poll_option_b">Option B</label>
+              <input type="text" id="poll_option_b" name="option_b" maxlength="60" required placeholder="Reggaeton" />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Post Poll</button>
+        </form>
+      <% } %>
+    </div>
+    <% } %>
 
     <% if (isLive) { %>
     <div class="card" style="margin-bottom: 30px;">

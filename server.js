@@ -56,6 +56,19 @@ const chatLimiter = rateLimit({
 });
 app.use('/api/chat', (req, res, next) => (req.method === 'POST' ? chatLimiter(req, res, next) : next()));
 
+// Reactions are tapped rapidly on purpose (that's the fun of it), so this
+// is generous compared to the other limiters — it's just there to stop a
+// script from flooding the table, not to slow down a real person tapping.
+const reactionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 90,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/reactions', (req, res, next) => (req.method === 'POST' ? reactionLimiter(req, res, next) : next()));
+
+app.use('/api/guestbook', (req, res, next) => (req.method === 'POST' ? formLimiter(req, res, next) : next()));
+
 app.use('/', publicRoutes);
 app.use('/api', apiRoutes);
 app.use('/admin', adminRoutes);

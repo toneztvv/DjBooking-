@@ -7,6 +7,7 @@
       <span id="live-status-label" class="live-badge <%= isLive ? '' : 'offline' %>">
         <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
       </span>
+      <span id="guest-counter-pill" class="guest-counter-pill" style="display:none;">&#128101; <span id="guest-counter-count">0</span> here now</span>
     </div>
     <h1 style="font-size: clamp(2rem, 5vw, 3rem);">Request a <span class="gradient">Song</span></h1>
     <p id="live-event-name" class="lead" style="display: <%= isLive && eventName ? 'block' : 'none' %>;">
@@ -58,6 +59,40 @@
       </div>
     </div>
 
+    <div id="reactions-wrap" style="display:none; margin-bottom: 30px;">
+      <div class="form-card" style="max-width: 100%; text-align:center;">
+        <h3 style="margin-top:0;">Send a Reaction</h3>
+        <div class="reaction-bar">
+          <button type="button" class="reaction-btn" data-emoji="🔥">🔥</button>
+          <button type="button" class="reaction-btn" data-emoji="❤️">❤️</button>
+          <button type="button" class="reaction-btn" data-emoji="🙌">🙌</button>
+          <button type="button" class="reaction-btn" data-emoji="😂">😂</button>
+          <button type="button" class="reaction-btn" data-emoji="👏">👏</button>
+        </div>
+        <div id="reaction-counts" class="reaction-counts"></div>
+      </div>
+    </div>
+    <div id="reaction-float-layer" class="reaction-float-layer"></div>
+
+    <div id="poll-wrap" style="display:none; margin-bottom: 30px;">
+      <div class="form-card" style="max-width: 100%;">
+        <h3 id="poll-question" style="margin-top:0;">&#128202;</h3>
+        <div class="poll-bar-row">
+          <div class="poll-bar-label" id="poll-label-a"></div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-a" style="width:0%;"></div></div>
+        </div>
+        <div class="poll-bar-row">
+          <div class="poll-bar-label" id="poll-label-b"></div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" id="poll-fill-b" style="width:0%;"></div></div>
+        </div>
+        <div class="poll-vote-buttons" id="poll-vote-buttons">
+          <button type="button" class="btn btn-secondary" id="poll-btn-a"></button>
+          <button type="button" class="btn btn-secondary" id="poll-btn-b"></button>
+        </div>
+        <p id="poll-voted-note" class="small-muted" style="margin-top:10px; display:none;">Thanks for voting!</p>
+      </div>
+    </div>
+
     <div id="chat-wrap" style="display: <%= isLive ? 'block' : 'none' %>; margin-bottom: 30px;">
       <div class="form-card" style="max-width: 100%;">
         <h3 style="margin-top:0;">&#128172; Live Chat</h3>
@@ -68,6 +103,29 @@
         <form id="chat-form" style="margin-top:14px; display:flex; gap:10px;">
           <input type="text" id="chat-message" name="message" placeholder="Type a message..." required maxlength="500" autocomplete="off" style="flex:1;" />
           <button type="submit" class="btn btn-primary">Send</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="guestbook-wrap" style="display:none; margin-bottom: 30px;">
+      <div class="form-card" style="max-width: 100%;">
+        <h3 style="margin-top:0;">&#128213; Guestbook</h3>
+        <p class="small-muted" style="margin-bottom:14px;">Leave a note for the night &mdash; these are kept as a keepsake.</p>
+        <div id="guestbook-list"></div>
+        <div id="guestbook-empty" class="empty-state" style="display:none;">No notes yet &mdash; be the first!</div>
+        <div id="guestbook-error" class="alert alert-error" style="display:none; margin-top:12px;"></div>
+        <form id="guestbook-form" style="margin-top:14px;">
+          <div class="form-grid">
+            <div class="field" style="margin-bottom:0;">
+              <label for="guestbook-name">Your Name</label>
+              <input type="text" id="guestbook-name" name="name" required maxlength="80" />
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label for="guestbook-message">Message</label>
+              <input type="text" id="guestbook-message" name="message" required maxlength="500" autocomplete="off" />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top:14px;">Add to Guestbook</button>
         </form>
       </div>
     </div>

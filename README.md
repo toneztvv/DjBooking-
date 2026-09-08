@@ -11,8 +11,13 @@ A booking + live song-request website for DJXpress.
   - **Recently Played**: the same, once the DJ marks a song as played, with the time it was played.
   - The page auto-refreshes every 5 seconds for everyone watching — no login needed.
   - **Live Chat**: while the DJ is live, guests and the DJ can type back and forth in a shared chat everyone at the event sees, updating every few seconds. Chat needs no name. A message containing a banned word (see `src/moderation.js`) is blocked before it's ever sent.
-- **Admin dashboard** (`/admin`) — password protected. Go live / end the event, clear the board for a new event, mark songs as played, reply in the live chat, view/download the QR code, and manage booking inquiries.
-- **Event History** (`/admin/events`) — every event the DJ has ever gone live for, permanently kept: full setlist in the order songs were actually played (with timestamps and who requested them), which requested songs never got played, and the full live chat log. Clicking "Clear Board" mid-event splits it into a new chapter in the history rather than losing the first half.
+  - **Guest Counter**: a live "X here now" count of who's actively on the page, based on a heartbeat ping — no login or tracking beyond an anonymous per-browser id.
+  - **Live Reactions**: tappable emoji buttons that float across every guest's screen in real time.
+  - **Quick Polls**: the DJ posts a this-or-that question from the dashboard; guests vote and watch results update live, one vote per browser.
+  - **Guestbook**: a running wall of notes from guests, kept forever as a keepsake (separate from the live chat).
+  - All four of the above can be turned on/off any time from the dashboard's "Live Page Features" toggles — before, during, or after an event. Turning one off only hides it from guests and stops new submissions; nothing already saved is deleted, and it all comes back when turned back on.
+- **Admin dashboard** (`/admin`) — password protected. Go live / end the event, clear the board for a new event, mark songs as played, reply in the live chat, manage a quick poll, toggle any live-page feature on/off, view/download the QR code, and manage booking inquiries.
+- **Event History** (`/admin/events`) — every event the DJ has ever gone live for, permanently kept: full setlist in the order songs were actually played (with timestamps and who requested them), which requested songs never got played, the full live chat log, every poll's final results, and the guestbook entries from that event. Clicking "Clear Board" mid-event splits it into a new chapter in the history rather than losing the first half.
 
 ## Tech stack
 

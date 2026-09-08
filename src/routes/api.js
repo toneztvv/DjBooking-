@@ -1,9 +1,10 @@
 const express = require('express');
-const { db, getSetting, normalizeKey } = require('../db');
+const { db, getSetting, normalizeKey, getFeatureFlags } = require('../db');
 const { liveQrBuffer } = require('../qr');
 const { sendInquiryNotification } = require('../mail');
 const { sendSms } = require('../sms');
 const { containsBannedWord } = require('../moderation');
+const presence = require('../presence');
 
 const router = express.Router();
 
@@ -102,18 +103,60 @@ function getRecentlyPlayed(eventId) {
     .all(eventId);
 }
 
+function getActivePoll(eventId) {
+  const poll = db
+    .prepare(`SELECT * FROM polls WHERE event_id = ? AND closed_at IS NULL ORDER BY id DESC LIMIT 1`)
+    .get(eventId);
+  if (!poll) return null;
+
+  const counts = db
+    .prepare(`SELECT choice, COUNT(*) AS n FROM poll_votes WHERE poll_id = ? GROUP BY choice`)
+    .all(poll.id);
+  const votesA = counts.find((c) => c.choice === 'a')?.n || 0;
+  const votesB = counts.find((c) => c.choice === 'b')?.n || 0;
+
+  return {
+    id: poll.id,
+    question: poll.question,
+    optionA: poll.option_a,
+    optionB: poll.option_b,
+    votesA,
+    votesB,
+  };
+}
+
 router.get('/live-state', (req, res) => {
   const isLive = getSetting('is_live') === '1';
   const eventId = Number(getSetting('current_event_id') || '1');
   const currentEvent = db.prepare('SELECT name FROM events WHERE id = ?').get(eventId);
   const eventName = (currentEvent && currentEvent.name) || '';
+  const features = getFeatureFlags();
 
   res.json({
     isLive,
     eventName,
+    features,
+    activeGuests: isLive && features.guestCounter ? presence.getActiveCount(eventId) : null,
+    poll: isLive && features.polls ? getActivePoll(eventId) : null,
     pending: getPendingBoard(eventId),
     recentlyPlayed: getRecentlyPlayed(eventId),
   });
+});
+
+router.post('/presence/ping', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  const features = getFeatureFlags();
+  if (!isLive || !features.guestCounter) {
+    return res.json({ ok: true });
+  }
+
+  const clientId = clean((req.body || {}).client_id, 100);
+  if (clientId) {
+    const eventId = Number(getSetting('current_event_id') || '1');
+    presence.recordPing(eventId, clientId);
+  }
+
+  res.json({ ok: true });
 });
 
 router.post('/requests', (req, res) => {
@@ -227,6 +270,145 @@ router.post('/chat', (req, res) => {
     .get(result.lastInsertRowid);
 
   res.status(201).json({ ok: true, message: saved });
+});
+
+// --- Live reactions ----------------------------------------------------------
+
+const ALLOWED_REACTIONS = ['🔥', '❤️', '🙌', '😂', '👏'];
+
+router.get('/reactions', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  const features = getFeatureFlags();
+  if (!isLive || !features.reactions) {
+    return res.json({ enabled: false, recent: [], counts: {} });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const afterId = Number(req.query.afterId) || 0;
+
+  const recent = db
+    .prepare(
+      `SELECT id, emoji FROM reactions
+       WHERE event_id = ? AND id > ?
+       ORDER BY id ASC LIMIT 100`
+    )
+    .all(eventId, afterId);
+
+  const countRows = db
+    .prepare(`SELECT emoji, COUNT(*) AS n FROM reactions WHERE event_id = ? GROUP BY emoji`)
+    .all(eventId);
+  const counts = {};
+  countRows.forEach((r) => (counts[r.emoji] = r.n));
+
+  res.json({ enabled: true, recent, counts });
+});
+
+router.post('/reactions', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  const features = getFeatureFlags();
+  if (!isLive || !features.reactions) {
+    return res.status(409).json({ ok: false, error: 'Reactions are turned off right now.' });
+  }
+
+  const emoji = clean((req.body || {}).emoji, 10);
+  if (!ALLOWED_REACTIONS.includes(emoji)) {
+    return res.status(400).json({ ok: false, error: 'Unknown reaction.' });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+  db.prepare(`INSERT INTO reactions (event_id, emoji) VALUES (?, ?)`).run(eventId, emoji);
+
+  res.status(201).json({ ok: true });
+});
+
+// --- Quick polls ---------------------------------------------------------------
+
+router.post('/polls/:id/vote', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  const features = getFeatureFlags();
+  if (!isLive || !features.polls) {
+    return res.status(409).json({ ok: false, error: 'Polls are turned off right now.' });
+  }
+
+  const pollId = Number(req.params.id);
+  const choice = clean((req.body || {}).choice, 1);
+  const clientId = clean((req.body || {}).client_id, 100);
+
+  if (!['a', 'b'].includes(choice) || !clientId) {
+    return res.status(400).json({ ok: false, error: 'Missing vote choice.' });
+  }
+
+  const poll = db.prepare(`SELECT * FROM polls WHERE id = ? AND closed_at IS NULL`).get(pollId);
+  if (!poll) {
+    return res.status(410).json({ ok: false, error: 'This poll has closed.' });
+  }
+
+  try {
+    db.prepare(`INSERT INTO poll_votes (poll_id, choice, client_id) VALUES (?, ?, ?)`).run(
+      pollId,
+      choice,
+      clientId
+    );
+  } catch (err) {
+    return res.status(409).json({ ok: false, error: 'You already voted on this poll.' });
+  }
+
+  res.status(201).json({ ok: true });
+});
+
+// --- Guestbook / love notes ---------------------------------------------------
+
+router.get('/guestbook', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  const features = getFeatureFlags();
+  if (!isLive || !features.guestbook) {
+    return res.json({ enabled: false, entries: [] });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const entries = db
+    .prepare(
+      `SELECT id, name, message, created_at FROM guestbook_entries
+       WHERE event_id = ? ORDER BY id DESC LIMIT 200`
+    )
+    .all(eventId);
+
+  res.json({ enabled: true, entries });
+});
+
+router.post('/guestbook', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  const features = getFeatureFlags();
+  if (!isLive || !features.guestbook) {
+    return res.status(409).json({ ok: false, error: 'The guestbook is turned off right now.' });
+  }
+
+  const body = req.body || {};
+  if (clean(body.company_website)) {
+    return res.status(201).json({ ok: true });
+  }
+
+  const name = clean(body.name, 80);
+  const message = clean(body.message, 500);
+
+  if (!name || !message) {
+    return res.status(400).json({ ok: false, error: 'Please enter your name and a message.' });
+  }
+
+  if (containsBannedWord(name) || containsBannedWord(message)) {
+    return res.status(400).json({ ok: false, error: 'That message isn’t allowed. Please remove the inappropriate language and try again.' });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const result = db
+    .prepare(`INSERT INTO guestbook_entries (event_id, name, message) VALUES (?, ?, ?)`)
+    .run(eventId, name, message);
+
+  const saved = db
+    .prepare(`SELECT id, name, message, created_at FROM guestbook_entries WHERE id = ?`)
+    .get(result.lastInsertRowid);
+
+  res.status(201).json({ ok: true, entry: saved });
 });
 
 // --- QR code ---------------------------------------------------------------

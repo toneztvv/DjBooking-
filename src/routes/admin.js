@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { db, getSetting, setSetting, normalizeKey } = require('../db');
+const { db, getSetting, setSetting, normalizeKey, getFeatureFlags } = require('../db');
 const adminAuth = require('../middleware/adminAuth');
 const { getLiveUrl, getQrTargetUrl } = require('../qr');
 const { recognizeAudio } = require('../audd');
@@ -74,6 +74,20 @@ function endEvent(id) {
   ).run(id);
 }
 
+function getActivePollWithCounts(eventId) {
+  const poll = db
+    .prepare(`SELECT * FROM polls WHERE event_id = ? AND closed_at IS NULL ORDER BY id DESC LIMIT 1`)
+    .get(eventId);
+  if (!poll) return null;
+
+  const counts = db
+    .prepare(`SELECT choice, COUNT(*) AS n FROM poll_votes WHERE poll_id = ? GROUP BY choice`)
+    .all(poll.id);
+  poll.votesA = counts.find((c) => c.choice === 'a')?.n || 0;
+  poll.votesB = counts.find((c) => c.choice === 'b')?.n || 0;
+  return poll;
+}
+
 router.get('/', (req, res) => {
   const isLive = getSetting('is_live') === '1';
   const eventId = Number(getSetting('current_event_id') || '1');
@@ -90,7 +104,27 @@ router.get('/', (req, res) => {
     recentlyPlayed: getPlayedSetlist(eventId, 'DESC').slice(0, 50),
     liveUrl: getQrTargetUrl(),
     newInquiries,
+    features: getFeatureFlags(),
+    activePoll: getActivePollWithCounts(eventId),
   });
+});
+
+// --- Live page feature toggles ------------------------------------------------
+
+const TOGGLEABLE_FEATURES = {
+  guest_counter: 'feature_guest_counter',
+  reactions: 'feature_reactions',
+  polls: 'feature_polls',
+  guestbook: 'feature_guestbook',
+};
+
+router.post('/features/:feature/toggle', (req, res) => {
+  const settingKey = TOGGLEABLE_FEATURES[req.params.feature];
+  if (settingKey) {
+    const isOn = getSetting(settingKey) !== '0';
+    setSetting(settingKey, isOn ? '0' : '1');
+  }
+  res.redirect('/admin');
 });
 
 router.post('/live/toggle', (req, res) => {
@@ -294,6 +328,59 @@ router.post('/chat/reply', (req, res) => {
   res.status(201).json({ ok: true, message: saved });
 });
 
+// --- Quick polls ---------------------------------------------------------------
+
+router.post('/polls', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  if (!isLive) {
+    return res.redirect('/admin');
+  }
+
+  const question = clean(req.body.question, 200);
+  const optionA = clean(req.body.option_a, 60);
+  const optionB = clean(req.body.option_b, 60);
+
+  if (question && optionA && optionB) {
+    const eventId = Number(getSetting('current_event_id') || '1');
+    // Only one active poll at a time — starting a new one auto-closes the last.
+    db.prepare(`UPDATE polls SET closed_at = datetime('now') WHERE event_id = ? AND closed_at IS NULL`).run(eventId);
+    db.prepare(
+      `INSERT INTO polls (event_id, question, option_a, option_b) VALUES (?, ?, ?, ?)`
+    ).run(eventId, question, optionA, optionB);
+  }
+
+  res.redirect('/admin');
+});
+
+router.post('/polls/:id/close', (req, res) => {
+  const id = Number(req.params.id);
+  if (id) {
+    db.prepare(`UPDATE polls SET closed_at = datetime('now') WHERE id = ? AND closed_at IS NULL`).run(id);
+  }
+  res.redirect('/admin');
+});
+
+// --- Guestbook / love notes ---------------------------------------------------
+
+router.get('/guestbook', (req, res) => {
+  const entries = db
+    .prepare(
+      `SELECT g.*, e.name AS event_name FROM guestbook_entries g
+       LEFT JOIN events e ON e.id = g.event_id
+       ORDER BY g.created_at DESC`
+    )
+    .all();
+  res.render('admin/guestbook', { page: 'admin', entries });
+});
+
+router.post('/guestbook/:id/delete', (req, res) => {
+  const id = Number(req.params.id);
+  if (id) {
+    db.prepare(`DELETE FROM guestbook_entries WHERE id = ?`).run(id);
+  }
+  res.redirect('/admin/guestbook');
+});
+
 router.get('/inquiries', (req, res) => {
   const inquiries = db
     .prepare(`SELECT * FROM inquiries ORDER BY created_at DESC`)
@@ -370,6 +457,19 @@ router.get('/events/:id', (req, res) => {
     )
     .all(id);
 
+  const polls = db.prepare(`SELECT * FROM polls WHERE event_id = ? ORDER BY id ASC`).all(id);
+  polls.forEach((poll) => {
+    const counts = db
+      .prepare(`SELECT choice, COUNT(*) AS n FROM poll_votes WHERE poll_id = ? GROUP BY choice`)
+      .all(poll.id);
+    poll.votesA = counts.find((c) => c.choice === 'a')?.n || 0;
+    poll.votesB = counts.find((c) => c.choice === 'b')?.n || 0;
+  });
+
+  const guestbookEntries = db
+    .prepare(`SELECT * FROM guestbook_entries WHERE event_id = ? ORDER BY id ASC`)
+    .all(id);
+
   res.render('admin/event-detail', {
     page: 'admin',
     event,
@@ -377,6 +477,8 @@ router.get('/events/:id', (req, res) => {
     setlist: getPlayedSetlist(id, 'ASC'),
     neverPlayed: getPendingBoard(id),
     chatLog,
+    polls,
+    guestbookEntries,
     currentEventId: Number(getSetting('current_event_id') || '1'),
   });
 });
@@ -388,10 +490,18 @@ router.post('/events/:id/delete', (req, res) => {
   if (id && id !== currentEventId) {
     const deleteRequests = db.prepare(`DELETE FROM song_requests WHERE event_id = ?`);
     const deleteChat = db.prepare(`DELETE FROM chat_messages WHERE event_id = ?`);
+    const deleteReactions = db.prepare(`DELETE FROM reactions WHERE event_id = ?`);
+    const deletePollVotes = db.prepare(`DELETE FROM poll_votes WHERE poll_id IN (SELECT id FROM polls WHERE event_id = ?)`);
+    const deletePolls = db.prepare(`DELETE FROM polls WHERE event_id = ?`);
+    const deleteGuestbook = db.prepare(`DELETE FROM guestbook_entries WHERE event_id = ?`);
     const deleteEvent = db.prepare(`DELETE FROM events WHERE id = ?`);
     db.transaction(() => {
       deleteRequests.run(id);
       deleteChat.run(id);
+      deleteReactions.run(id);
+      deletePollVotes.run(id);
+      deletePolls.run(id);
+      deleteGuestbook.run(id);
       deleteEvent.run(id);
     })();
   }

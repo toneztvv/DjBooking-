@@ -19,10 +19,14 @@ A booking + live song-request site for DJXpress:
   - The QR code (shown on the admin dashboard) points to the homepage
     (${siteUrl}/), so guests can choose Book Now or Live Requests
   - A live page (${siteUrl}/live) where guests request songs, watch a
-    live "Up Next" / "Recently Played" board, and chat back and forth
-    with the DJ in real time while the event is live (no name needed to
-    chat; a message with inappropriate language is blocked before it
-    ever gets sent)
+    live "Up Next" / "Recently Played" board, chat back and forth with
+    the DJ in real time (no name needed; inappropriate language is
+    blocked before it's sent), see a live "how many people are here"
+    counter, tap floating emoji reactions, vote on the DJ's quick polls,
+    and leave a note in the guestbook
+  - Every one of those four extras (guest counter, reactions, polls,
+    guestbook) can be switched on/off any time from the dashboard,
+    without losing anything already saved
 
 EVERY TOOL AND ACCOUNT THIS SITE TOUCHES, AT A GLANCE
   Claude Code (claude.ai/code)  The AI coding assistant used to write,
@@ -190,12 +194,21 @@ Log in at: ${siteUrl}/admin
                                               the board, accept and mark
                                               requests played, Auto Song
                                               Detection, reply in the
-                                              live chat, the QR code,
-                                              a summary of new inquiries
+                                              live chat, post/close a
+                                              quick poll, turn the guest
+                                              counter/reactions/polls/
+                                              guestbook on or off, the
+                                              QR code, a summary of new
+                                              inquiries
+  Guestbook              /admin/guestbook    Every guestbook note across
+                                              every event, with a delete
+                                              button per entry
   Event History          /admin/events       Every past event, each with
                                               its full setlist in the
                                               order songs were played,
-                                              and its full chat log
+                                              its full chat log, every
+                                              poll's final results, and
+                                              that event's guestbook notes
   Booking Inquiries      /admin/inquiries    Everyone who's submitted the
                                               booking form, contact info,
                                               and a status you can update

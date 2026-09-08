@@ -64,11 +64,58 @@ function initDb() {
 
     CREATE INDEX IF NOT EXISTS idx_chat_event_id
       ON chat_messages (event_id, id);
+
+    CREATE TABLE IF NOT EXISTS reactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      emoji TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_reactions_event_id
+      ON reactions (event_id, id);
+
+    CREATE TABLE IF NOT EXISTS polls (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      question TEXT NOT NULL,
+      option_a TEXT NOT NULL,
+      option_b TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      closed_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_polls_event_id
+      ON polls (event_id, id);
+
+    CREATE TABLE IF NOT EXISTS poll_votes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      poll_id INTEGER NOT NULL,
+      choice TEXT NOT NULL CHECK (choice IN ('a', 'b')),
+      client_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (poll_id, client_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS guestbook_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_guestbook_event_id
+      ON guestbook_entries (event_id, id);
   `);
 
   const defaults = {
     is_live: '0',
     current_event_id: '1',
+    feature_guest_counter: '1',
+    feature_reactions: '1',
+    feature_polls: '1',
+    feature_guestbook: '1',
   };
   const insert = db.prepare(
     'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)'
@@ -117,4 +164,13 @@ function normalizeKey(title, artist) {
   return `${title}::${artist || ''}`.trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
-module.exports = { db, initDb, getSetting, setSetting, normalizeKey };
+function getFeatureFlags() {
+  return {
+    guestCounter: getSetting('feature_guest_counter') !== '0',
+    reactions: getSetting('feature_reactions') !== '0',
+    polls: getSetting('feature_polls') !== '0',
+    guestbook: getSetting('feature_guestbook') !== '0',
+  };
+}
+
+module.exports = { db, initDb, getSetting, setSetting, normalizeKey, getFeatureFlags };

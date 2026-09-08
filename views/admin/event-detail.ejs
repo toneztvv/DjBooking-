@@ -91,7 +91,7 @@
     </div>
 
     <h2 style="font-size:1.2rem; margin: 30px 0 14px;">Live Chat Log</h2>
-    <div class="card">
+    <div class="card" style="margin-bottom: 30px;">
       <div class="chat-log" style="max-height: 500px;">
         <% chatLog.forEach(function(m) { %>
           <div class="chat-bubble<% if (m.is_dj) { %> chat-bubble-dj<% } %>">
@@ -102,6 +102,37 @@
         <% }); %>
       </div>
       <% if (!chatLog.length) { %><div class="empty-state">No chat messages during this event.</div><% } %>
+    </div>
+
+    <h2 style="font-size:1.2rem; margin-bottom:14px;">Quick Polls</h2>
+    <div class="card" style="margin-bottom: 30px;">
+      <% polls.forEach(function(p) { %>
+        <% const total = p.votesA + p.votesB; %>
+        <% const pctA = total ? Math.round((p.votesA / total) * 100) : 0; %>
+        <% const pctB = total ? Math.round((p.votesB / total) * 100) : 0; %>
+        <p class="small-muted" style="margin-bottom:6px;"><strong><%= p.question %></strong><% if (!p.closed_at) { %> &mdash; <span class="badge badge-live">Active</span><% } %></p>
+        <div class="poll-bar-row">
+          <div class="poll-bar-label"><%= p.option_a %> &mdash; <%= p.votesA %> (<%= pctA %>%)</div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" style="width: <%= pctA %>%;"></div></div>
+        </div>
+        <div class="poll-bar-row" style="margin-bottom: 24px;">
+          <div class="poll-bar-label"><%= p.option_b %> &mdash; <%= p.votesB %> (<%= pctB %>%)</div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" style="width: <%= pctB %>%;"></div></div>
+        </div>
+      <% }); %>
+      <% if (!polls.length) { %><div class="empty-state">No polls posted during this event.</div><% } %>
+    </div>
+
+    <h2 style="font-size:1.2rem; margin-bottom:14px;">Guestbook</h2>
+    <div class="card">
+      <% guestbookEntries.forEach(function(e) { %>
+        <div class="guestbook-entry">
+          <div class="gb-name"><%= e.name %></div>
+          <div class="gb-message"><%= e.message %></div>
+          <div class="gb-time"><%= e.created_at %></div>
+        </div>
+      <% }); %>
+      <% if (!guestbookEntries.length) { %><div class="empty-state">No guestbook entries during this event.</div><% } %>
     </div>
   </div>
 </section>

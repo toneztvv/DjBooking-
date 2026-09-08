@@ -1,0 +1,32 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Guestbook' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 20px;">
+      <h1 style="margin:0;">Guestbook</h1>
+      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+    </div>
+    <p class="small-muted" style="margin-bottom: 24px; max-width: 720px;">
+      Every note left across every event, newest first. Turning the Guestbook off on the dashboard just hides it from guests &mdash; nothing here ever gets deleted unless you delete it yourself.
+    </p>
+
+    <% entries.forEach(function(e) { %>
+      <div class="guestbook-entry">
+        <div class="flex-between">
+          <div>
+            <div class="gb-name"><%= e.name %></div>
+            <div class="gb-message"><%= e.message %></div>
+            <div class="gb-time"><%= e.created_at %><% if (e.event_name) { %> &middot; <%= e.event_name %><% } %></div>
+          </div>
+          <form method="POST" action="/admin/guestbook/<%= e.id %>/delete"
+            onsubmit="return confirm('Delete this guestbook entry? This can\'t be undone.');">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      </div>
+    <% }); %>
+    <% if (!entries.length) { %><div class="empty-state">No guestbook entries yet.</div><% } %>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>
