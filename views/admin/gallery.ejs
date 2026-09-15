@@ -1,0 +1,47 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Gallery' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 20px;">
+      <h1 style="margin:0;">Photo &amp; Video Gallery</h1>
+      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+    </div>
+    <p class="small-muted" style="margin-bottom: 24px; max-width: 720px;">
+      Upload photos or short video clips from past events to show off on the homepage. Nothing shows there until you add something here.
+    </p>
+
+    <div class="form-card" style="margin-bottom: 30px;">
+      <h3 style="margin-top:0;">Upload Photo or Video</h3>
+      <form method="POST" action="/admin/gallery" enctype="multipart/form-data">
+        <div class="field">
+          <label for="media">File (image or video, up to 25MB)</label>
+          <input type="file" id="media" name="media" accept="image/*,video/*" required />
+        </div>
+        <div class="field">
+          <label for="caption">Caption (optional)</label>
+          <input type="text" id="caption" name="caption" maxlength="200" placeholder="e.g. Smith Wedding, June 2026" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Upload</button>
+      </form>
+    </div>
+
+    <div class="gallery-grid">
+      <% items.forEach(function(item) { %>
+        <div class="gallery-tile">
+          <% if (item.type === 'video') { %>
+            <video src="/gallery-media/<%= item.filename %>" controls></video>
+          <% } else { %>
+            <img src="/gallery-media/<%= item.filename %>" alt="<%= item.caption || 'Event photo' %>" />
+          <% } %>
+          <% if (item.caption) { %><p class="small-muted" style="margin: 8px 0 4px;"><%= item.caption %></p><% } %>
+          <form method="POST" action="/admin/gallery/<%= item.id %>/delete" onsubmit="return confirm('Delete this from the gallery?');">
+            <button type="submit" class="btn btn-danger btn-sm btn-block">Delete</button>
+          </form>
+        </div>
+      <% }); %>
+    </div>
+    <% if (!items.length) { %><div class="empty-state">Nothing uploaded yet.</div><% } %>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

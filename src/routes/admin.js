@@ -1,10 +1,14 @@
 const express = require('express');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const { db, getSetting, setSetting, normalizeKey, getFeatureFlags } = require('../db');
 const adminAuth = require('../middleware/adminAuth');
 const { getLiveUrl, getQrTargetUrl } = require('../qr');
 const { recognizeAudio } = require('../audd');
 const { getSetupGuideText } = require('../setupGuide');
+const { toCsv } = require('../csv');
 
 const router = express.Router();
 
@@ -13,6 +17,26 @@ router.use(adminAuth);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 }, // one short audio clip, generous cap
+});
+
+// Gallery photos/videos live on the same persistent disk as the database
+// (not in memory) so they survive restarts and deploys.
+const GALLERY_DIR = path.join(__dirname, '..', '..', 'data', 'gallery');
+if (!fs.existsSync(GALLERY_DIR)) fs.mkdirSync(GALLERY_DIR, { recursive: true });
+
+const galleryUpload = multer({
+  storage: multer.diskStorage({
+    destination: GALLERY_DIR,
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${crypto.randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/^image\/|^video\//.test(file.mimetype)) return cb(null, true);
+    cb(new Error('Only image or video files are allowed'));
+  },
 });
 
 const DJ_PICK_LABEL = 'DJ Pick';
@@ -25,17 +49,19 @@ function clean(value, maxLen = 300) {
 function getPendingBoard(eventId) {
   return db
     .prepare(
-      `SELECT normalized_key,
-              song_title,
-              artist,
+      `SELECT sr.normalized_key,
+              sr.song_title,
+              sr.artist,
               COUNT(*) AS times_requested,
-              MIN(created_at) AS first_requested_at,
-              GROUP_CONCAT(DISTINCT requested_by) AS requesters,
-              MAX(accepted) AS accepted
-       FROM song_requests
-       WHERE event_id = ? AND status = 'pending'
-       GROUP BY normalized_key
-       ORDER BY accepted DESC, times_requested DESC, first_requested_at ASC`
+              MIN(sr.created_at) AS first_requested_at,
+              GROUP_CONCAT(DISTINCT sr.requested_by) AS requesters,
+              MAX(sr.accepted) AS accepted,
+              (SELECT COUNT(*) FROM request_upvotes u
+                WHERE u.event_id = sr.event_id AND u.normalized_key = sr.normalized_key) AS upvotes
+       FROM song_requests sr
+       WHERE sr.event_id = ? AND sr.status = 'pending'
+       GROUP BY sr.normalized_key
+       ORDER BY accepted DESC, (times_requested + upvotes) DESC, first_requested_at ASC`
     )
     .all(eventId);
 }
@@ -489,6 +515,7 @@ router.post('/events/:id/delete', (req, res) => {
 
   if (id && id !== currentEventId) {
     const deleteRequests = db.prepare(`DELETE FROM song_requests WHERE event_id = ?`);
+    const deleteUpvotes = db.prepare(`DELETE FROM request_upvotes WHERE event_id = ?`);
     const deleteChat = db.prepare(`DELETE FROM chat_messages WHERE event_id = ?`);
     const deleteReactions = db.prepare(`DELETE FROM reactions WHERE event_id = ?`);
     const deletePollVotes = db.prepare(`DELETE FROM poll_votes WHERE poll_id IN (SELECT id FROM polls WHERE event_id = ?)`);
@@ -497,6 +524,7 @@ router.post('/events/:id/delete', (req, res) => {
     const deleteEvent = db.prepare(`DELETE FROM events WHERE id = ?`);
     db.transaction(() => {
       deleteRequests.run(id);
+      deleteUpvotes.run(id);
       deleteChat.run(id);
       deleteReactions.run(id);
       deletePollVotes.run(id);
@@ -557,6 +585,203 @@ router.get('/setup-guide/download', (req, res) => {
   res.set('Content-Type', 'text/plain; charset=utf-8');
   res.set('Content-Disposition', 'attachment; filename="djxpress-setup-guide.txt"');
   res.send(getSetupGuideText());
+});
+
+// --- Testimonials ------------------------------------------------------------
+
+router.get('/testimonials', (req, res) => {
+  const testimonials = db.prepare(`SELECT * FROM testimonials ORDER BY created_at DESC`).all();
+  res.render('admin/testimonials', { page: 'admin', testimonials });
+});
+
+router.post('/testimonials', (req, res) => {
+  const clientName = clean(req.body.client_name, 120);
+  const quote = clean(req.body.quote, 1000);
+  const eventType = clean(req.body.event_type, 60);
+  const rating = Math.min(5, Math.max(1, Number(req.body.rating) || 5));
+
+  if (clientName && quote) {
+    db.prepare(
+      `INSERT INTO testimonials (client_name, quote, event_type, rating) VALUES (?, ?, ?, ?)`
+    ).run(clientName, quote, eventType || null, rating);
+  }
+
+  res.redirect('/admin/testimonials');
+});
+
+router.post('/testimonials/:id/toggle', (req, res) => {
+  const id = Number(req.params.id);
+  if (id) {
+    const t = db.prepare(`SELECT published FROM testimonials WHERE id = ?`).get(id);
+    if (t) db.prepare(`UPDATE testimonials SET published = ? WHERE id = ?`).run(t.published ? 0 : 1, id);
+  }
+  res.redirect('/admin/testimonials');
+});
+
+router.post('/testimonials/:id/delete', (req, res) => {
+  const id = Number(req.params.id);
+  if (id) db.prepare(`DELETE FROM testimonials WHERE id = ?`).run(id);
+  res.redirect('/admin/testimonials');
+});
+
+// --- Photo/video gallery -------------------------------------------------------
+
+router.get('/gallery', (req, res) => {
+  const items = db.prepare(`SELECT * FROM gallery_items ORDER BY created_at DESC`).all();
+  res.render('admin/gallery', { page: 'admin', items });
+});
+
+router.post('/gallery', galleryUpload.single('media'), (req, res) => {
+  if (!req.file) {
+    return res.redirect('/admin/gallery');
+  }
+  const type = req.file.mimetype.startsWith('video/') ? 'video' : 'photo';
+  const caption = clean(req.body.caption, 200);
+  db.prepare(`INSERT INTO gallery_items (type, filename, caption) VALUES (?, ?, ?)`).run(
+    type,
+    req.file.filename,
+    caption || null
+  );
+  res.redirect('/admin/gallery');
+});
+
+router.post('/gallery/:id/delete', (req, res) => {
+  const id = Number(req.params.id);
+  const item = id && db.prepare(`SELECT * FROM gallery_items WHERE id = ?`).get(id);
+  if (item) {
+    db.prepare(`DELETE FROM gallery_items WHERE id = ?`).run(id);
+    const filePath = path.join(GALLERY_DIR, item.filename);
+    fs.unlink(filePath, () => {});
+  }
+  res.redirect('/admin/gallery');
+});
+
+// --- Lifetime analytics --------------------------------------------------------
+
+router.get('/analytics', (req, res) => {
+  const totalEvents = db.prepare(`SELECT COUNT(*) AS c FROM events`).get().c;
+
+  const totalSongsPlayed = db
+    .prepare(
+      `SELECT COUNT(*) AS c FROM (
+         SELECT DISTINCT event_id, normalized_key, played_at
+         FROM song_requests WHERE status = 'played'
+       )`
+    )
+    .get().c;
+
+  const totalRequests = db.prepare(`SELECT COUNT(*) AS c FROM song_requests`).get().c;
+  const uniqueSongs = db.prepare(`SELECT COUNT(DISTINCT normalized_key) AS c FROM song_requests`).get().c;
+
+  const inquiryStats = db
+    .prepare(
+      `SELECT COUNT(*) AS total,
+              SUM(CASE WHEN status = 'booked' THEN 1 ELSE 0 END) AS booked
+       FROM inquiries`
+    )
+    .get();
+
+  const totalGuestbook = db.prepare(`SELECT COUNT(*) AS c FROM guestbook_entries`).get().c;
+  const totalChatMessages = db.prepare(`SELECT COUNT(*) AS c FROM chat_messages`).get().c;
+
+  const reactionTotals = db
+    .prepare(`SELECT emoji, COUNT(*) AS n FROM reactions GROUP BY emoji ORDER BY n DESC`)
+    .all();
+
+  const topSongs = db
+    .prepare(
+      `SELECT song_title, artist, COUNT(*) AS total
+       FROM song_requests
+       GROUP BY normalized_key
+       ORDER BY total DESC
+       LIMIT 10`
+    )
+    .all();
+
+  res.render('admin/analytics', {
+    page: 'admin',
+    totalEvents,
+    totalSongsPlayed,
+    totalRequests,
+    uniqueSongs,
+    inquiryStats,
+    totalGuestbook,
+    totalChatMessages,
+    reactionTotals,
+    topSongs,
+  });
+});
+
+// --- CSV exports ---------------------------------------------------------------
+
+router.get('/export/requests.csv', (req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT sr.song_title, sr.artist, sr.requested_by, sr.dedication, sr.status,
+              sr.created_at, sr.played_at, e.name AS event_name
+       FROM song_requests sr
+       LEFT JOIN events e ON e.id = sr.event_id
+       ORDER BY sr.created_at DESC`
+    )
+    .all();
+
+  const csv = toCsv(rows, [
+    { key: 'event_name', label: 'Event' },
+    { key: 'song_title', label: 'Song' },
+    { key: 'artist', label: 'Artist' },
+    { key: 'requested_by', label: 'Requested By' },
+    { key: 'dedication', label: 'Dedication' },
+    { key: 'status', label: 'Status' },
+    { key: 'created_at', label: 'Requested At' },
+    { key: 'played_at', label: 'Played At' },
+  ]);
+
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', 'attachment; filename="djxpress-song-requests.csv"');
+  res.send(csv);
+});
+
+router.get('/export/inquiries.csv', (req, res) => {
+  const rows = db.prepare(`SELECT * FROM inquiries ORDER BY created_at DESC`).all();
+
+  const csv = toCsv(rows, [
+    { key: 'created_at', label: 'Received' },
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'event_date', label: 'Event Date' },
+    { key: 'event_type', label: 'Event Type' },
+    { key: 'location', label: 'Location' },
+    { key: 'guest_count', label: 'Guest Count' },
+    { key: 'message', label: 'Message' },
+    { key: 'status', label: 'Status' },
+  ]);
+
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', 'attachment; filename="djxpress-inquiries.csv"');
+  res.send(csv);
+});
+
+router.get('/export/guestbook.csv', (req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT g.name, g.message, g.created_at, e.name AS event_name
+       FROM guestbook_entries g
+       LEFT JOIN events e ON e.id = g.event_id
+       ORDER BY g.created_at DESC`
+    )
+    .all();
+
+  const csv = toCsv(rows, [
+    { key: 'event_name', label: 'Event' },
+    { key: 'name', label: 'Name' },
+    { key: 'message', label: 'Message' },
+    { key: 'created_at', label: 'Left At' },
+  ]);
+
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', 'attachment; filename="djxpress-guestbook.csv"');
+  res.send(csv);
 });
 
 module.exports = router;

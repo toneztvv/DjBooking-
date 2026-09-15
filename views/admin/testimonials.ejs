@@ -1,0 +1,67 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Testimonials' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 20px;">
+      <h1 style="margin:0;">Testimonials</h1>
+      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+    </div>
+    <p class="small-muted" style="margin-bottom: 24px; max-width: 720px;">
+      Type in reviews you've gotten (from Google, Facebook, a text message, wherever) to show off on the homepage. Only "Published" ones show up there — use the button to hide one without deleting it.
+    </p>
+
+    <div class="form-card" style="margin-bottom: 30px;">
+      <h3 style="margin-top:0;">Add a Testimonial</h3>
+      <form method="POST" action="/admin/testimonials">
+        <div class="form-grid">
+          <div class="field">
+            <label for="client_name">Client Name *</label>
+            <input type="text" id="client_name" name="client_name" required maxlength="120" placeholder="e.g. Sarah &amp; Mike" />
+          </div>
+          <div class="field">
+            <label for="event_type">Event Type</label>
+            <input type="text" id="event_type" name="event_type" maxlength="60" placeholder="e.g. Wedding" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="rating">Rating</label>
+          <select id="rating" name="rating">
+            <option value="5">&#9733;&#9733;&#9733;&#9733;&#9733; (5)</option>
+            <option value="4">&#9733;&#9733;&#9733;&#9733; (4)</option>
+            <option value="3">&#9733;&#9733;&#9733; (3)</option>
+            <option value="2">&#9733;&#9733; (2)</option>
+            <option value="1">&#9733; (1)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="quote">Quote *</label>
+          <textarea id="quote" name="quote" rows="3" required maxlength="1000" placeholder="What they said about DJXpress..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Add Testimonial</button>
+      </form>
+    </div>
+
+    <% testimonials.forEach(function(t) { %>
+      <div class="card" style="margin-bottom: 16px;">
+        <div class="flex-between">
+          <div>
+            <div class="star-rating"><% for (let i = 0; i < 5; i++) { %><%- i < t.rating ? '&#9733;' : '&#9734;' %><% } %></div>
+            <p style="margin: 8px 0;">&ldquo;<%= t.quote %>&rdquo;</p>
+            <p class="small-muted" style="margin:0;"><strong><%= t.client_name %></strong><% if (t.event_type) { %> &mdash; <%= t.event_type %><% } %></p>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <form method="POST" action="/admin/testimonials/<%= t.id %>/toggle">
+              <button type="submit" class="btn btn-sm <%= t.published ? 'btn-success' : 'btn-ghost' %>"><%= t.published ? 'Published' : 'Hidden' %></button>
+            </form>
+            <form method="POST" action="/admin/testimonials/<%= t.id %>/delete" onsubmit="return confirm('Delete this testimonial?');">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+    <% if (!testimonials.length) { %><div class="empty-state">No testimonials yet.</div><% } %>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

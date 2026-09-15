@@ -7,7 +7,7 @@ A booking + live song-request website for DJXpress.
 - **Home page** — intro, services, genres, calls to action.
 - **Book Now** — booking inquiry form (name, contact info, event details) saved to a database you can review.
 - **Live Requests** (`/live`) — reachable from the homepage's nav, or directly when the DJ is live. Guests request songs here. It shows:
-  - **Up Next**: every pending song, who requested it, when it was first requested, and how many times.
+  - **Up Next**: every pending song, who requested it, when it was first requested, how many times, and a &#128077; button anyone can tap to boost a song without requesting it again (one boost per browser).
   - **Recently Played**: the same, once the DJ marks a song as played, with the time it was played.
   - The page auto-refreshes every 5 seconds for everyone watching — no login needed.
   - **Live Chat**: while the DJ is live, guests and the DJ can type back and forth in a shared chat everyone at the event sees, updating every few seconds. Chat needs no name. A message containing a banned word (see `src/moderation.js`) is blocked before it's ever sent.
@@ -18,6 +18,11 @@ A booking + live song-request website for DJXpress.
   - All four of the above can be turned on/off any time from the dashboard's "Live Page Features" toggles — before, during, or after an event. Turning one off only hides it from guests and stops new submissions; nothing already saved is deleted, and it all comes back when turned back on.
 - **Admin dashboard** (`/admin`) — password protected. Go live / end the event, clear the board for a new event, mark songs as played, reply in the live chat, manage a quick poll, toggle any live-page feature on/off, view/download the QR code, and manage booking inquiries.
 - **Event History** (`/admin/events`) — every event the DJ has ever gone live for, permanently kept: full setlist in the order songs were actually played (with timestamps and who requested them), which requested songs never got played, the full live chat log, every poll's final results, and the guestbook entries from that event. Clicking "Clear Board" mid-event splits it into a new chapter in the history rather than losing the first half.
+- **Testimonials** (`/admin/testimonials`) — type in reviews to show on the homepage under "What People Are Saying." Each one can be published or hidden without deleting it.
+- **Photo/Video Gallery** (`/admin/gallery`) — upload event photos or short video clips; they show up on the homepage. Empty until you upload something.
+- **Availability Calendar** — the `/book` page shows a live month calendar marking any date with a "booked" inquiry, so people can see at a glance what's already taken.
+- **Lifetime Analytics** (`/admin/analytics`) — totals across every event ever: songs played, total requests, top 10 most-requested songs, booking conversion rate, guestbook/chat/reaction counts.
+- **CSV Exports** — one-click download of all song requests, all booking inquiries, or all guestbook entries, from the Analytics page.
 
 ## Tech stack
 

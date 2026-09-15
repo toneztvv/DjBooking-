@@ -92,6 +92,53 @@
   </div>
 </section>
 
+<% if (typeof galleryItems !== 'undefined') { %>
+<section>
+  <div class="container">
+    <div class="section-title">
+      <h2>Photo &amp; Video Gallery</h2>
+      <p>A look at DJXpress in action.</p>
+    </div>
+    <% if (galleryItems.length) { %>
+      <div class="gallery-grid">
+        <% galleryItems.forEach(function(item) { %>
+          <div class="gallery-tile">
+            <% if (item.type === 'video') { %>
+              <video src="/gallery-media/<%= item.filename %>" controls></video>
+            <% } else { %>
+              <img src="/gallery-media/<%= item.filename %>" alt="<%= item.caption || 'DJXpress event photo' %>" />
+            <% } %>
+            <% if (item.caption) { %><p class="small-muted" style="margin: 8px 0 0;"><%= item.caption %></p><% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div class="empty-state">Photos and videos from events are coming soon &mdash; check back after the next one!</div>
+    <% } %>
+  </div>
+</section>
+<% } %>
+
+<% if (typeof testimonials !== 'undefined' && testimonials.length) { %>
+<section>
+  <div class="container">
+    <div class="section-title">
+      <h2>What People Are Saying</h2>
+      <p>Real feedback from real events.</p>
+    </div>
+    <div class="grid grid-3">
+      <% testimonials.forEach(function(t) { %>
+        <div class="card">
+          <div class="star-rating" style="margin-bottom:10px;"><% for (let i = 0; i < 5; i++) { %><%- i < t.rating ? '&#9733;' : '&#9734;' %><% } %></div>
+          <p style="margin:0 0 14px;">&ldquo;<%= t.quote %>&rdquo;</p>
+          <p class="small-muted" style="margin:0;"><strong><%= t.client_name %></strong><% if (t.event_type) { %> &mdash; <%= t.event_type %><% } %></p>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>
+
 <section>
   <div class="container">
     <div class="card" style="text-align:center; padding: 50px 30px;">

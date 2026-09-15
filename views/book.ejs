@@ -10,6 +10,19 @@
 
 <section style="padding-top: 0;">
   <div class="container">
+    <div class="card" style="max-width: 500px; margin: 0 auto 30px;">
+      <div class="flex-between" style="margin-bottom: 10px;">
+        <h3 style="margin:0;">Availability</h3>
+        <div style="display:flex; gap:8px;">
+          <button type="button" id="cal-prev" class="btn btn-ghost btn-sm">&larr;</button>
+          <button type="button" id="cal-next" class="btn btn-ghost btn-sm">&rarr;</button>
+        </div>
+      </div>
+      <p id="cal-month-label" class="small-muted" style="margin-bottom:10px; text-align:center; font-weight:700;"></p>
+      <div id="calendar-grid" class="calendar-grid"></div>
+      <p class="small-muted" style="margin-top:12px; text-align:center;"><span class="cal-legend-dot cal-booked"></span> Already booked &nbsp; <span class="cal-legend-dot cal-open"></span> Open</p>
+    </div>
+
     <div class="form-card">
       <% if (typeof submitted !== 'undefined' && submitted) { %>
         <div class="alert alert-success">Thanks! Your inquiry has been sent. DJXpress will reach out soon.</div>
@@ -89,5 +102,7 @@
     </div>
   </div>
 </section>
+
+<script src="/js/book.js"></script>
 
 <%- include('partials/footer') %>

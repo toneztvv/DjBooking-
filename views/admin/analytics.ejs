@@ -1,0 +1,85 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Analytics' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 20px;">
+      <h1 style="margin:0;">Lifetime Analytics</h1>
+      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+    </div>
+    <p class="small-muted" style="margin-bottom: 24px;">Totals across every event DJXpress has ever gone live for.</p>
+
+    <div class="grid grid-3" style="margin-bottom: 30px;">
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= totalEvents %></h3>
+        <p class="small-muted" style="margin:0;">Events Hosted</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= totalSongsPlayed %></h3>
+        <p class="small-muted" style="margin:0;">Songs Played</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= totalRequests %></h3>
+        <p class="small-muted" style="margin:0;">Total Song Requests</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= uniqueSongs %></h3>
+        <p class="small-muted" style="margin:0;">Unique Songs Requested</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= inquiryStats.total %></h3>
+        <p class="small-muted" style="margin:0;">Booking Inquiries<% if (inquiryStats.total) { %> (<%= Math.round((inquiryStats.booked / inquiryStats.total) * 100) %>% booked)<% } %></p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= totalGuestbook %></h3>
+        <p class="small-muted" style="margin:0;">Guestbook Notes</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= totalChatMessages %></h3>
+        <p class="small-muted" style="margin:0;">Chat Messages</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <h3 style="margin-bottom:6px;"><%= reactionTotals.reduce((sum, r) => sum + r.n, 0) %></h3>
+        <p class="small-muted" style="margin:0;">Reactions Sent<% if (reactionTotals.length) { %> (<%= reactionTotals.map(r => `${r.emoji} ${r.n}`).join(' ') %>)<% } %></p>
+      </div>
+    </div>
+
+    <div class="flex-between" style="margin-bottom: 16px;">
+      <h2 style="margin:0; font-size:1.2rem;">Top 10 Most-Requested Songs (All-Time)</h2>
+      <a href="/admin/export/requests.csv" class="btn btn-secondary btn-sm">Export All Requests (CSV)</a>
+    </div>
+    <div class="card" style="margin-bottom: 30px;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Song</th>
+              <th>Times Requested</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% topSongs.forEach(function(s, i) { %>
+              <tr>
+                <td class="small-muted"><%= i + 1 %></td>
+                <td><strong><%= s.song_title %></strong><% if (s.artist) { %><br><span class="small-muted"><%= s.artist %></span><% } %></td>
+                <td><span class="count-pill"><%= s.total %></span></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <% if (!topSongs.length) { %><div class="empty-state">No requests yet.</div><% } %>
+      </div>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <h3 style="margin-bottom:6px;">More Exports</h3>
+      <p class="small-muted" style="margin-bottom:16px;">Download your data any time to back it up or work with it elsewhere.</p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <a href="/admin/export/inquiries.csv" class="btn btn-secondary btn-sm">Export Inquiries (CSV)</a>
+        <a href="/admin/export/guestbook.csv" class="btn btn-secondary btn-sm">Export Guestbook (CSV)</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

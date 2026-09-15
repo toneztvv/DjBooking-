@@ -882,3 +882,97 @@ footer a {
   font-size: 0.75rem;
   color: var(--muted);
 }
+
+/* --- Availability calendar --- */
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.cal-weekday {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: var(--bg-alt);
+  border: 1px solid var(--card-border);
+}
+
+.cal-day.cal-blank {
+  background: transparent;
+  border: none;
+}
+
+.cal-day.cal-booked {
+  background: rgba(248, 113, 113, 0.18);
+  border-color: rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
+  font-weight: 700;
+}
+
+.cal-day.cal-today {
+  outline: 2px solid var(--accent-2);
+  outline-offset: -2px;
+}
+
+.cal-legend-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.cal-legend-dot.cal-booked {
+  background: rgba(248, 113, 113, 0.5);
+}
+
+.cal-legend-dot.cal-open {
+  background: var(--bg-alt);
+  border: 1px solid var(--card-border);
+}
+
+/* --- Photo/video gallery --- */
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.gallery-tile {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+
+.gallery-tile img,
+.gallery-tile video {
+  width: 100%;
+  border-radius: 8px;
+  display: block;
+  max-height: 260px;
+  object-fit: cover;
+}
+
+/* --- Star ratings (testimonials) --- */
+
+.star-rating {
+  color: var(--warning);
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+}

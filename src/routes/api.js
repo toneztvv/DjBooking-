@@ -70,17 +70,19 @@ router.post('/inquiries', (req, res) => {
 function getPendingBoard(eventId) {
   return db
     .prepare(
-      `SELECT normalized_key,
-              song_title,
-              artist,
+      `SELECT sr.normalized_key,
+              sr.song_title,
+              sr.artist,
               COUNT(*) AS times_requested,
-              MIN(created_at) AS first_requested_at,
-              GROUP_CONCAT(DISTINCT requested_by) AS requesters,
-              MAX(accepted) AS accepted
-       FROM song_requests
-       WHERE event_id = ? AND status = 'pending'
-       GROUP BY normalized_key
-       ORDER BY accepted DESC, times_requested DESC, first_requested_at ASC`
+              MIN(sr.created_at) AS first_requested_at,
+              GROUP_CONCAT(DISTINCT sr.requested_by) AS requesters,
+              MAX(sr.accepted) AS accepted,
+              (SELECT COUNT(*) FROM request_upvotes u
+                WHERE u.event_id = sr.event_id AND u.normalized_key = sr.normalized_key) AS upvotes
+       FROM song_requests sr
+       WHERE sr.event_id = ? AND sr.status = 'pending'
+       GROUP BY sr.normalized_key
+       ORDER BY accepted DESC, (times_requested + upvotes) DESC, first_requested_at ASC`
     )
     .all(eventId);
 }
@@ -204,6 +206,51 @@ router.post('/requests', (req, res) => {
   }
 
   res.status(201).json({ ok: true });
+});
+
+router.post('/requests/upvote', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  if (!isLive) {
+    return res.status(409).json({ ok: false, error: 'The DJ is not live right now.' });
+  }
+
+  const key = clean((req.body || {}).normalized_key, 400);
+  const clientId = clean((req.body || {}).client_id, 100);
+
+  if (!key || !clientId) {
+    return res.status(400).json({ ok: false, error: 'Missing request or chatter id.' });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const exists = db
+    .prepare(`SELECT 1 FROM song_requests WHERE event_id = ? AND normalized_key = ? AND status = 'pending' LIMIT 1`)
+    .get(eventId, key);
+
+  if (!exists) {
+    return res.status(404).json({ ok: false, error: 'That request is no longer pending.' });
+  }
+
+  try {
+    db.prepare(
+      `INSERT INTO request_upvotes (event_id, normalized_key, client_id) VALUES (?, ?, ?)`
+    ).run(eventId, key, clientId);
+  } catch (err) {
+    return res.status(409).json({ ok: false, error: 'You already boosted this request.' });
+  }
+
+  res.status(201).json({ ok: true });
+});
+
+// --- Booking calendar --------------------------------------------------------
+
+router.get('/booked-dates', (req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT event_date FROM inquiries
+       WHERE status = 'booked' AND event_date IS NOT NULL AND event_date != ''`
+    )
+    .all();
+  res.json({ dates: rows.map((r) => r.event_date) });
 });
 
 // --- Live chat ---------------------------------------------------------------

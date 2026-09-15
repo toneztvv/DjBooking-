@@ -107,6 +107,33 @@ function initDb() {
 
     CREATE INDEX IF NOT EXISTS idx_guestbook_event_id
       ON guestbook_entries (event_id, id);
+
+    CREATE TABLE IF NOT EXISTS request_upvotes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      normalized_key TEXT NOT NULL,
+      client_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (event_id, normalized_key, client_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS testimonials (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_name TEXT NOT NULL,
+      quote TEXT NOT NULL,
+      event_type TEXT,
+      rating INTEGER NOT NULL DEFAULT 5,
+      published INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS gallery_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL CHECK (type IN ('photo', 'video')),
+      filename TEXT NOT NULL,
+      caption TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
 
   const defaults = {

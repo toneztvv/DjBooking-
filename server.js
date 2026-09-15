@@ -21,6 +21,14 @@ app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Set before the body parsers so these are always available to the 500 page
+// even if parsing itself throws (e.g. malformed JSON) before reaching them.
+app.use((req, res, next) => {
+  res.locals.siteName = 'DJXpress';
+  res.locals.currentYear = new Date().getFullYear();
+  next();
+});
+
 app.use(
   helmet({
     contentSecurityPolicy: false,
@@ -30,12 +38,7 @@ app.use(compression());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-app.use((req, res, next) => {
-  res.locals.siteName = 'DJXpress';
-  res.locals.currentYear = new Date().getFullYear();
-  next();
-});
+app.use('/gallery-media', express.static(path.join(__dirname, 'data', 'gallery')));
 
 const formLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -68,6 +71,7 @@ const reactionLimiter = rateLimit({
 app.use('/api/reactions', (req, res, next) => (req.method === 'POST' ? reactionLimiter(req, res, next) : next()));
 
 app.use('/api/guestbook', (req, res, next) => (req.method === 'POST' ? formLimiter(req, res, next) : next()));
+app.use('/api/requests/upvote', formLimiter);
 
 app.use('/', publicRoutes);
 app.use('/api', apiRoutes);

@@ -5,7 +5,13 @@ const { getLiveUrl } = require('../qr');
 const router = express.Router();
 
 router.get('/', (req, res) => {
-  res.render('index', { page: 'home' });
+  const testimonials = db
+    .prepare(`SELECT * FROM testimonials WHERE published = 1 ORDER BY created_at DESC`)
+    .all();
+  const galleryItems = db
+    .prepare(`SELECT * FROM gallery_items ORDER BY created_at DESC`)
+    .all();
+  res.render('index', { page: 'home', testimonials, galleryItems });
 });
 
 router.get('/book', (req, res) => {

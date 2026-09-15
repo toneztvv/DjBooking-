@@ -75,6 +75,24 @@
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 
+  const UPVOTED_KEYS_KEY = 'djxpress_upvoted_keys';
+  function getUpvotedSet() {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(UPVOTED_KEYS_KEY) || '[]'));
+    } catch (err) {
+      return new Set();
+    }
+  }
+  function markUpvoted(key) {
+    try {
+      const set = getUpvotedSet();
+      set.add(key);
+      localStorage.setItem(UPVOTED_KEYS_KEY, JSON.stringify([...set]));
+    } catch (err) {
+      // ignore
+    }
+  }
+
   function renderPending(rows) {
     if (!rows.length) {
       pendingBody.innerHTML = '';
@@ -82,6 +100,7 @@
       return;
     }
     pendingEmpty.style.display = 'none';
+    const upvoted = getUpvotedSet();
     pendingBody.innerHTML = rows
       .map(
         (r) => `
@@ -90,9 +109,34 @@
         <td>${escapeHtml(r.requesters)}</td>
         <td>${formatTime(r.first_requested_at)}</td>
         <td><span class="count-pill">${r.times_requested}</span></td>
+        <td><button type="button" class="btn btn-ghost btn-sm upvote-btn" data-key="${escapeHtml(r.normalized_key)}" ${upvoted.has(r.normalized_key) ? 'disabled' : ''}>&#128077; ${r.upvotes || 0}</button></td>
       </tr>`
       )
       .join('');
+  }
+
+  if (pendingBody) {
+    pendingBody.addEventListener('click', async (e) => {
+      const btn = e.target.closest('.upvote-btn');
+      if (!btn || btn.disabled) return;
+
+      const key = btn.dataset.key;
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/requests/upvote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ normalized_key: key, client_id: getClientId() }),
+        });
+        if (res.ok) {
+          markUpvoted(key);
+          refresh();
+        }
+      } catch (err) {
+        // Leave it disabled either way — worst case they just don't see the bump.
+      }
+    });
   }
 
   function renderPlayed(rows) {

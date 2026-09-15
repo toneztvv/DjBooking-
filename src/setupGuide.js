@@ -212,6 +212,19 @@ Log in at: ${siteUrl}/admin
   Booking Inquiries      /admin/inquiries    Everyone who's submitted the
                                               booking form, contact info,
                                               and a status you can update
+                                              (setting one to "booked"
+                                              blocks that date on the
+                                              /book page's calendar)
+  Testimonials           /admin/testimonials Reviews you type in, shown
+                                              on the homepage; publish or
+                                              hide each one any time
+  Gallery                /admin/gallery      Upload photos/videos from
+                                              past events for the homepage
+  Analytics              /admin/analytics    Lifetime totals (songs
+                                              played, requests, top 10
+                                              songs, booking conversion)
+                                              and CSV exports of requests,
+                                              inquiries, and guestbook
   Services & Billing     /admin/services     One-click links to every
                                               paid account this site
                                               depends on
