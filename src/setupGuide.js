@@ -19,14 +19,19 @@ A booking + live song-request site for DJXpress:
   - The QR code (shown on the admin dashboard) points to the homepage
     (${siteUrl}/), so guests can choose Book Now or Live Requests
   - A live page (${siteUrl}/live) where guests request songs, watch a
-    live "Up Next" / "Recently Played" board, chat back and forth with
-    the DJ in real time (no name needed; inappropriate language is
-    blocked before it's sent), see a live "how many people are here"
-    counter, tap floating emoji reactions, vote on the DJ's quick polls,
-    and leave a note in the guestbook
+    live "Up Next" / "Recently Played" board plus a "Now Playing" banner
+    with real cover art, chat back and forth with the DJ in real time
+    (no name needed — each browser gets a random display color instead;
+    inappropriate language is blocked before it's sent), see a live "how
+    many people are here" counter, tap floating emoji reactions, vote on
+    the DJ's quick polls, and leave a note in the guestbook
   - Every one of those four extras (guest counter, reactions, polls,
     guestbook) can be switched on/off any time from the dashboard,
     without losing anything already saved
+  - A Big Screen view (${siteUrl}/screen) meant for a TV or projector at
+    the venue itself — Now Playing, Up Next, reactions, poll results,
+    and the guestbook, all on one auto-updating screen, separate from
+    what's on guests' phones
 
 EVERY TOOL AND ACCOUNT THIS SITE TOUCHES, AT A GLANCE
   Claude Code (claude.ai/code)  The AI coding assistant used to write,
@@ -43,6 +48,8 @@ EVERY TOOL AND ACCOUNT THIS SITE TOUCHES, AT A GLANCE
   Resend                        Email notifications — section 4
   AudD                          Automatic song detection (audio recognition) — section 5
   Twilio                        Text message notifications — coming soon, section 6
+  iTunes Search API              Free, no account/key needed — looks up
+                                 cover art for the "Now Playing" banner
   - An admin dashboard (${siteUrl}/admin) for running the event: going
     live, marking/accepting requests, automatic song detection, replying
     in the live chat, viewing past events' full setlists and chat logs,

@@ -1,0 +1,162 @@
+.screen-body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.screen-wrap {
+  padding: 24px 40px 40px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.screen-brand {
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.screen-event-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+
+.screen-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.screen-offline {
+  text-align: center;
+  padding: 140px 20px;
+}
+
+.screen-offline h1 {
+  font-size: 4rem;
+  margin-bottom: 10px;
+}
+
+.screen-offline p {
+  color: var(--muted);
+  font-size: 1.4rem;
+}
+
+.screen-grid {
+  display: grid;
+  grid-template-columns: 2.2fr 1fr;
+  gap: 30px;
+}
+
+.screen-section-title {
+  font-size: 1.4rem;
+  margin: 30px 0 14px;
+}
+
+.screen-body .now-playing-card {
+  max-width: none;
+  margin: 0;
+  padding: 20px 26px;
+}
+
+.screen-body .now-playing-art {
+  width: 90px;
+  height: 90px;
+}
+
+.screen-body .now-playing-title {
+  font-size: 1.6rem;
+}
+
+.screen-body .now-playing-artist {
+  font-size: 1.1rem;
+}
+
+.screen-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.screen-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 14px 20px;
+  font-size: 1.15rem;
+}
+
+.screen-list-row .slr-song {
+  font-weight: 700;
+}
+
+.screen-list-row .slr-artist {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.screen-empty {
+  color: var(--muted);
+  font-size: 1.1rem;
+  padding: 20px 0;
+}
+
+.screen-qr-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+}
+
+.screen-qr-card img {
+  width: 100%;
+  max-width: 260px;
+  border-radius: 10px;
+}
+
+.screen-qr-card p {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.screen-guestbook {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.screen-poll {
+  margin-top: 20px;
+}
+
+@media (max-width: 1000px) {
+  .screen-grid {
+    grid-template-columns: 1fr;
+  }
+  .screen-wrap {
+    padding: 20px;
+  }
+  .screen-offline h1 {
+    font-size: 2.6rem;
+  }
+}

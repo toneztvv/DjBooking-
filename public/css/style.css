@@ -976,3 +976,51 @@ footer a {
   font-size: 1.1rem;
   letter-spacing: 2px;
 }
+
+/* --- Now Playing banner (guest /live page + Big Screen) --- */
+
+.now-playing-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(255, 47, 191, 0.14), rgba(124, 77, 255, 0.14));
+  border: 1px solid rgba(255, 47, 191, 0.35);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.now-playing-art {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.now-playing-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+
+.now-playing-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.now-playing-artist {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* --- Guest display colors --- */
+
+.chat-sender.guest-colored,
+.gb-name.guest-colored {
+  color: var(--guest-color, var(--accent-2));
+}

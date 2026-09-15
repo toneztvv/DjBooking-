@@ -25,6 +25,15 @@
       DJXpress isn't live right now. Check back during your event &mdash; this page updates automatically once requests open up.
     </div>
 
+    <div id="now-playing" class="now-playing-card" style="display:none; margin-bottom: 30px;">
+      <img id="now-playing-art" class="now-playing-art" src="" alt="" />
+      <div>
+        <div class="now-playing-label">NOW PLAYING</div>
+        <div id="now-playing-title" class="now-playing-title"></div>
+        <div id="now-playing-artist" class="now-playing-artist"></div>
+      </div>
+    </div>
+
     <div id="request-form-wrap" style="display: <%= isLive ? 'block' : 'none' %>;">
       <div class="form-card">
         <h3 style="margin-top:0;">Send a Request</h3>

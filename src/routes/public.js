@@ -34,4 +34,8 @@ router.get('/live', (req, res) => {
   });
 });
 
+router.get('/screen', (req, res) => {
+  res.render('screen', { page: 'screen' });
+});
+
 module.exports = router;

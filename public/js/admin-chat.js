@@ -54,11 +54,12 @@
     messages.forEach((m) => {
       if (chatLog.querySelector(`[data-id="${m.id}"]`)) return;
 
+      const senderStyle = !m.is_dj && m.color ? ` style="--guest-color: ${escapeHtml(m.color)};"` : '';
       const bubble = document.createElement('div');
       bubble.className = 'chat-bubble' + (m.is_dj ? ' chat-bubble-dj' : '');
       bubble.dataset.id = m.id;
       bubble.innerHTML = `
-        <span class="chat-sender">${escapeHtml(m.is_dj ? 'DJ (you)' : m.sender_name)}</span>
+        <span class="chat-sender${!m.is_dj && m.color ? ' guest-colored' : ''}"${senderStyle}>${escapeHtml(m.is_dj ? 'DJ (you)' : m.sender_name)}</span>
         <span class="chat-text">${escapeHtml(m.message)}</span>
         <span class="chat-time">${formatTime(m.created_at)}</span>`;
 

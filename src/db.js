@@ -173,6 +173,20 @@ function initDb() {
   if (!columns.some((c) => c.name === 'accepted')) {
     db.exec(`ALTER TABLE song_requests ADD COLUMN accepted INTEGER NOT NULL DEFAULT 0`);
   }
+  if (!columns.some((c) => c.name === 'artwork_url')) {
+    db.exec(`ALTER TABLE song_requests ADD COLUMN artwork_url TEXT`);
+  }
+
+  // Migration: "color" lets each guest's browser pick a display color for
+  // their chat bubble / guestbook name — cosmetic only, not an identity.
+  const chatColumns = db.prepare(`PRAGMA table_info(chat_messages)`).all();
+  if (!chatColumns.some((c) => c.name === 'color')) {
+    db.exec(`ALTER TABLE chat_messages ADD COLUMN color TEXT`);
+  }
+  const guestbookColumns = db.prepare(`PRAGMA table_info(guestbook_entries)`).all();
+  if (!guestbookColumns.some((c) => c.name === 'color')) {
+    db.exec(`ALTER TABLE guestbook_entries ADD COLUMN color TEXT`);
+  }
 }
 
 function getSetting(key) {

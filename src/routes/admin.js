@@ -9,6 +9,7 @@ const { getLiveUrl, getQrTargetUrl } = require('../qr');
 const { recognizeAudio } = require('../audd');
 const { getSetupGuideText } = require('../setupGuide');
 const { toCsv } = require('../csv');
+const { fetchArtworkUrl } = require('../albumArt');
 
 const router = express.Router();
 
@@ -73,6 +74,7 @@ function getPlayedSetlist(eventId, order = 'DESC') {
               song_title,
               artist,
               played_at,
+              MAX(artwork_url) AS artwork_url,
               COUNT(*) AS times_requested,
               GROUP_CONCAT(DISTINCT requested_by) AS requesters
        FROM song_requests
@@ -173,6 +175,21 @@ router.post('/live/toggle', (req, res) => {
   res.redirect('/admin');
 });
 
+// Fire-and-forget: looks up cover art after a song is marked played and
+// backfills it once found. Never blocks the request that triggered it —
+// worst case a song just shows without artwork.
+function fetchAndSaveArtwork(eventId, key, title, artist) {
+  fetchArtworkUrl(title, artist)
+    .then((url) => {
+      if (!url) return;
+      db.prepare(
+        `UPDATE song_requests SET artwork_url = ?
+         WHERE event_id = ? AND normalized_key = ? AND artwork_url IS NULL`
+      ).run(url, eventId, key);
+    })
+    .catch(() => {});
+}
+
 function applyDetection(eventId, detected) {
   const { title, artist } = detected;
   if (!title) return { action: 'ignored' };
@@ -208,6 +225,7 @@ function applyDetection(eventId, detected) {
        SET status = 'played', played_at = datetime('now')
        WHERE event_id = ? AND normalized_key = ? AND status = 'pending'`
     ).run(eventId, key);
+    fetchAndSaveArtwork(eventId, key, title, artist);
     return { action: 'matched_request', title, artist };
   }
 
@@ -218,6 +236,7 @@ function applyDetection(eventId, detected) {
       (event_id, song_title, artist, normalized_key, requested_by, dedication, created_at, played_at, status)
      VALUES (?, ?, ?, ?, ?, NULL, datetime('now'), datetime('now'), 'played')`
   ).run(eventId, title, artist || null, key, DJ_PICK_LABEL);
+  fetchAndSaveArtwork(eventId, key, title, artist);
 
   return { action: 'logged_dj_pick', title, artist };
 }
@@ -262,11 +281,17 @@ router.post('/requests/mark-played', (req, res) => {
   const eventId = Number(getSetting('current_event_id') || '1');
 
   if (key) {
+    const row = db
+      .prepare(`SELECT song_title, artist FROM song_requests WHERE event_id = ? AND normalized_key = ? LIMIT 1`)
+      .get(eventId, key);
+
     db.prepare(
       `UPDATE song_requests
        SET status = 'played', played_at = datetime('now')
        WHERE event_id = ? AND normalized_key = ? AND status = 'pending'`
     ).run(eventId, key);
+
+    if (row) fetchAndSaveArtwork(eventId, key, row.song_title, row.artist);
   }
 
   res.redirect('/admin');
@@ -309,8 +334,8 @@ router.get('/chat', (req, res) => {
 
   const messages = db
     .prepare(
-      `SELECT id, sender_name, message, is_dj, created_at FROM (
-         SELECT id, sender_name, message, is_dj, created_at
+      `SELECT id, sender_name, message, is_dj, color, created_at FROM (
+         SELECT id, sender_name, message, is_dj, color, created_at
          FROM chat_messages WHERE event_id = ?
          ORDER BY id DESC LIMIT 200
        ) sub ORDER BY id ASC`
@@ -478,7 +503,7 @@ router.get('/events/:id', (req, res) => {
 
   const chatLog = db
     .prepare(
-      `SELECT id, sender_name, message, is_dj, created_at
+      `SELECT id, sender_name, message, is_dj, color, created_at
        FROM chat_messages WHERE event_id = ? ORDER BY id ASC`
     )
     .all(id);

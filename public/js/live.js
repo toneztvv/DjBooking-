@@ -11,6 +11,11 @@
   const playedEmpty = document.getElementById('played-empty');
   const formMessage = document.getElementById('form-message');
 
+  const nowPlayingWrap = document.getElementById('now-playing');
+  const nowPlayingArt = document.getElementById('now-playing-art');
+  const nowPlayingTitle = document.getElementById('now-playing-title');
+  const nowPlayingArtist = document.getElementById('now-playing-artist');
+
   const chatWrap = document.getElementById('chat-wrap');
   const chatLog = document.getElementById('chat-log');
   const chatEmpty = document.getElementById('chat-empty');
@@ -57,6 +62,26 @@
       return id;
     } catch (err) {
       return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+  }
+
+  // A fixed palette, matched on the server — gives each browser a stable
+  // color for chat/guestbook without needing an account or a real name.
+  const GUEST_COLORS = [
+    '#ff6b9d', '#33e0ff', '#7c4dff', '#34d399', '#fbbf24',
+    '#fb923c', '#f87171', '#a78bfa', '#4ade80', '#38bdf8',
+  ];
+  const GUEST_COLOR_KEY = 'djxpress_guest_color';
+  function getGuestColor() {
+    try {
+      let color = localStorage.getItem(GUEST_COLOR_KEY);
+      if (!color || !GUEST_COLORS.includes(color)) {
+        color = GUEST_COLORS[Math.floor(Math.random() * GUEST_COLORS.length)];
+        localStorage.setItem(GUEST_COLOR_KEY, color);
+      }
+      return color;
+    } catch (err) {
+      return GUEST_COLORS[0];
     }
   }
 
@@ -178,11 +203,12 @@
     messages.forEach((m) => {
       if (chatLog.querySelector(`[data-id="${m.id}"]`)) return;
 
+      const senderStyle = !m.is_dj && m.color ? ` style="--guest-color: ${escapeHtml(m.color)};"` : '';
       const bubble = document.createElement('div');
       bubble.className = 'chat-bubble' + (m.is_dj ? ' chat-bubble-dj' : '');
       bubble.dataset.id = m.id;
       bubble.innerHTML = `
-        <span class="chat-sender">${escapeHtml(m.is_dj ? 'DJ' : m.sender_name)}</span>
+        <span class="chat-sender${!m.is_dj && m.color ? ' guest-colored' : ''}"${senderStyle}>${escapeHtml(m.is_dj ? 'DJ' : m.sender_name)}</span>
         <span class="chat-text">${escapeHtml(m.message)}</span>
         <span class="chat-time">${formatTime(m.created_at)}</span>`;
       chatLog.appendChild(bubble);
@@ -219,7 +245,7 @@
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, color: getGuestColor() }),
         });
         const data = await res.json();
 
@@ -383,7 +409,7 @@
       .map(
         (e) => `
       <div class="guestbook-entry">
-        <div class="gb-name">${escapeHtml(e.name)}</div>
+        <div class="gb-name${e.color ? ' guest-colored' : ''}"${e.color ? ` style="--guest-color: ${escapeHtml(e.color)};"` : ''}>${escapeHtml(e.name)}</div>
         <div class="gb-message">${escapeHtml(e.message)}</div>
         <div class="gb-time">${formatTime(e.created_at)}</div>
       </div>`
@@ -418,7 +444,7 @@
         const res = await fetch('/api/guestbook', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, message }),
+          body: JSON.stringify({ name, message, color: getGuestColor() }),
         });
         const data = await res.json();
 
@@ -501,6 +527,22 @@
       } else if (presenceTimer) {
         clearInterval(presenceTimer);
         presenceTimer = null;
+      }
+
+      if (nowPlayingWrap) {
+        if (isLive && data.nowPlaying) {
+          nowPlayingWrap.style.display = 'flex';
+          nowPlayingTitle.textContent = data.nowPlaying.song_title;
+          nowPlayingArtist.textContent = data.nowPlaying.artist || '';
+          if (data.nowPlaying.artwork_url) {
+            nowPlayingArt.src = data.nowPlaying.artwork_url;
+            nowPlayingArt.style.display = 'block';
+          } else {
+            nowPlayingArt.style.display = 'none';
+          }
+        } else {
+          nowPlayingWrap.style.display = 'none';
+        }
       }
 
       renderPending(data.pending || []);

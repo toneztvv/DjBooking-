@@ -94,6 +94,7 @@ function getRecentlyPlayed(eventId) {
               song_title,
               artist,
               played_at,
+              MAX(artwork_url) AS artwork_url,
               COUNT(*) AS times_requested,
               GROUP_CONCAT(DISTINCT requested_by) AS requesters
        FROM song_requests
@@ -134,14 +135,17 @@ router.get('/live-state', (req, res) => {
   const eventName = (currentEvent && currentEvent.name) || '';
   const features = getFeatureFlags();
 
+  const recentlyPlayed = getRecentlyPlayed(eventId);
+
   res.json({
     isLive,
     eventName,
     features,
     activeGuests: isLive && features.guestCounter ? presence.getActiveCount(eventId) : null,
     poll: isLive && features.polls ? getActivePoll(eventId) : null,
+    nowPlaying: isLive ? recentlyPlayed[0] || null : null,
     pending: getPendingBoard(eventId),
-    recentlyPlayed: getRecentlyPlayed(eventId),
+    recentlyPlayed,
   });
 });
 
@@ -255,14 +259,25 @@ router.get('/booked-dates', (req, res) => {
 
 // --- Live chat ---------------------------------------------------------------
 
+// A fixed palette guests pick from client-side for their chat/guestbook
+// display color — validated against this list server-side so an inline
+// style value never comes from unsanitized user input.
+const GUEST_COLORS = [
+  '#ff6b9d', '#33e0ff', '#7c4dff', '#34d399', '#fbbf24',
+  '#fb923c', '#f87171', '#a78bfa', '#4ade80', '#38bdf8',
+];
+function cleanColor(value) {
+  return GUEST_COLORS.includes(value) ? value : null;
+}
+
 // Full snapshot every poll (not just new messages since afterId) so a
 // message the DJ deletes actually disappears for guests who already have
 // it rendered, not just stop showing up in future polls.
 function getChatMessages(eventId) {
   return db
     .prepare(
-      `SELECT id, sender_name, message, is_dj, created_at FROM (
-         SELECT id, sender_name, message, is_dj, created_at
+      `SELECT id, sender_name, message, is_dj, color, created_at FROM (
+         SELECT id, sender_name, message, is_dj, color, created_at
          FROM chat_messages WHERE event_id = ?
          ORDER BY id DESC LIMIT 200
        ) sub ORDER BY id ASC`
@@ -294,6 +309,7 @@ router.post('/chat', (req, res) => {
 
   const senderName = clean(body.sender_name, 60) || 'Guest';
   const message = clean(body.message, 500);
+  const color = cleanColor(body.color);
 
   if (!message) {
     return res.status(400).json({ ok: false, error: 'Please enter a message.' });
@@ -307,13 +323,13 @@ router.post('/chat', (req, res) => {
 
   const result = db
     .prepare(
-      `INSERT INTO chat_messages (event_id, sender_name, message, is_dj)
-       VALUES (?, ?, ?, 0)`
+      `INSERT INTO chat_messages (event_id, sender_name, message, is_dj, color)
+       VALUES (?, ?, ?, 0, ?)`
     )
-    .run(eventId, senderName, message);
+    .run(eventId, senderName, message, color);
 
   const saved = db
-    .prepare(`SELECT id, sender_name, message, is_dj, created_at FROM chat_messages WHERE id = ?`)
+    .prepare(`SELECT id, sender_name, message, is_dj, color, created_at FROM chat_messages WHERE id = ?`)
     .get(result.lastInsertRowid);
 
   res.status(201).json({ ok: true, message: saved });
@@ -415,7 +431,7 @@ router.get('/guestbook', (req, res) => {
   const eventId = Number(getSetting('current_event_id') || '1');
   const entries = db
     .prepare(
-      `SELECT id, name, message, created_at FROM guestbook_entries
+      `SELECT id, name, message, color, created_at FROM guestbook_entries
        WHERE event_id = ? ORDER BY id DESC LIMIT 200`
     )
     .all(eventId);
@@ -437,6 +453,7 @@ router.post('/guestbook', (req, res) => {
 
   const name = clean(body.name, 80);
   const message = clean(body.message, 500);
+  const color = cleanColor(body.color);
 
   if (!name || !message) {
     return res.status(400).json({ ok: false, error: 'Please enter your name and a message.' });
@@ -448,11 +465,11 @@ router.post('/guestbook', (req, res) => {
 
   const eventId = Number(getSetting('current_event_id') || '1');
   const result = db
-    .prepare(`INSERT INTO guestbook_entries (event_id, name, message) VALUES (?, ?, ?)`)
-    .run(eventId, name, message);
+    .prepare(`INSERT INTO guestbook_entries (event_id, name, message, color) VALUES (?, ?, ?, ?)`)
+    .run(eventId, name, message, color);
 
   const saved = db
-    .prepare(`SELECT id, name, message, created_at FROM guestbook_entries WHERE id = ?`)
+    .prepare(`SELECT id, name, message, color, created_at FROM guestbook_entries WHERE id = ?`)
     .get(result.lastInsertRowid);
 
   res.status(201).json({ ok: true, entry: saved });

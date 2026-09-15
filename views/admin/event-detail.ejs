@@ -95,7 +95,7 @@
       <div class="chat-log" style="max-height: 500px;">
         <% chatLog.forEach(function(m) { %>
           <div class="chat-bubble<% if (m.is_dj) { %> chat-bubble-dj<% } %>">
-            <span class="chat-sender"><%= m.is_dj ? 'DJ' : m.sender_name %></span>
+            <span class="chat-sender<% if (!m.is_dj && m.color) { %> guest-colored<% } %>"<% if (!m.is_dj && m.color) { %> style="--guest-color: <%= m.color %>;"<% } %>><%= m.is_dj ? 'DJ' : m.sender_name %></span>
             <span class="chat-text"><%= m.message %></span>
             <span class="chat-time"><%= m.created_at %></span>
           </div>
@@ -127,7 +127,7 @@
     <div class="card">
       <% guestbookEntries.forEach(function(e) { %>
         <div class="guestbook-entry">
-          <div class="gb-name"><%= e.name %></div>
+          <div class="gb-name<% if (e.color) { %> guest-colored<% } %>"<% if (e.color) { %> style="--guest-color: <%= e.color %>;"<% } %>><%= e.name %></div>
           <div class="gb-message"><%= e.message %></div>
           <div class="gb-time"><%= e.created_at %></div>
         </div>

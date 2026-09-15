@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DJXpress | Big Screen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/screen.css" />
+</head>
+<body class="screen-body">
+  <div class="screen-wrap">
+    <header class="screen-header">
+      <div class="screen-brand">
+        <span class="brand-mark">DJ</span>
+        <span><span class="brand-x">X</span>press</span>
+      </div>
+      <div id="screen-event-name" class="screen-event-name"></div>
+      <div class="screen-status">
+        <span id="screen-status-dot" class="pulse-dot offline"></span>
+        <span id="screen-status-label">OFFLINE</span>
+        <span id="screen-guest-count" class="guest-counter-pill" style="display:none;">&#128101; <span id="screen-guest-count-num">0</span></span>
+      </div>
+    </header>
+
+    <div id="screen-offline" class="screen-offline">
+      <h1>DJXpress</h1>
+      <p>Waiting to go live&hellip;</p>
+    </div>
+
+    <div id="screen-live" class="screen-grid" style="display:none;">
+      <div class="screen-col screen-col-main">
+        <div id="now-playing" class="now-playing-card" style="display:none;">
+          <img id="now-playing-art" class="now-playing-art" src="" alt="" />
+          <div>
+            <div class="now-playing-label">NOW PLAYING</div>
+            <div id="now-playing-title" class="now-playing-title"></div>
+            <div id="now-playing-artist" class="now-playing-artist"></div>
+          </div>
+        </div>
+
+        <h2 class="screen-section-title">&#127925; Up Next</h2>
+        <div id="screen-pending" class="screen-list"></div>
+        <div id="screen-pending-empty" class="screen-empty">No requests yet</div>
+
+        <div id="screen-poll-wrap" class="screen-poll" style="display:none;">
+          <h2 class="screen-section-title" id="screen-poll-question"></h2>
+          <div class="poll-bar-row">
+            <div class="poll-bar-label" id="screen-poll-label-a"></div>
+            <div class="poll-bar-track"><div class="poll-bar-fill" id="screen-poll-fill-a" style="width:0%;"></div></div>
+          </div>
+          <div class="poll-bar-row">
+            <div class="poll-bar-label" id="screen-poll-label-b"></div>
+            <div class="poll-bar-track"><div class="poll-bar-fill" id="screen-poll-fill-b" style="width:0%;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen-col screen-col-side">
+        <div class="screen-qr-card">
+          <img src="/api/qrcode.png?size=300" alt="Scan to open DJXpress" />
+          <p>Scan to request a song</p>
+        </div>
+
+        <h2 class="screen-section-title">Guestbook</h2>
+        <div id="screen-guestbook" class="screen-guestbook"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="reaction-float-layer" class="reaction-float-layer"></div>
+
+  <script src="/js/screen.js"></script>
+</body>
+</html>

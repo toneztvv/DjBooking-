@@ -14,7 +14,7 @@
       <div class="guestbook-entry">
         <div class="flex-between">
           <div>
-            <div class="gb-name"><%= e.name %></div>
+            <div class="gb-name<% if (e.color) { %> guest-colored<% } %>"<% if (e.color) { %> style="--guest-color: <%= e.color %>;"<% } %>><%= e.name %></div>
             <div class="gb-message"><%= e.message %></div>
             <div class="gb-time"><%= e.created_at %><% if (e.event_name) { %> &middot; <%= e.event_name %><% } %></div>
           </div>

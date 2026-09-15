@@ -9,8 +9,9 @@ A booking + live song-request website for DJXpress.
 - **Live Requests** (`/live`) — reachable from the homepage's nav, or directly when the DJ is live. Guests request songs here. It shows:
   - **Up Next**: every pending song, who requested it, when it was first requested, how many times, and a &#128077; button anyone can tap to boost a song without requesting it again (one boost per browser).
   - **Recently Played**: the same, once the DJ marks a song as played, with the time it was played.
+  - **Now Playing**: a banner with the current song's real cover art, looked up automatically (free, no API key) the moment a song is marked played.
   - The page auto-refreshes every 5 seconds for everyone watching — no login needed.
-  - **Live Chat**: while the DJ is live, guests and the DJ can type back and forth in a shared chat everyone at the event sees, updating every few seconds. Chat needs no name. A message containing a banned word (see `src/moderation.js`) is blocked before it's ever sent.
+  - **Live Chat**: while the DJ is live, guests and the DJ can type back and forth in a shared chat everyone at the event sees, updating every few seconds. Chat needs no name — each browser gets a random display color (from a fixed palette) shown next to its messages, so the crowd feels more present without accounts. A message containing a banned word (see `src/moderation.js`) is blocked before it's ever sent.
   - **Guest Counter**: a live "X here now" count of who's actively on the page, based on a heartbeat ping — no login or tracking beyond an anonymous per-browser id.
   - **Live Reactions**: tappable emoji buttons that float across every guest's screen in real time.
   - **Quick Polls**: the DJ posts a this-or-that question from the dashboard; guests vote and watch results update live, one vote per browser.
@@ -23,6 +24,7 @@ A booking + live song-request website for DJXpress.
 - **Availability Calendar** — the `/book` page shows a live month calendar marking any date with a "booked" inquiry, so people can see at a glance what's already taken.
 - **Lifetime Analytics** (`/admin/analytics`) — totals across every event ever: songs played, total requests, top 10 most-requested songs, booking conversion rate, guestbook/chat/reaction counts.
 - **CSV Exports** — one-click download of all song requests, all booking inquiries, or all guestbook entries, from the Analytics page.
+- **Big Screen Mode** (`/screen`) — a separate, fullscreen, TV/projector-facing view meant to run on a laptop or TV at the venue itself (not a guest's phone): Now Playing with cover art, Up Next, live reaction bursts, the active poll's live results, a guestbook feed, and the QR code, all auto-updating. Open it from "Open Big Screen Mode" on the admin dashboard.
 
 ## Tech stack
 
