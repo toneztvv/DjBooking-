@@ -25,6 +25,7 @@ A booking + live song-request website for DJXpress.
 - **Lifetime Analytics** (`/admin/analytics`) — totals across every event ever: songs played, total requests, top 10 most-requested songs, booking conversion rate, guestbook/chat/reaction counts.
 - **CSV Exports** — one-click download of all song requests, all booking inquiries, or all guestbook entries, from the Analytics page.
 - **Big Screen Mode** (`/screen`) — a separate, fullscreen, TV/projector-facing view meant to run on a laptop or TV at the venue itself (not a guest's phone): Now Playing with cover art, Up Next, live reaction bursts, the active poll's live results, a guestbook feed, and the QR code, all auto-updating. Open it from "Open Big Screen Mode" on the admin dashboard.
+- **Visual polish** — an animated glowing hero with an equalizer motif, glass-style cards, scroll-reveal animations, animated lifetime stat counters on the homepage, a branded favicon (`public/images/favicon.svg`), and a social share preview image (`public/images/og-image.png`). Both are plain static files — replace them with your own anytime to rebrand.
 
 ## Tech stack
 

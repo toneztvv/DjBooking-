@@ -10,7 +10,7 @@
 
 <section style="padding-top: 0;">
   <div class="container">
-    <div class="card" style="max-width: 500px; margin: 0 auto 30px;">
+    <div class="card reveal" style="max-width: 500px; margin: 0 auto 30px;">
       <div class="flex-between" style="margin-bottom: 10px;">
         <h3 style="margin:0;">Availability</h3>
         <div style="display:flex; gap:8px;">
@@ -23,7 +23,7 @@
       <p class="small-muted" style="margin-top:12px; text-align:center;"><span class="cal-legend-dot cal-booked"></span> Already booked &nbsp; <span class="cal-legend-dot cal-open"></span> Open</p>
     </div>
 
-    <div class="form-card">
+    <div class="form-card reveal">
       <% if (typeof submitted !== 'undefined' && submitted) { %>
         <div class="alert alert-success">Thanks! Your inquiry has been sent. DJXpress will reach out soon.</div>
       <% } %>
@@ -70,8 +70,11 @@
             <select id="event_type" name="event_type">
               <option value="">Select one</option>
               <option>Wedding</option>
-              <option>Birthday</option>
               <option>Quinceañera</option>
+              <option>Sweet 16</option>
+              <option>Birthday</option>
+              <option>Comida / Family Gathering</option>
+              <option>Back to School Bash</option>
               <option>Corporate Event</option>
               <option>Club / Nightlife</option>
               <option>Private Party</option>
@@ -104,5 +107,6 @@
 </section>
 
 <script src="/js/book.js"></script>
+<script src="/js/polish.js"></script>
 
 <%- include('partials/footer') %>

@@ -7,6 +7,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 
 const { initDb } = require('./src/db');
+const { getSiteUrl } = require('./src/qr');
 
 initDb();
 
@@ -26,6 +27,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use((req, res, next) => {
   res.locals.siteName = 'DJXpress';
   res.locals.currentYear = new Date().getFullYear();
+  res.locals.siteUrl = getSiteUrl();
   next();
 });
 

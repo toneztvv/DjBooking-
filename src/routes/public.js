@@ -11,7 +11,21 @@ router.get('/', (req, res) => {
   const galleryItems = db
     .prepare(`SELECT * FROM gallery_items ORDER BY created_at DESC`)
     .all();
-  res.render('index', { page: 'home', testimonials, galleryItems });
+
+  const stats = {
+    eventsHosted: db.prepare(`SELECT COUNT(DISTINCT event_id) AS c FROM song_requests WHERE status = 'played'`).get().c,
+    songsPlayed: db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM (
+           SELECT DISTINCT event_id, normalized_key, played_at
+           FROM song_requests WHERE status = 'played'
+         )`
+      )
+      .get().c,
+    songsRequested: db.prepare(`SELECT COUNT(*) AS c FROM song_requests`).get().c,
+  };
+
+  res.render('index', { page: 'home', testimonials, galleryItems, stats });
 });
 
 router.get('/book', (req, res) => {

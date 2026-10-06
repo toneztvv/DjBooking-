@@ -2,12 +2,15 @@
 
 <section class="hero">
   <div class="container">
-    <span class="eyebrow">Weddings &bull; Parties &bull; Clubs &bull; Corporate</span>
+    <span class="eyebrow">Weddings &bull; Quinces &bull; Sweet 16s &bull; Parties &bull; Clubs &bull; Corporate</span>
     <h1>DJ<span class="gradient">Xpress</span> keeps<br>the dance floor moving.</h1>
     <p class="lead">
-      Professional DJ services for weddings, birthdays, private parties and nightlife.
+      Professional DJ services for weddings, quinceañeras, sweet 16s, comidas, back to school bashes, birthdays, and nightlife.
       Book your date, browse the vibe, and once the party starts &mdash; request your song live from your phone.
     </p>
+    <div class="hero-eq" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
     <div class="hero-actions">
       <a href="/book" class="btn btn-primary">Book Your Event</a>
       <a href="/live" class="btn btn-secondary">See Live Requests</a>
@@ -15,7 +18,28 @@
   </div>
 </section>
 
-<section>
+<% if (typeof stats !== 'undefined' && (stats.eventsHosted || stats.songsPlayed || stats.songsRequested)) { %>
+<section class="reveal" style="padding-top: 0;">
+  <div class="container">
+    <div class="stats-row">
+      <div class="stat-tile">
+        <div class="stat-number" data-count-to="<%= stats.eventsHosted %>">0</div>
+        <div class="stat-label">Events Hosted</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-number" data-count-to="<%= stats.songsPlayed %>">0</div>
+        <div class="stat-label">Songs Played</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-number" data-count-to="<%= stats.songsRequested %>">0</div>
+        <div class="stat-label">Songs Requested</div>
+      </div>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<section class="reveal">
   <div class="container">
     <div class="section-title">
       <h2>What DJXpress Brings</h2>
@@ -41,7 +65,7 @@
   </div>
 </section>
 
-<section class="card" style="max-width: var(--max-width); margin: 0 auto;">
+<section class="card reveal" style="max-width: var(--max-width); margin: 0 auto;">
   <div class="container" style="padding: 20px 0;">
     <div class="section-title">
       <h2>Music For Every Occasion</h2>
@@ -50,7 +74,10 @@
     <div class="tag-list">
       <span class="tag">Weddings</span>
       <span class="tag">Quinceañeras</span>
+      <span class="tag">Sweet 16s</span>
       <span class="tag">Birthdays</span>
+      <span class="tag">Comidas</span>
+      <span class="tag">Back to School Bashes</span>
       <span class="tag">Corporate Events</span>
       <span class="tag">Club Nights</span>
       <span class="tag">Hip-Hop &amp; R&amp;B</span>
@@ -63,7 +90,7 @@
   </div>
 </section>
 
-<section>
+<section class="reveal">
   <div class="container">
     <div class="section-title">
       <h2>How Live Requests Work</h2>
@@ -93,7 +120,7 @@
 </section>
 
 <% if (typeof galleryItems !== 'undefined') { %>
-<section>
+<section class="reveal">
   <div class="container">
     <div class="section-title">
       <h2>Photo &amp; Video Gallery</h2>
@@ -120,7 +147,7 @@
 <% } %>
 
 <% if (typeof testimonials !== 'undefined' && testimonials.length) { %>
-<section>
+<section class="reveal">
   <div class="container">
     <div class="section-title">
       <h2>What People Are Saying</h2>
@@ -139,7 +166,7 @@
 </section>
 <% } %>
 
-<section>
+<section class="reveal">
   <div class="container">
     <div class="card" style="text-align:center; padding: 50px 30px;">
       <h2 style="margin-top:0;">Ready to book DJXpress for your event?</h2>
@@ -150,5 +177,7 @@
     </div>
   </div>
 </section>
+
+<script src="/js/polish.js"></script>
 
 <%- include('partials/footer') %>
