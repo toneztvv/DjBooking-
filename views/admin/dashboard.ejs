@@ -62,6 +62,24 @@
             <button type="submit" class="btn btn-sm <%= features.guestbook ? 'btn-success' : 'btn-ghost' %>"><%= features.guestbook ? 'ON' : 'OFF' %></button>
           </form>
         </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Drops &amp; Countdowns</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Confetti, fireworks, shoutouts and "moment" countdowns you fire onto every screen.</p>
+          </div>
+          <form method="POST" action="/admin/features/effects/toggle">
+            <button type="submit" class="btn btn-sm <%= features.effects ? 'btn-success' : 'btn-ghost' %>"><%= features.effects ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Energy Meter</strong>
+            <p class="small-muted" style="margin:2px 0 0;">A crowd-energy meter you control from here, shown to guests.</p>
+          </div>
+          <form method="POST" action="/admin/features/energy/toggle">
+            <button type="submit" class="btn btn-sm <%= features.energy ? 'btn-success' : 'btn-ghost' %>"><%= features.energy ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -111,6 +129,58 @@
         <% } %>
       </div>
     </div>
+
+    <% if (isLive) { %>
+    <div class="card" id="hype-card" style="margin-bottom: 30px;">
+      <h3>&#9889; Hype Controls</h3>
+      <p class="small-muted" style="margin-bottom:14px;">Fire things onto every guest's phone and the Big Screen the moment you tap them.</p>
+
+      <% if (features.effects) { %>
+      <h4 class="hype-heading">Drops</h4>
+      <div class="hype-row">
+        <button type="button" class="btn btn-primary btn-sm" data-drop="confetti">&#127881; Confetti</button>
+        <button type="button" class="btn btn-primary btn-sm" data-drop="fireworks">&#127878; Fireworks</button>
+        <button type="button" class="btn btn-primary btn-sm" data-drop="wash">&#10024; Color Wash</button>
+      </div>
+
+      <h4 class="hype-heading">Shoutout Banner</h4>
+      <form id="shoutout-form" class="hype-row" style="flex-wrap:nowrap;">
+        <input type="text" id="shoutout-text" maxlength="140" placeholder="e.g. Happy 16th Maria! &#127874;" style="flex:1; min-width:0;" />
+        <button type="submit" class="btn btn-secondary btn-sm">Send</button>
+      </form>
+
+      <h4 class="hype-heading">Soundboard <span class="small-muted" style="font-weight:400;">(plays through the Big Screen's speakers)</span></h4>
+      <div class="hype-row">
+        <button type="button" class="btn btn-secondary btn-sm" data-drop="sound:airhorn">&#128226; Air Horn</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-drop="sound:siren">&#128680; Siren</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-drop="sound:cheer">&#128079; Crowd Cheer</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-drop="sound:scratch">&#128191; Scratch</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-drop="sound:drumroll">&#129345; Drum Roll</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-drop="sound:laser">&#128299; Laser</button>
+      </div>
+      <p class="small-muted" style="margin-top:8px;">Open <a href="/screen" target="_blank">Big Screen Mode</a> on a laptop/TV and click <strong>Enable sound</strong> once &mdash; sounds only play there, never on guests' phones.</p>
+
+      <h4 class="hype-heading">Moment Countdown</h4>
+      <form id="countdown-form" class="hype-row" style="flex-wrap:nowrap;">
+        <input type="text" id="countdown-label-input" maxlength="60" placeholder="e.g. Cake cutting" style="flex:1; min-width:0;" />
+        <input type="number" id="countdown-minutes" min="1" max="180" value="5" style="width:80px;" aria-label="Minutes" />
+        <button type="submit" class="btn btn-secondary btn-sm">Start</button>
+        <button type="button" id="countdown-clear" class="btn btn-ghost btn-sm">Clear</button>
+      </form>
+      <% } %>
+
+      <% if (features.energy) { %>
+      <h4 class="hype-heading">Crowd Energy: <span id="energy-readout"><%= energyLevel %></span>/10</h4>
+      <input type="range" id="energy-slider" min="0" max="10" step="1" value="<%= energyLevel %>" class="energy-slider" aria-label="Crowd energy" />
+      <% } %>
+
+      <% if (!features.effects && !features.energy) { %>
+        <p class="small-muted">Drops and the energy meter are both switched off in Live Page Features above.</p>
+      <% } %>
+
+      <p id="hype-status" class="small-muted" style="margin-top:12px; min-height:1.4em;" role="status"></p>
+    </div>
+    <% } %>
 
     <% if (isLive && features.polls) { %>
     <div class="card" style="margin-bottom: 30px;">
@@ -262,6 +332,7 @@
 <% if (isLive) { %>
 <script src="/js/detect.js"></script>
 <script src="/js/admin-chat.js"></script>
+<script src="/js/admin-hype.js"></script>
 <% } %>
 
 <%- include('../partials/footer') %>

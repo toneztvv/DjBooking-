@@ -14,12 +14,13 @@
 <body class="screen-body">
   <div class="screen-wrap">
     <header class="screen-header">
-      <div class="screen-brand">
+      <div class="screen-brand brand">
         <span class="brand-mark">DJ</span>
         <span><span class="brand-x">X</span>press</span>
       </div>
       <div id="screen-event-name" class="screen-event-name"></div>
       <div class="screen-status">
+        <button type="button" id="sound-toggle" class="sound-toggle">&#128266; Enable sound</button>
         <span id="screen-status-dot" class="pulse-dot offline"></span>
         <span id="screen-status-label">OFFLINE</span>
         <span id="screen-guest-count" class="guest-counter-pill" style="display:none;">&#128101; <span id="screen-guest-count-num">0</span></span>
@@ -40,6 +41,19 @@
             <div id="now-playing-title" class="now-playing-title"></div>
             <div id="now-playing-artist" class="now-playing-artist"></div>
           </div>
+        </div>
+
+        <div id="countdown-wrap" class="countdown-card" style="display:none;">
+          <div id="countdown-label" class="countdown-label"></div>
+          <div id="countdown-time" class="countdown-time"></div>
+        </div>
+
+        <div id="energy-wrap" class="energy-card" style="display:none;">
+          <div class="energy-head">
+            <span class="energy-title">&#128293; Crowd Energy</span>
+            <span id="energy-label" class="energy-label"></span>
+          </div>
+          <div id="energy-bar" class="energy-bar" aria-hidden="true"></div>
         </div>
 
         <h2 class="screen-section-title">&#127925; Up Next</h2>
@@ -73,6 +87,9 @@
 
   <div id="reaction-float-layer" class="reaction-float-layer"></div>
 
+  <script src="/js/soundboard.js"></script>
+  <script src="/js/effects.js"></script>
+  <script src="/js/moments.js"></script>
   <script src="/js/screen.js"></script>
 </body>
 </html>

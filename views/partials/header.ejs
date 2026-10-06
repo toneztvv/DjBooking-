@@ -6,8 +6,9 @@
   <title><%= typeof title !== 'undefined' ? title : 'DJXpress | Book Your DJ & Request Live Songs' %></title>
   <meta name="description" content="DJXpress — professional DJ for weddings, quinceañeras, sweet 16s, comidas, back to school bashes, parties & corporate events. Book now or request a song live at the event." />
   <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
-  <meta property="og:title" content="DJXpress — Professional DJ for Every Event" />
-  <meta property="og:description" content="Weddings, quinceañeras, sweet 16s, comidas, back to school bashes & more. Book your date, then request songs live from your phone." />
+  <% if (typeof noindex !== 'undefined' && noindex) { %><meta name="robots" content="noindex, nofollow" /><% } %>
+  <meta property="og:title" content="<%= typeof ogTitle !== 'undefined' ? ogTitle : 'DJXpress — Professional DJ for Every Event' %>" />
+  <meta property="og:description" content="<%= typeof ogDescription !== 'undefined' ? ogDescription : 'Weddings, quinceañeras, sweet 16s, comidas, back to school bashes & more. Book your date, then request songs live from your phone.' %>" />
   <meta property="og:image" content="<%= siteUrl %>/images/og-image.png" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />

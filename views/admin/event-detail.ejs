@@ -20,6 +20,44 @@
       </div>
     </div>
 
+    <div class="card" style="margin-bottom: 30px;">
+      <h3>Shareable Night Recap</h3>
+      <p class="small-muted" style="margin-bottom:14px;">
+        Create a private link to a recap of this night &mdash; setlist with cover art, most-requested songs, reactions, poll results, and a few guestbook notes. It's <strong>not listed anywhere</strong>; only people you send the link to can open it, and live chat is never included.
+      </p>
+      <% if (event.share_token) { %>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+          <input type="text" id="share-url" readonly value="<%= siteUrl %>/recap/<%= event.share_token %>" style="flex:1; min-width:240px;" />
+          <button type="button" class="btn btn-primary btn-sm" id="share-copy-btn">Copy Link</button>
+          <a href="/recap/<%= event.share_token %>" target="_blank" class="btn btn-secondary btn-sm">Open &#8599;</a>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <form method="POST" action="/admin/events/<%= event.id %>/share"
+            onsubmit="return confirm('Make a new link? The old link will stop working.');">
+            <button type="submit" class="btn btn-ghost btn-sm">Make a New Link</button>
+          </form>
+          <form method="POST" action="/admin/events/<%= event.id %>/unshare"
+            onsubmit="return confirm('Stop sharing? Anyone with the link will no longer be able to open it.');">
+            <button type="submit" class="btn btn-danger btn-sm">Stop Sharing</button>
+          </form>
+        </div>
+        <script>
+          document.getElementById('share-copy-btn').addEventListener('click', function () {
+            var input = document.getElementById('share-url');
+            var btn = this;
+            navigator.clipboard.writeText(input.value).then(function () {
+              btn.textContent = 'Copied!';
+              setTimeout(function () { btn.textContent = 'Copy Link'; }, 1500);
+            }, function () { input.select(); });
+          });
+        </script>
+      <% } else { %>
+        <form method="POST" action="/admin/events/<%= event.id %>/share">
+          <button type="submit" class="btn btn-primary btn-sm">Create Share Link</button>
+        </form>
+      <% } %>
+    </div>
+
     <div class="grid grid-3" style="margin-bottom: 30px;">
       <div class="card" style="text-align:center;">
         <h3 style="margin-bottom:6px;"><%= setlist.length %></h3>

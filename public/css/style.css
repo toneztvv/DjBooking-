@@ -1269,3 +1269,316 @@ footer a {
     animation: none;
   }
 }
+
+/* --- DJ drops: canvas effects, color wash, shoutout banner --- */
+
+.fx-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1200;
+}
+
+/* A slow, soft color pulse (about one pulse every 2s) — deliberately NOT a
+   strobe, so it's safe for guests sensitive to flashing lights. */
+.fx-wash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1100;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 47, 191, 0.55), rgba(124, 77, 255, 0.4) 45%, transparent 75%);
+  animation: fx-wash-pulse 4s ease-in-out forwards;
+}
+
+@keyframes fx-wash-pulse {
+  0% { opacity: 0; filter: hue-rotate(0deg); }
+  25% { opacity: 0.9; }
+  50% { opacity: 0.25; filter: hue-rotate(120deg); }
+  75% { opacity: 0.9; }
+  100% { opacity: 0; filter: hue-rotate(240deg); }
+}
+
+.fx-toast {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3rem;
+  z-index: 1300;
+  pointer-events: none;
+}
+
+.fx-shoutout {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 760px);
+  z-index: 1300;
+  pointer-events: none;
+  animation: fx-shout-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.fx-shoutout-out {
+  animation: fx-shout-out 0.6s ease forwards;
+}
+
+.fx-shoutout-text {
+  text-align: center;
+  font-weight: 800;
+  font-size: clamp(1.4rem, 5vw, 2.6rem);
+  line-height: 1.15;
+  padding: 22px 26px;
+  border-radius: 22px;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(255, 47, 191, 0.95), rgba(124, 77, 255, 0.95));
+  box-shadow: 0 20px 60px -10px rgba(255, 47, 191, 0.7);
+  word-break: break-word;
+}
+
+@keyframes fx-shout-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-40px) scale(0.9); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+@keyframes fx-shout-out {
+  to { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(0.95); }
+}
+
+/* --- Crowd energy meter --- */
+
+.energy-card {
+  max-width: 640px;
+  margin: 0 auto 24px;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  background: rgba(26, 26, 41, 0.75);
+  border: 1px solid var(--card-border);
+}
+
+.energy-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.energy-title {
+  font-weight: 800;
+}
+
+.energy-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.energy-bar {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 5px;
+}
+
+.energy-seg {
+  height: 16px;
+  border-radius: 5px;
+  background: var(--bg-alt);
+  border: 1px solid var(--card-border);
+  transition: background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease;
+}
+
+.energy-seg.on { border-color: transparent; }
+.energy-seg.on:nth-child(-n + 3) { background: #33e0ff; box-shadow: 0 0 12px -2px #33e0ff; }
+.energy-seg.on:nth-child(n + 4):nth-child(-n + 6) { background: #7c4dff; box-shadow: 0 0 12px -2px #7c4dff; }
+.energy-seg.on:nth-child(n + 7):nth-child(-n + 8) { background: #ff2fbf; box-shadow: 0 0 14px -2px #ff2fbf; }
+.energy-seg.on:nth-child(n + 9) { background: #fb923c; box-shadow: 0 0 16px -1px #fb923c; }
+
+.energy-max .energy-label {
+  color: #fb923c;
+  animation: energy-flicker 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes energy-flicker {
+  from { opacity: 1; text-shadow: 0 0 6px rgba(251, 146, 60, 0.8); }
+  to { opacity: 0.7; text-shadow: 0 0 14px rgba(251, 146, 60, 1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .energy-max .energy-label { animation: none; }
+  .fx-wash, .fx-shoutout { animation-duration: 0.01s; }
+}
+
+/* --- Moment countdown --- */
+
+.countdown-card {
+  max-width: 640px;
+  margin: 0 auto 24px;
+  padding: 18px 20px;
+  text-align: center;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(124, 77, 255, 0.22), rgba(51, 224, 255, 0.16));
+  border: 1px solid rgba(51, 224, 255, 0.4);
+}
+
+.countdown-label {
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.85rem;
+}
+
+.countdown-time {
+  font-size: clamp(2.4rem, 8vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-now {
+  border-color: rgba(255, 47, 191, 0.7);
+  background: linear-gradient(135deg, rgba(255, 47, 191, 0.3), rgba(124, 77, 255, 0.25));
+}
+
+/* --- Big Screen: sound toggle + bigger moment cards --- */
+
+.sound-toggle {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.sound-toggle.sound-on {
+  color: var(--success);
+  border-color: rgba(52, 211, 153, 0.5);
+  cursor: default;
+}
+
+.screen-body .countdown-card,
+.screen-body .energy-card {
+  max-width: none;
+  margin: 24px 0 0;
+}
+
+.screen-body .countdown-time {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+}
+
+.screen-body .energy-seg {
+  height: 26px;
+}
+
+/* --- Admin hype controls --- */
+
+.hype-heading {
+  margin: 18px 0 8px;
+  font-size: 0.95rem;
+}
+
+.hype-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.energy-slider {
+  width: 100%;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+/* --- Night recap page --- */
+
+.recap-list {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recap-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(26, 26, 41, 0.75);
+  border: 1px solid var(--card-border);
+}
+
+.recap-rank {
+  width: 26px;
+  text-align: center;
+  font-weight: 800;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.recap-art {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg-alt);
+}
+
+.recap-art-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.recap-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.recap-meta strong,
+.recap-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recap-reactions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.recap-reaction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(26, 26, 41, 0.75);
+  border: 1px solid var(--card-border);
+}
+
+.recap-reaction-emoji {
+  font-size: 1.8rem;
+}
+
+.recap-notes {
+  max-width: 720px;
+  margin: 0 auto;
+}

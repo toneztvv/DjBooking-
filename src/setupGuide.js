@@ -28,6 +28,10 @@ A booking + live song-request site for DJXpress:
   - Every one of those four extras (guest counter, reactions, polls,
     guestbook) can be switched on/off any time from the dashboard,
     without losing anything already saved
+  - "Hype" tools the DJ controls live from the dashboard: confetti /
+    fireworks / shoutout banners that appear on every guest's phone and the
+    Big Screen at once, a labeled "moment" countdown (cake cutting, first
+    dance), and a crowd-energy meter
   - A Big Screen view (${siteUrl}/screen) meant for a TV or projector at
     the venue itself — Now Playing, Up Next, reactions, poll results,
     and the guestbook, all on one auto-updating screen, separate from
@@ -225,6 +229,12 @@ Log in at: ${siteUrl}/admin
   Testimonials           /admin/testimonials Reviews you type in, shown
                                               on the homepage; publish or
                                               hide each one any time
+  Event History > Share  /admin/events/ID    On any past event, "Create Share
+                                              Link" makes a private, unlisted
+                                              recap page (setlist, top songs,
+                                              reactions, polls, guestbook
+                                              notes) to send to the client.
+                                              "Stop Sharing" kills the link.
   Gallery                /admin/gallery      Upload photos/videos from
                                               past events for the homepage
   Analytics              /admin/analytics    Lifetime totals (songs
@@ -237,6 +247,16 @@ Log in at: ${siteUrl}/admin
                                               depends on
   This Guide             /admin/setup-guide  This document, downloadable
                                               any time
+
+=====================================================================
+BIG SCREEN SOUNDBOARD — ONE-TIME SETUP EACH EVENT
+=====================================================================
+The six hype sounds (air horn, siren, etc.) play only through the device
+showing ${siteUrl}/screen — never on guests' phones. Web browsers refuse to
+play any audio until the page has been clicked once, so at the start of
+each event: open /screen on the laptop/TV, and click "Enable sound" in the
+top-right corner (it turns green: "Sound on"). If sounds ever seem silent,
+that button is the first thing to check — and the device's volume.
 
 =====================================================================
 8. IF SOMETHING BREAKS — QUICK TROUBLESHOOTING NOTES

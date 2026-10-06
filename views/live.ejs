@@ -34,6 +34,19 @@
       </div>
     </div>
 
+    <div id="countdown-wrap" class="countdown-card" style="display:none;">
+      <div id="countdown-label" class="countdown-label"></div>
+      <div id="countdown-time" class="countdown-time"></div>
+    </div>
+
+    <div id="energy-wrap" class="energy-card" style="display:none;">
+      <div class="energy-head">
+        <span class="energy-title">&#128293; Crowd Energy</span>
+        <span id="energy-label" class="energy-label"></span>
+      </div>
+      <div id="energy-bar" class="energy-bar" aria-hidden="true"></div>
+    </div>
+
     <div id="request-form-wrap" style="display: <%= isLive ? 'block' : 'none' %>;">
       <div class="form-card">
         <h3 style="margin-top:0;">Send a Request</h3>
@@ -188,6 +201,8 @@
   </div>
 </section>
 
+<script src="/js/effects.js"></script>
+<script src="/js/moments.js"></script>
 <script src="/js/live.js"></script>
 
 <%- include('partials/footer') %>

@@ -10,6 +10,7 @@
 
   const nowPlayingWrap = document.getElementById('now-playing');
   const nowPlayingArt = document.getElementById('now-playing-art');
+  if (nowPlayingArt) nowPlayingArt.addEventListener('error', () => (nowPlayingArt.style.display = 'none'));
   const nowPlayingTitle = document.getElementById('now-playing-title');
   const nowPlayingArtist = document.getElementById('now-playing-artist');
 
@@ -115,6 +116,13 @@
         nowPlayingWrap.style.display = 'none';
       }
 
+      if (window.DJXMoments) {
+        window.DJXMoments.update({
+          energy: isLive ? data.energy : null,
+          countdown: isLive ? data.countdown : null,
+        });
+      }
+
       const pending = (data.pending || []).slice(0, 6);
       if (!pending.length) {
         pendingList.innerHTML = '';
@@ -148,6 +156,21 @@
     } catch (err) {
       // retry next cycle
     }
+  }
+
+  // Browsers won't play audio until the page has been clicked once, so the
+  // Big Screen laptop needs a single click here before the soundboard works.
+  const soundToggle = document.getElementById('sound-toggle');
+  if (soundToggle && window.DJXAudio) {
+    soundToggle.addEventListener('click', () => {
+      if (window.DJXAudio.unlock()) {
+        soundToggle.textContent = '\u{1F50A} Sound on';
+        soundToggle.classList.add('sound-on');
+        soundToggle.disabled = true;
+      } else {
+        soundToggle.textContent = 'Sound not supported here';
+      }
+    });
   }
 
   refresh();

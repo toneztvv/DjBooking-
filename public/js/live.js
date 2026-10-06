@@ -13,6 +13,7 @@
 
   const nowPlayingWrap = document.getElementById('now-playing');
   const nowPlayingArt = document.getElementById('now-playing-art');
+  if (nowPlayingArt) nowPlayingArt.addEventListener('error', () => (nowPlayingArt.style.display = 'none'));
   const nowPlayingTitle = document.getElementById('now-playing-title');
   const nowPlayingArtist = document.getElementById('now-playing-artist');
 
@@ -543,6 +544,13 @@
         } else {
           nowPlayingWrap.style.display = 'none';
         }
+      }
+
+      if (window.DJXMoments) {
+        window.DJXMoments.update({
+          energy: isLive ? data.energy : null,
+          countdown: isLive ? data.countdown : null,
+        });
       }
 
       renderPending(data.pending || []);

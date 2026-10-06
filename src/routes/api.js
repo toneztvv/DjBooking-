@@ -128,6 +128,32 @@ function getActivePoll(eventId) {
   };
 }
 
+const ENERGY_LABELS = [
+  [0, 'Warming up'],
+  [3, 'Getting loose'],
+  [5, 'Heating up'],
+  [7, 'On fire'],
+  [9, 'Absolutely insane'],
+];
+
+function getEnergy() {
+  const level = Math.min(10, Math.max(0, Number(getSetting('energy_level')) || 0));
+  const label = ENERGY_LABELS.filter(([min]) => level >= min).pop()[1];
+  return { level, label };
+}
+
+// The DJ can set a "moment" countdown (cake cutting, first dance...). We send
+// seconds remaining rather than a timestamp so a guest's wrong phone clock
+// can't skew it.
+function getCountdown() {
+  const label = getSetting('countdown_label');
+  const endsAt = Number(getSetting('countdown_ends_at'));
+  if (!label || !endsAt) return null;
+  const remaining = Math.round((endsAt - Date.now()) / 1000);
+  if (remaining < -30) return null; // linger on "NOW" for 30s, then vanish
+  return { label, remainingSeconds: remaining };
+}
+
 router.get('/live-state', (req, res) => {
   const isLive = getSetting('is_live') === '1';
   const eventId = Number(getSetting('current_event_id') || '1');
@@ -144,9 +170,42 @@ router.get('/live-state', (req, res) => {
     activeGuests: isLive && features.guestCounter ? presence.getActiveCount(eventId) : null,
     poll: isLive && features.polls ? getActivePoll(eventId) : null,
     nowPlaying: isLive ? recentlyPlayed[0] || null : null,
+    energy: isLive && features.energy ? getEnergy() : null,
+    countdown: isLive && features.effects ? getCountdown() : null,
     pending: getPendingBoard(eventId),
     recentlyPlayed,
   });
+});
+
+// Effects the DJ fires (confetti, shoutouts, sounds...). Only recent ones are
+// returned so a phone that wakes up later doesn't replay old drops, and a
+// fresh page load starts from "now" using latestId rather than replaying.
+router.get('/effects', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  const features = getFeatureFlags();
+  if (!isLive || !features.effects) {
+    return res.json({ enabled: false, latestId: 0, effects: [] });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const latest = db
+    .prepare(`SELECT COALESCE(MAX(id), 0) AS id FROM drops WHERE event_id = ?`)
+    .get(eventId).id;
+
+  const afterId = req.query.afterId === undefined ? null : Number(req.query.afterId) || 0;
+  if (afterId === null) {
+    return res.json({ enabled: true, latestId: latest, effects: [] });
+  }
+
+  const effects = db
+    .prepare(
+      `SELECT id, kind, message FROM drops
+       WHERE event_id = ? AND id > ? AND created_at >= datetime('now', '-20 seconds')
+       ORDER BY id ASC LIMIT 20`
+    )
+    .all(eventId, afterId);
+
+  res.json({ enabled: true, latestId: latest, effects });
 });
 
 router.post('/presence/ping', (req, res) => {

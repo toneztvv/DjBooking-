@@ -1,0 +1,168 @@
+<%- include('partials/header', { page, title, noindex, ogTitle, ogDescription }) %>
+
+<section class="hero" style="padding: 70px 0 40px;">
+  <div class="container">
+    <span class="eyebrow">Night Recap</span>
+    <h1 style="font-size: clamp(2rem, 6vw, 3.4rem);"><%= event.name || 'The Night' %></h1>
+    <p class="lead" style="margin-bottom: 8px;">
+      <time data-utc="<%= event.started_at %>" data-format="date"><%= event.started_at.slice(0, 10) %></time>
+    </p>
+    <div class="hero-eq" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="hero-actions">
+      <button type="button" id="recap-share-btn" class="btn btn-primary">Share this recap</button>
+      <a href="/book" class="btn btn-secondary">Book DJXpress</a>
+    </div>
+    <p id="recap-share-note" class="small-muted" style="margin-top: 12px; min-height: 1.4em;"></p>
+  </div>
+</section>
+
+<section class="reveal" style="padding-top: 0;">
+  <div class="container">
+    <div class="stats-row">
+      <div class="stat-tile">
+        <div class="stat-number" data-count-to="<%= setlist.length %>">0</div>
+        <div class="stat-label">Songs Played</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-number" data-count-to="<%= totals.requests %>">0</div>
+        <div class="stat-label">Requests</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-number" data-count-to="<%= totals.requesters %>">0</div>
+        <div class="stat-label">Guests Requested</div>
+      </div>
+      <% if (totalReactions) { %>
+      <div class="stat-tile">
+        <div class="stat-number" data-count-to="<%= totalReactions %>">0</div>
+        <div class="stat-label">Reactions</div>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<% if (topSongs.length) { %>
+<section class="reveal">
+  <div class="container">
+    <div class="section-title">
+      <h2>Most Requested</h2>
+      <p>The songs the crowd wanted most.</p>
+    </div>
+    <div class="recap-list">
+      <% topSongs.forEach(function(s, i) { %>
+        <div class="recap-row">
+          <span class="recap-rank"><%= i + 1 %></span>
+          <% if (s.artwork_url) { %><img class="recap-art" src="<%= s.artwork_url %>" alt="" loading="lazy" /><% } else { %><span class="recap-art recap-art-empty">&#127925;</span><% } %>
+          <div class="recap-meta">
+            <strong><%= s.song_title %></strong>
+            <% if (s.artist) { %><span class="small-muted"><%= s.artist %></span><% } %>
+          </div>
+          <span class="count-pill"><%= s.total %>x</span>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<% if (setlist.length) { %>
+<section class="reveal">
+  <div class="container">
+    <div class="section-title">
+      <h2>The Setlist</h2>
+      <p>Every song, in the order it was played.</p>
+    </div>
+    <div class="recap-list">
+      <% setlist.forEach(function(s, i) { %>
+        <div class="recap-row">
+          <span class="recap-rank"><%= i + 1 %></span>
+          <% if (s.artwork_url) { %><img class="recap-art" src="<%= s.artwork_url %>" alt="" loading="lazy" /><% } else { %><span class="recap-art recap-art-empty">&#127925;</span><% } %>
+          <div class="recap-meta">
+            <strong><%= s.song_title %></strong>
+            <% if (s.artist) { %><span class="small-muted"><%= s.artist %></span><% } %>
+          </div>
+          <time class="small-muted" data-utc="<%= s.played_at %>" data-format="time"></time>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<% if (reactions.length) { %>
+<section class="reveal">
+  <div class="container">
+    <div class="section-title">
+      <h2>How the Crowd Felt</h2>
+    </div>
+    <div class="recap-reactions">
+      <% reactions.forEach(function(r) { %>
+        <div class="recap-reaction"><span class="recap-reaction-emoji"><%= r.emoji %></span><span class="count-pill"><%= r.n %></span></div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<% if (polls.length) { %>
+<section class="reveal">
+  <div class="container">
+    <div class="section-title">
+      <h2>The Crowd Voted</h2>
+    </div>
+    <div class="card" style="max-width: 640px; margin: 0 auto;">
+      <% polls.forEach(function(p) { %>
+        <% const total = p.votesA + p.votesB; %>
+        <% const pctA = total ? Math.round((p.votesA / total) * 100) : 0; %>
+        <% const pctB = total ? Math.round((p.votesB / total) * 100) : 0; %>
+        <p style="color: var(--text); margin-bottom: 8px;"><strong><%= p.question %></strong></p>
+        <div class="poll-bar-row">
+          <div class="poll-bar-label"><%= p.option_a %> &mdash; <%= pctA %>%</div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" style="width: <%= pctA %>%;"></div></div>
+        </div>
+        <div class="poll-bar-row" style="margin-bottom: 22px;">
+          <div class="poll-bar-label"><%= p.option_b %> &mdash; <%= pctB %>%</div>
+          <div class="poll-bar-track"><div class="poll-bar-fill" style="width: <%= pctB %>%;"></div></div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<% if (notes.length) { %>
+<section class="reveal">
+  <div class="container">
+    <div class="section-title">
+      <h2>Notes From the Night</h2>
+    </div>
+    <div class="recap-notes">
+      <% notes.forEach(function(n) { %>
+        <div class="guestbook-entry">
+          <div class="gb-name<% if (n.color) { %> guest-colored<% } %>"<% if (n.color) { %> style="--guest-color: <%= n.color %>;"<% } %>><%= n.name %></div>
+          <div class="gb-message"><%= n.message %></div>
+        </div>
+      <% }); %>
+    </div>
+  </div>
+</section>
+<% } %>
+
+<section class="reveal">
+  <div class="container">
+    <div class="card" style="text-align:center; padding: 50px 30px;">
+      <h2 style="margin-top:0;">Want a night like this?</h2>
+      <p class="small-muted" style="max-width:500px; margin: 0 auto 24px;">
+        DJXpress brings live requests, a Big Screen, polls, and a crowd that never stops moving to your event.
+      </p>
+      <a href="/book" class="btn btn-primary">Book Your Date</a>
+    </div>
+  </div>
+</section>
+
+<script src="/js/polish.js"></script>
+<script src="/js/recap.js"></script>
+
+<%- include('partials/footer') %>

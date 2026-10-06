@@ -134,6 +134,7 @@ router.get('/', (req, res) => {
     newInquiries,
     features: getFeatureFlags(),
     activePoll: getActivePollWithCounts(eventId),
+    energyLevel: Math.min(10, Math.max(0, Number(getSetting('energy_level')) || 0)),
   });
 });
 
@@ -144,6 +145,8 @@ const TOGGLEABLE_FEATURES = {
   reactions: 'feature_reactions',
   polls: 'feature_polls',
   guestbook: 'feature_guestbook',
+  effects: 'feature_effects',
+  energy: 'feature_energy',
 };
 
 router.post('/features/:feature/toggle', (req, res) => {
@@ -167,6 +170,9 @@ router.post('/live/toggle', (req, res) => {
     const newEventId = startNewEvent(nextEventName);
     setSetting('current_event_id', newEventId);
     setSetting('is_live', '1');
+    setSetting('energy_level', '0');
+    setSetting('countdown_label', '');
+    setSetting('countdown_ends_at', '');
   } else {
     endEvent(currentEventId);
     setSetting('is_live', '0');
@@ -432,6 +438,64 @@ router.post('/guestbook/:id/delete', (req, res) => {
   res.redirect('/admin/guestbook');
 });
 
+// --- Hype controls: drops, soundboard, energy, countdown --------------------
+
+const VISUAL_DROPS = ['confetti', 'wash', 'fireworks', 'shoutout'];
+const SOUND_DROPS = ['airhorn', 'siren', 'cheer', 'scratch', 'drumroll', 'laser'];
+
+router.post('/drops', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  if (!isLive) {
+    return res.status(409).json({ ok: false, error: 'Go live first.' });
+  }
+  if (!getFeatureFlags().effects) {
+    return res.status(409).json({ ok: false, error: 'Drops are switched off in Live Page Features.' });
+  }
+
+  const kind = clean((req.body || {}).kind, 30);
+  const isSound = kind.startsWith('sound:') && SOUND_DROPS.includes(kind.slice(6));
+  if (!VISUAL_DROPS.includes(kind) && !isSound) {
+    return res.status(400).json({ ok: false, error: 'Unknown effect.' });
+  }
+
+  let message = clean((req.body || {}).message, 140);
+  if (kind === 'shoutout' && !message) {
+    return res.status(400).json({ ok: false, error: 'Type a shoutout first.' });
+  }
+  if (kind !== 'shoutout') message = '';
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+  db.prepare(`INSERT INTO drops (event_id, kind, message) VALUES (?, ?, ?)`).run(
+    eventId,
+    kind,
+    message || null
+  );
+  res.status(201).json({ ok: true });
+});
+
+router.post('/energy', (req, res) => {
+  const level = Math.min(10, Math.max(0, Math.round(Number((req.body || {}).level)) || 0));
+  setSetting('energy_level', level);
+  res.json({ ok: true, level });
+});
+
+router.post('/countdown', (req, res) => {
+  const label = clean((req.body || {}).label, 60);
+  const minutes = Number((req.body || {}).minutes);
+  if (!label || !(minutes > 0) || minutes > 180) {
+    return res.status(400).json({ ok: false, error: 'Add a label and 1–180 minutes.' });
+  }
+  setSetting('countdown_label', label);
+  setSetting('countdown_ends_at', Date.now() + Math.round(minutes * 60 * 1000));
+  res.json({ ok: true });
+});
+
+router.post('/countdown/clear', (req, res) => {
+  setSetting('countdown_label', '');
+  setSetting('countdown_ends_at', '');
+  res.json({ ok: true });
+});
+
 router.get('/inquiries', (req, res) => {
   const inquiries = db
     .prepare(`SELECT * FROM inquiries ORDER BY created_at DESC`)
@@ -534,6 +598,22 @@ router.get('/events/:id', (req, res) => {
   });
 });
 
+router.post('/events/:id/share', (req, res) => {
+  const id = Number(req.params.id);
+  if (id && getEventById(id)) {
+    // Unguessable token: the recap is reachable only by people given the link.
+    const token = crypto.randomBytes(12).toString('base64url');
+    db.prepare(`UPDATE events SET share_token = ? WHERE id = ?`).run(token, id);
+  }
+  res.redirect(`/admin/events/${id}`);
+});
+
+router.post('/events/:id/unshare', (req, res) => {
+  const id = Number(req.params.id);
+  if (id) db.prepare(`UPDATE events SET share_token = NULL WHERE id = ?`).run(id);
+  res.redirect(`/admin/events/${id}`);
+});
+
 router.post('/events/:id/delete', (req, res) => {
   const id = Number(req.params.id);
   const currentEventId = Number(getSetting('current_event_id') || '1');
@@ -541,6 +621,7 @@ router.post('/events/:id/delete', (req, res) => {
   if (id && id !== currentEventId) {
     const deleteRequests = db.prepare(`DELETE FROM song_requests WHERE event_id = ?`);
     const deleteUpvotes = db.prepare(`DELETE FROM request_upvotes WHERE event_id = ?`);
+    const deleteDrops = db.prepare(`DELETE FROM drops WHERE event_id = ?`);
     const deleteChat = db.prepare(`DELETE FROM chat_messages WHERE event_id = ?`);
     const deleteReactions = db.prepare(`DELETE FROM reactions WHERE event_id = ?`);
     const deletePollVotes = db.prepare(`DELETE FROM poll_votes WHERE poll_id IN (SELECT id FROM polls WHERE event_id = ?)`);
@@ -550,6 +631,7 @@ router.post('/events/:id/delete', (req, res) => {
     db.transaction(() => {
       deleteRequests.run(id);
       deleteUpvotes.run(id);
+      deleteDrops.run(id);
       deleteChat.run(id);
       deleteReactions.run(id);
       deletePollVotes.run(id);

@@ -127,6 +127,17 @@ function initDb() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS drops (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      kind TEXT NOT NULL,
+      message TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_drops_event_id
+      ON drops (event_id, id);
+
     CREATE TABLE IF NOT EXISTS gallery_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT NOT NULL CHECK (type IN ('photo', 'video')),
@@ -143,6 +154,9 @@ function initDb() {
     feature_reactions: '1',
     feature_polls: '1',
     feature_guestbook: '1',
+    feature_effects: '1',
+    feature_energy: '1',
+    energy_level: '0',
   };
   const insert = db.prepare(
     'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)'
@@ -175,6 +189,13 @@ function initDb() {
   }
   if (!columns.some((c) => c.name === 'artwork_url')) {
     db.exec(`ALTER TABLE song_requests ADD COLUMN artwork_url TEXT`);
+  }
+
+  // Migration: a random token turns an event into a shareable (but
+  // unlisted) public recap page; NULL means sharing is off.
+  const eventColumns = db.prepare(`PRAGMA table_info(events)`).all();
+  if (!eventColumns.some((c) => c.name === 'share_token')) {
+    db.exec(`ALTER TABLE events ADD COLUMN share_token TEXT`);
   }
 
   // Migration: "color" lets each guest's browser pick a display color for
@@ -211,6 +232,8 @@ function getFeatureFlags() {
     reactions: getSetting('feature_reactions') !== '0',
     polls: getSetting('feature_polls') !== '0',
     guestbook: getSetting('feature_guestbook') !== '0',
+    effects: getSetting('feature_effects') !== '0',
+    energy: getSetting('feature_energy') !== '0',
   };
 }
 
