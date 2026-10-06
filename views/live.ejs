@@ -154,9 +154,12 @@
                 <th></th>
               </tr>
             </thead>
-            <tbody id="pending-body"></tbody>
+            <tbody id="pending-body">
+              <tr class="skeleton-row"><td colspan="5"><span class="skeleton-bar"></span></td></tr>
+              <tr class="skeleton-row"><td colspan="5"><span class="skeleton-bar"></span></td></tr>
+            </tbody>
           </table>
-          <div id="pending-empty" class="empty-state">No requests yet &mdash; be the first!</div>
+          <div id="pending-empty" class="empty-state" style="display:none;">No requests yet &mdash; be the first!</div>
         </div>
       </div>
 
@@ -173,9 +176,12 @@
                 <th>Requests</th>
               </tr>
             </thead>
-            <tbody id="played-body"></tbody>
+            <tbody id="played-body">
+              <tr class="skeleton-row"><td colspan="4"><span class="skeleton-bar"></span></td></tr>
+              <tr class="skeleton-row"><td colspan="4"><span class="skeleton-bar"></span></td></tr>
+            </tbody>
           </table>
-          <div id="played-empty" class="empty-state">Nothing played yet tonight.</div>
+          <div id="played-empty" class="empty-state" style="display:none;">Nothing played yet tonight.</div>
         </div>
       </div>
     </div>

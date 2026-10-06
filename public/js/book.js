@@ -3,6 +3,7 @@
   const monthLabel = document.getElementById('cal-month-label');
   const prevBtn = document.getElementById('cal-prev');
   const nextBtn = document.getElementById('cal-next');
+  const eventDateInput = document.getElementById('event_date');
   if (!grid) return;
 
   const MONTH_NAMES = [
@@ -12,11 +13,24 @@
 
   let bookedDates = new Set();
   const today = new Date();
+  const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth();
+  let selectedKey = eventDateInput ? eventDateInput.value : '';
 
   function toDateKey(y, m, d) {
     return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+
+  function selectDate(key, cell) {
+    selectedKey = key;
+    if (eventDateInput) {
+      eventDateInput.value = key;
+      eventDateInput.classList.add('field-confirm-flash');
+      setTimeout(() => eventDateInput.classList.remove('field-confirm-flash'), 900);
+    }
+    grid.querySelectorAll('.cal-selected').forEach((el) => el.classList.remove('cal-selected'));
+    if (cell) cell.classList.add('cal-selected');
   }
 
   function render() {
@@ -32,7 +46,6 @@
 
     const firstDay = new Date(viewYear, viewMonth, 1).getDay();
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
 
     for (let i = 0; i < firstDay; i++) {
       const blank = document.createElement('div');
@@ -42,11 +55,30 @@
 
     for (let day = 1; day <= daysInMonth; day++) {
       const key = toDateKey(viewYear, viewMonth, day);
+      const isPast = key < todayKey;
+      const isBooked = bookedDates.has(key);
       const cell = document.createElement('div');
       cell.className = 'cal-day';
-      if (bookedDates.has(key)) cell.classList.add('cal-booked');
+      if (isBooked) cell.classList.add('cal-booked');
+      if (isPast) cell.classList.add('cal-past');
       if (key === todayKey) cell.classList.add('cal-today');
+      if (key === selectedKey) cell.classList.add('cal-selected');
       cell.textContent = day;
+
+      if (!isBooked && !isPast && eventDateInput) {
+        cell.classList.add('cal-pickable');
+        cell.setAttribute('role', 'button');
+        cell.setAttribute('tabindex', '0');
+        cell.setAttribute('aria-label', `Pick ${MONTH_NAMES[viewMonth]} ${day}, ${viewYear} as your event date`);
+        cell.addEventListener('click', () => selectDate(key, cell));
+        cell.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            selectDate(key, cell);
+          }
+        });
+      }
+
       grid.appendChild(cell);
     }
   }

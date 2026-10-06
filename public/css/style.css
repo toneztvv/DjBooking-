@@ -32,6 +32,18 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  animation: page-fade-in 0.5s ease;
+}
+
+@keyframes page-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    animation: none;
+  }
 }
 
 img {
@@ -178,12 +190,17 @@ a:hover {
     border-bottom: 1px solid var(--card-border);
     flex-direction: column;
     align-items: stretch;
-    padding: 10px;
-    display: none;
+    padding: 0 10px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
   }
 
   .nav-links.open {
-    display: flex;
+    max-height: 300px;
+    opacity: 1;
+    padding: 10px;
   }
 
   .nav-links a {
@@ -286,6 +303,10 @@ a:hover {
 .btn:hover {
   text-decoration: none;
   transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.96);
 }
 
 .btn-primary {
@@ -639,6 +660,23 @@ th {
   padding: 16px;
   border-radius: var(--radius);
   display: inline-block;
+  box-shadow: 0 0 0 1px rgba(255, 47, 191, 0.3), 0 0 40px -8px rgba(124, 77, 255, 0.5);
+  animation: qr-glow 3s ease-in-out infinite alternate;
+}
+
+@keyframes qr-glow {
+  from {
+    box-shadow: 0 0 0 1px rgba(255, 47, 191, 0.3), 0 0 30px -8px rgba(124, 77, 255, 0.4);
+  }
+  to {
+    box-shadow: 0 0 0 1px rgba(51, 224, 255, 0.4), 0 0 50px -8px rgba(255, 47, 191, 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qr-box {
+    animation: none;
+  }
 }
 
 .qr-box img {
@@ -981,6 +1019,41 @@ footer a {
   outline-offset: -2px;
 }
 
+.cal-day.cal-past {
+  opacity: 0.35;
+}
+
+.cal-day.cal-pickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.cal-day.cal-pickable:hover,
+.cal-day.cal-pickable:focus-visible {
+  border-color: var(--accent-2);
+  background: rgba(51, 224, 255, 0.12);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.cal-day.cal-selected {
+  background: linear-gradient(135deg, var(--accent), var(--accent-3));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 8px 20px -8px rgba(255, 47, 191, 0.7);
+}
+
+.field-confirm-flash {
+  animation: field-confirm-pulse 0.9s ease;
+}
+
+@keyframes field-confirm-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(51, 224, 255, 0.6); }
+  60% { box-shadow: 0 0 0 8px rgba(51, 224, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(51, 224, 255, 0); }
+}
+
 .cal-legend-dot {
   display: inline-block;
   width: 10px;
@@ -1169,4 +1242,30 @@ footer a {
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+}
+
+/* --- Skeleton loading placeholders --- */
+
+.skeleton-row td {
+  padding: 14px 10px;
+}
+
+.skeleton-bar {
+  display: block;
+  height: 16px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--bg-alt) 25%, var(--card-border) 50%, var(--bg-alt) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-bar {
+    animation: none;
+  }
 }
