@@ -7,7 +7,7 @@ const { db, getSetting, normalizeKey, getFeatureFlags } = require('../db');
 const { liveQrBuffer, urlQrBuffer } = require('../qr');
 const { getBattleState } = require('../battles');
 const { getTipJar, getTipMethods } = require('../tips');
-const { WALL_DIR, MAX_PHOTO_BYTES, WALL_FILE_RE, looksLikeJpeg } = require('../wall');
+const { WALL_DIR, MAX_PHOTO_BYTES, WALL_FILE_RE, isAcceptablePhoto } = require('../wall');
 const { cleanReferral, getReferralInfo } = require('../referrals');
 const stripe = require('../stripe');
 const {
@@ -17,6 +17,8 @@ const {
   createPassRow,
   getActivePassByCode,
   applyPaidPassSession,
+  refundDuplicate,
+  paymentIntentOf,
 } = require('../payments');
 const { getSiteUrl } = require('../qr');
 const { sendInquiryNotification } = require('../mail');
@@ -678,7 +680,8 @@ router.get('/wall', (req, res) => {
     : 0;
 
   const blocked = !!(clientId && db.prepare(`SELECT 1 FROM wall_blocks WHERE client_id = ?`).get(clientId));
-  const pass = mode === 2 ? getActivePassByCode(String(req.query.pass_code || '')) : null;
+  // The code travels in a header (not the URL) so it never ends up in server logs.
+  const pass = mode === 2 ? getActivePassByCode(String(req.get('x-pass-code') || '')) : null;
   res.json({
     enabled: true,
     mode,
@@ -707,8 +710,8 @@ router.post('/wall', wallUploadMiddleware, (req, res) => {
     }
   }
 
-  if (!req.file || !looksLikeJpeg(req.file.buffer)) {
-    return res.status(400).json({ ok: false, error: 'Please choose a photo.' });
+  if (!req.file || !isAcceptablePhoto(req.file.buffer)) {
+    return res.status(400).json({ ok: false, error: 'Please choose a normal photo (JPG).' });
   }
 
   const clientId = clean(body.client_id, 100);
@@ -738,6 +741,18 @@ router.post('/wall', wallUploadMiddleware, (req, res) => {
     return res.status(429).json({ ok: false, error: 'You’ve shared the max number of photos for tonight — thank you!' });
   }
 
+  // Overall brakes so no one can flood the queue or the disk, however many
+  // "phones" they pretend to be.
+  const overall = db
+    .prepare(
+      `SELECT COUNT(*) AS total, COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) AS pending
+       FROM wall_photos WHERE event_id = ?`
+    )
+    .get(eventId);
+  if (overall.pending >= 60 || overall.total >= 400) {
+    return res.status(429).json({ ok: false, error: 'The DJ has a lot of photos to review right now — please try again in a few minutes.' });
+  }
+
   const filename = `${crypto.randomUUID()}.jpg`;
   fs.writeFileSync(path.join(WALL_DIR, filename), req.file.buffer);
   db.prepare(
@@ -758,19 +773,65 @@ router.post('/wall/pass/checkout', async (req, res) => {
   }
 
   const clientId = clean((req.body || {}).client_id, 100);
+  if (!clientId) return res.status(400).json({ ok: false, error: 'Please reload the page and try again.' });
   const priceCents = getPassPriceCents();
+
+  // Never sell the same phone a second pass.
+  const have = db
+    .prepare(`SELECT code FROM photo_passes WHERE client_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`)
+    .get(clientId);
+  if (have) return res.json({ ok: true, alreadyHave: true, code: have.code });
+
   try {
+    // A checkout that was already started a moment ago is reused instead of
+    // opening a second one — double taps and extra tabs can't create a second
+    // charge, because Stripe will only let one checkout be paid once.
+    const pending = db
+      .prepare(
+        `SELECT * FROM photo_passes
+         WHERE client_id = ? AND status = 'pending' AND source = 'stripe'
+           AND created_at >= datetime('now', '-25 minutes')
+         ORDER BY id DESC LIMIT 1`
+      )
+      .get(clientId);
+    if (pending) {
+      if (!pending.stripe_session_id) {
+        return res.status(409).json({ ok: false, error: 'Checkout is already starting — one moment, then try again.' });
+      }
+      try {
+        const open = await stripe.retrieveSession(pending.stripe_session_id);
+        if (open.status === 'open' && open.url) return res.json({ ok: true, url: open.url });
+        if (open.payment_status === 'paid') {
+          const done = applyPaidPassSession(open);
+          if (done) {
+            if (done.duplicateOf) await refundDuplicate(paymentIntentOf(open));
+            const code = done.duplicateOf ? done.duplicateOf.code : done.code;
+            return res.json({ ok: true, alreadyHave: true, code });
+          }
+        }
+      } catch (err) {
+        // Couldn't look it up — fall through and start a fresh checkout.
+      }
+    }
+
     const pass = createPassRow({ source: 'stripe', status: 'pending', clientId, amountCents: priceCents });
-    const base = getSiteUrl();
-    const session = await stripe.createCheckoutSession({
-      amountCents: priceCents,
-      productName: 'DJXpress Photo Pass — upload photos to the Big Screen, forever',
-      metadata: { product: 'photopass', pass_code: pass.code },
-      description: `DJXpress Photo Pass ${pass.code} — keep this code to restore your pass on another phone`,
-      successUrl: `${base}/live?pass_session={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${base}/live`,
-    });
-    res.json({ ok: true, url: session.url });
+    try {
+      const base = getSiteUrl();
+      const session = await stripe.createCheckoutSession({
+        amountCents: priceCents,
+        productName: 'DJXpress Photo Pass — upload photos to the Big Screen, forever',
+        metadata: { product: 'photopass', pass_code: pass.code },
+        description: `DJXpress Photo Pass ${pass.code} — keep this code to restore your pass on another phone`,
+        successUrl: `${base}/live?pass_session={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${base}/live`,
+        idempotencyKey: `photopass-${pass.code}`,
+      });
+      db.prepare(`UPDATE photo_passes SET stripe_session_id = ? WHERE id = ?`).run(session.id, pass.id);
+      res.json({ ok: true, url: session.url });
+    } catch (err) {
+      db.prepare(`DELETE FROM photo_passes WHERE id = ? AND status = 'pending'`).run(pass.id); // don't leave an orphan
+      throw err;
+    }
   } catch (err) {
     console.error('Photo Pass checkout failed:', err.message);
     res.status(502).json({ ok: false, error: 'Couldn’t start checkout. Please try again in a moment.' });
@@ -792,6 +853,12 @@ router.post('/wall/pass/claim', async (req, res) => {
     const pass = applyPaidPassSession(session);
     if (!pass) {
       return res.status(402).json({ ok: false, error: 'We haven’t received your payment yet. If you paid, wait a few seconds and refresh.' });
+    }
+    // Paid twice for the same person: the second payment is refunded and they
+    // simply keep the pass they already have.
+    if (pass.duplicateOf) {
+      await refundDuplicate(paymentIntentOf(session));
+      if (pass.duplicateOf.status === 'active') return res.json({ ok: true, code: pass.duplicateOf.code, duplicate: true });
     }
     if (pass.status !== 'active') return res.status(403).json({ ok: false, error: 'This pass has been turned off.' });
     res.json({ ok: true, code: pass.code });

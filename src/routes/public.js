@@ -3,7 +3,7 @@ const { db, getSetting } = require('../db');
 const { getLiveUrl, getSiteUrl } = require('../qr');
 const { cleanReferral, ensureEventReferralCode, getReferralInfo } = require('../referrals');
 const stripe = require('../stripe');
-const { getPhotoWallPriceCents, formatMoney, applyPaidSession } = require('../payments');
+const { getPhotoWallPriceCents, formatMoney, applyPaidSession, refundDuplicate } = require('../payments');
 
 const router = express.Router();
 
@@ -159,7 +159,7 @@ function getPlanByToken(token) {
   return db
     .prepare(
       `SELECT p.*, i.name AS client_name, i.email AS client_email, i.event_type, i.event_date, i.location,
-              i.photowall_paid_at
+              i.photowall_paid_at, i.photowall_pending_session, i.photowall_pending_at
        FROM event_plans p JOIN inquiries i ON i.id = p.inquiry_id
        WHERE p.token = ?`
     )
@@ -187,7 +187,9 @@ router.get('/plan/:token', async (req, res, next) => {
     if (stripe.isConfigured() && /^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId) && !plan.photowall_paid_at) {
       try {
         const session = await stripe.retrieveSession(sessionId);
-        if (String((session.metadata || {}).inquiry_id) === String(plan.inquiry_id) && applyPaidSession(session)) {
+        const result = String((session.metadata || {}).inquiry_id) === String(plan.inquiry_id) ? applyPaidSession(session) : { paid: false };
+        if (result.paid) {
+          await refundDuplicate(result.duplicateIntent);
           plan = getPlanByToken(req.params.token);
         } else if (session.payment_status !== 'paid') {
           paymentNote = 'We haven’t received your payment yet — if you paid, give it a minute and refresh.';
@@ -230,8 +232,43 @@ router.post('/plan/:token/checkout', async (req, res) => {
   }
 
   try {
+    // Pressing the button twice (or from two tabs) must never create a second
+    // charge: if a checkout for this booking is already open, hand back the
+    // SAME one — Stripe will only let a single checkout be paid once.
+    if (plan.photowall_pending_session === 'starting') {
+      const starting = db
+        .prepare(`SELECT 1 FROM inquiries WHERE id = ? AND photowall_pending_at >= datetime('now', '-2 minutes')`)
+        .get(plan.inquiry_id);
+      if (starting) return res.status(409).json({ ok: false, error: 'Checkout is already starting — one moment, then try again.' });
+    }
+    if (plan.photowall_pending_session && plan.photowall_pending_session !== 'starting' && plan.photowall_pending_at) {
+      const recent = db
+        .prepare(`SELECT 1 FROM inquiries WHERE id = ? AND photowall_pending_at >= datetime('now', '-25 minutes')`)
+        .get(plan.inquiry_id);
+      if (recent) {
+        try {
+          const open = await stripe.retrieveSession(plan.photowall_pending_session);
+          if (open.status === 'open' && open.url) return res.json({ ok: true, url: open.url });
+          if (open.payment_status === 'paid') {
+            const result = applyPaidSession(open);
+            await refundDuplicate(result.duplicateIntent);
+            return res.json({ ok: false, error: 'Your payment already went through — thank you! Refresh this page.' });
+          }
+        } catch (err) {
+          // Couldn't look it up — fall through and start a fresh checkout.
+        }
+      }
+    }
+
+    // Claim the slot BEFORE waiting on Stripe, so a second tap that arrives
+    // while the first is still in flight is turned away instead of opening a
+    // second checkout.
+    db.prepare(`UPDATE inquiries SET photowall_pending_session = 'starting', photowall_pending_at = datetime('now') WHERE id = ?`).run(plan.inquiry_id);
+
     const base = getSiteUrl();
-    const session = await stripe.createCheckoutSession({
+    let session;
+    try {
+      session = await stripe.createCheckoutSession({
       amountCents: priceCents,
       productName: 'DJXpress Live Photo Wall add-on',
       email: plan.client_email,
@@ -240,7 +277,16 @@ router.post('/plan/:token/checkout', async (req, res) => {
       description: `DJXpress Live Photo Wall add-on (booking #${plan.inquiry_id})`,
       successUrl: `${base}/plan/${encodeURIComponent(plan.token)}?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${base}/plan/${encodeURIComponent(plan.token)}?cancelled=1`,
-    });
+      idempotencyKey: `photowall-${plan.inquiry_id}-${Math.floor(Date.now() / (25 * 60 * 1000))}`,
+      });
+    } catch (err) {
+      db.prepare(`UPDATE inquiries SET photowall_pending_session = NULL, photowall_pending_at = NULL WHERE id = ? AND photowall_pending_session = 'starting'`).run(plan.inquiry_id);
+      throw err;
+    }
+    db.prepare(`UPDATE inquiries SET photowall_pending_session = ?, photowall_pending_at = datetime('now') WHERE id = ?`).run(
+      session.id,
+      plan.inquiry_id
+    );
     res.json({ ok: true, url: session.url });
   } catch (err) {
     console.error('Stripe checkout failed:', err.message);

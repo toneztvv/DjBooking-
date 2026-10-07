@@ -322,6 +322,22 @@ function initDb() {
     db.exec(`ALTER TABLE events ADD COLUMN inquiry_id INTEGER`);
   }
 
+  // Payment bookkeeping: which Stripe payment a pass came from (so a refund or
+  // dispute can switch it off) and, for duplicate payments, which pass it duplicated.
+  const passColumns = db.prepare(`PRAGMA table_info(photo_passes)`).all();
+  if (!passColumns.some((c) => c.name === 'payment_intent')) {
+    db.exec(`ALTER TABLE photo_passes ADD COLUMN payment_intent TEXT`);
+  }
+  if (!passColumns.some((c) => c.name === 'duplicate_of')) {
+    db.exec(`ALTER TABLE photo_passes ADD COLUMN duplicate_of INTEGER`);
+  }
+  const inqCols2 = db.prepare(`PRAGMA table_info(inquiries)`).all();
+  if (!inqCols2.some((c) => c.name === 'photowall_pay_intent')) {
+    db.exec(`ALTER TABLE inquiries ADD COLUMN photowall_pay_intent TEXT`);
+    db.exec(`ALTER TABLE inquiries ADD COLUMN photowall_pending_session TEXT`);
+    db.exec(`ALTER TABLE inquiries ADD COLUMN photowall_pending_at TEXT`);
+  }
+
   // Which Photo Pass (if any) a guest used to upload a photo.
   const wallColumns = db.prepare(`PRAGMA table_info(wall_photos)`).all();
   if (!wallColumns.some((c) => c.name === 'pass_id')) {

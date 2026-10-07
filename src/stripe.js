@@ -32,8 +32,8 @@ function flatten(obj, prefix, out = []) {
   return out;
 }
 
-async function stripeRequest(method, path, params) {
-  const headers = { Authorization: `Bearer ${secretKey()}` };
+async function stripeRequest(method, path, params, extraHeaders) {
+  const headers = { Authorization: `Bearer ${secretKey()}`, ...(extraHeaders || {}) };
   let body;
   if (params) {
     headers['Content-Type'] = 'application/x-www-form-urlencoded';
@@ -54,9 +54,12 @@ async function stripeRequest(method, path, params) {
 // server — nothing the browser sends can change the price. Payment methods
 // (card, Apple Pay, Cash App Pay...) come from what's switched on in the
 // Stripe dashboard.
-function createCheckoutSession({ amountCents, productName, email, clientReferenceId, metadata, description, successUrl, cancelUrl }) {
+function createCheckoutSession({ amountCents, productName, email, clientReferenceId, metadata, description, successUrl, cancelUrl, idempotencyKey }) {
   return stripeRequest('POST', '/v1/checkout/sessions', {
     mode: 'payment',
+    // Stripe's minimum is 30 minutes; an unpaid checkout then closes itself, so
+    // an old link can't be paid long after the price or situation changed.
+    expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
     success_url: successUrl,
     cancel_url: cancelUrl,
     customer_email: email || undefined,
@@ -69,7 +72,13 @@ function createCheckoutSession({ amountCents, productName, email, clientReferenc
     ],
     metadata: { ...metadata, amount_cents: String(amountCents) },
     payment_intent_data: { description: description || productName },
-  });
+  }, idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined);
+}
+
+// Sends a customer's money back (used automatically when someone pays twice).
+// The idempotency key makes it safe to ask more than once.
+function refundPaymentIntent(paymentIntentId) {
+  return stripeRequest('POST', '/v1/refunds', { payment_intent: paymentIntentId, reason: 'duplicate' }, { 'Idempotency-Key': `refund-${paymentIntentId}` });
 }
 
 function retrieveSession(id) {
@@ -116,6 +125,7 @@ module.exports = {
   getMode,
   hasWebhookSecret,
   createCheckoutSession,
+  refundPaymentIntent,
   retrieveSession,
   checkConnection,
   verifyWebhook,

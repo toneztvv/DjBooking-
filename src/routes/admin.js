@@ -26,6 +26,30 @@ const {
 
 const router = express.Router();
 
+// CSRF guard. The browser re-sends the saved admin login to ANY site that asks,
+// so without this a malicious web page could submit a hidden form to this
+// dashboard (e.g. "End live event", "Approve photo") while the DJ is logged in.
+// Every state-changing request must come from this site itself.
+function sameOriginOnly(req, res, next) {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  const deny = () => res.status(403).send('Blocked: request did not come from this site.');
+
+  // Modern browsers label every request with where it came from, and a web
+  // page cannot fake or remove this label.
+  const fetchSite = req.headers['sec-fetch-site'];
+  if (fetchSite) return fetchSite === 'same-origin' || fetchSite === 'none' ? next() : deny();
+
+  // Older browsers: fall back to the Origin header (must be this very site).
+  const origin = req.headers.origin;
+  if (!origin) return next(); // non-browser tools (curl) — they have no logged-in browser to abuse
+  try {
+    return new URL(origin).host === req.headers.host ? next() : deny();
+  } catch (err) {
+    return deny();
+  }
+}
+
+router.use(sameOriginOnly);
 router.use(adminAuth);
 
 const upload = multer({
@@ -174,6 +198,7 @@ router.get('/', (req, res) => {
     features: getFeatureFlags(),
     activePoll: getActivePollWithCounts(eventId),
     energyLevel: Math.min(10, Math.max(0, Number(getSetting('energy_level')) || 0)),
+    defaultPassword: !process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'changeme123',
     battle: getBattleState(eventId).active,
     wallMode: currentEvent ? cleanWallMode(currentEvent.photowall_unlocked) : 0,
     passReady: stripe.isConfigured() && getPassPriceCents() > 0,

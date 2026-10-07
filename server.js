@@ -9,13 +9,17 @@ const rateLimit = require('express-rate-limit');
 const { initDb } = require('./src/db');
 const { getSiteUrl } = require('./src/qr');
 const stripe = require('./src/stripe');
-const { applyPaidSession } = require('./src/payments');
+const { applyPaidSession, refundDuplicate, revokeByPaymentIntent } = require('./src/payments');
 
 initDb();
 
 const publicRoutes = require('./src/routes/public');
 const apiRoutes = require('./src/routes/api');
 const adminRoutes = require('./src/routes/admin');
+
+// A bug in one request must never take the whole site down mid-event.
+process.on('unhandledRejection', (err) => console.error('Unhandled rejection:', err && err.stack ? err.stack : err));
+process.on('uncaughtException', (err) => console.error('Uncaught exception:', err && err.stack ? err.stack : err));
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,27 +40,36 @@ app.use((req, res, next) => {
 app.use(
   helmet({
     contentSecurityPolicy: false,
+    // Same-origin: this site's own pages tell it where a form came from (needed
+    // by the admin forged-request guard); other sites learn nothing.
+    referrerPolicy: { policy: 'same-origin' },
   })
 );
 app.use(compression());
 // Stripe's payment notifications must be read as the untouched raw body (the
 // signature is computed over it), so this sits before the JSON parser.
-app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }), (req, res) => {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) return res.status(503).json({ ok: false, error: 'Webhook secret not set.' });
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }), async (req, res) => {
+  try {
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!secret) return res.status(503).json({ ok: false, error: 'Webhook secret not set.' });
 
-  const event = stripe.verifyWebhook(req.body, req.headers['stripe-signature'], secret);
-  if (!event) return res.status(400).json({ ok: false, error: 'Bad signature.' });
+    const event = stripe.verifyWebhook(req.body, req.headers['stripe-signature'], secret);
+    if (!event) return res.status(400).json({ ok: false, error: 'Bad signature.' });
 
-  if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
-    try {
-      applyPaidSession(event.data && event.data.object);
-    } catch (err) {
-      console.error('Stripe webhook handling failed:', err.message);
-      return res.status(500).json({ ok: false });
+    const obj = event.data && event.data.object;
+    if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+      const result = applyPaidSession(obj);
+      await refundDuplicate(result.duplicateIntent); // a second payment for the same thing goes straight back
+    } else if (event.type === 'charge.refunded' && obj && obj.refunded === true) {
+      revokeByPaymentIntent(obj.payment_intent); // fully refunded: switch off what it paid for
+    } else if (event.type === 'charge.dispute.created' && obj) {
+      revokeByPaymentIntent(obj.payment_intent); // chargeback opened: switch it off
     }
+    res.json({ received: true });
+  } catch (err) {
+    console.error('Stripe webhook handling failed:', err.message);
+    res.status(500).json({ ok: false });
   }
-  res.json({ received: true });
 });
 
 app.use(express.urlencoded({ extended: true }));
@@ -70,14 +83,18 @@ const formLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+// Everyone at a venue shares one wifi address, so live-night actions (requests,
+// chat, guestbook, boosts) get roomy limits — they're a flood guard, not a
+// per-guest cap. The booking form stays strict.
+const partyLimiter = rateLimit({ windowMs: 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false });
 app.use('/api/inquiries', formLimiter);
-app.use('/api/requests', formLimiter);
+app.use('/api/requests', partyLimiter);
 
 // Chat is polled via GET every few seconds, so only rate-limit the POSTs
 // (sending a message) — otherwise normal polling would trip the limiter.
 const chatLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 20,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -94,8 +111,7 @@ const reactionLimiter = rateLimit({
 });
 app.use('/api/reactions', (req, res, next) => (req.method === 'POST' ? reactionLimiter(req, res, next) : next()));
 
-app.use('/api/guestbook', (req, res, next) => (req.method === 'POST' ? formLimiter(req, res, next) : next()));
-app.use('/api/requests/upvote', formLimiter);
+app.use('/api/guestbook', (req, res, next) => (req.method === 'POST' ? partyLimiter(req, res, next) : next()));
 
 // Photo uploads, reviews, battle votes and planning-page saves are all
 // POST-only actions from real people; these just stop a script flooding them.
@@ -111,6 +127,24 @@ app.use('/api/wall', postOnly(uploadLimiter));
 app.use('/api/reviews', postOnly(formLimiter));
 app.use('/api/battles', postOnly(battleLimiter));
 app.use('/plan', postOnly(formLimiter));
+
+// Private pages are never stored by browsers or shared caches.
+app.use(['/admin', '/plan'], (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
+
+// Guessing the admin password: only FAILED attempts count, and after 40 in 15
+// minutes that address is locked out for the rest of the window.
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many failed logins. Try again in 15 minutes.',
+});
+app.use('/admin', adminLoginLimiter);
 
 app.use('/', publicRoutes);
 app.use('/api', apiRoutes);
@@ -129,6 +163,10 @@ app.use((err, req, res, next) => {
 const { purgeStalePending } = require('./src/wall');
 purgeStalePending();
 setInterval(purgeStalePending, 60 * 60 * 1000).unref();
+
+if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'changeme123') {
+  console.warn('WARNING: ADMIN_PASSWORD is not set (or is the default). Set a strong one before going live.');
+}
 
 app.listen(PORT, () => {
   console.log(`DJXpress site running on http://localhost:${PORT}`);

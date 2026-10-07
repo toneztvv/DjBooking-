@@ -69,9 +69,7 @@
   }
 
   function esc(str) {
-    const div = document.createElement('div');
-    div.textContent = str == null ? '' : String(str);
-    return div.innerHTML;
+    return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
   function loadImage(file) {
@@ -204,6 +202,13 @@
           window.location.href = data.url;
           return;
         }
+        if (res.ok && data.ok && data.alreadyHave && data.code) {
+          // This phone already has a pass — just switch it on, no payment needed.
+          setPass(data.code);
+          passSay('');
+          refresh();
+          return;
+        }
         passSay(data.error || 'Something went wrong. Please try again.', true);
       } catch (err) {
         passSay('Network error. Please try again.', true);
@@ -289,7 +294,7 @@
   async function refresh() {
     try {
       const sentPass = getPass();
-      const res = await fetch(`/api/wall?client_id=${encodeURIComponent(getClientId())}&pass_code=${encodeURIComponent(sentPass)}`, { headers: { Accept: 'application/json' } });
+      const res = await fetch(`/api/wall?client_id=${encodeURIComponent(getClientId())}`, { headers: { Accept: 'application/json', 'X-Pass-Code': sentPass } });
       if (!res.ok) return;
       const data = await res.json();
       wrap.style.display = data.enabled ? 'block' : 'none';
