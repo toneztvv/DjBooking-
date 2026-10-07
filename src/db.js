@@ -145,6 +145,61 @@ function initDb() {
       caption TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS wall_photos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      filename TEXT NOT NULL,
+      uploader_name TEXT,
+      caption TEXT,
+      client_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      approved_at TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_wall_photos_event
+      ON wall_photos (event_id, status, id);
+
+    CREATE TABLE IF NOT EXISTS battles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      song_a TEXT NOT NULL,
+      artist_a TEXT,
+      song_b TEXT NOT NULL,
+      artist_b TEXT,
+      ends_at INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      closed_at TEXT,
+      closed_ms INTEGER,
+      winner TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_battles_event
+      ON battles (event_id, id);
+
+    CREATE TABLE IF NOT EXISTS battle_votes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      battle_id INTEGER NOT NULL,
+      choice TEXT NOT NULL CHECK (choice IN ('a', 'b')),
+      client_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (battle_id, client_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS event_plans (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      inquiry_id INTEGER NOT NULL UNIQUE,
+      token TEXT NOT NULL UNIQUE,
+      must_play TEXT,
+      do_not_play TEXT,
+      timeline TEXT,
+      announcements TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT,
+      submitted_at TEXT
+    );
   `);
 
   const defaults = {
@@ -157,6 +212,15 @@ function initDb() {
     feature_effects: '1',
     feature_energy: '1',
     energy_level: '0',
+    feature_tips: '1',
+    feature_battles: '1',
+    feature_photowall: '1',
+    tip_venmo: '',
+    tip_cashapp: '',
+    tip_zelle: '',
+    tip_message: 'Loving the music? Tips are never expected, always appreciated. \u{1F49C}',
+    referral_offer: '',
+    google_review_url: '',
   };
   const insert = db.prepare(
     'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)'
@@ -198,6 +262,32 @@ function initDb() {
     db.exec(`ALTER TABLE events ADD COLUMN share_token TEXT`);
   }
 
+  if (!eventColumns.some((c) => c.name === 'photowall_unlocked')) {
+    db.exec(`ALTER TABLE events ADD COLUMN photowall_unlocked INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (!eventColumns.some((c) => c.name === 'referral_code')) {
+    db.exec(`ALTER TABLE events ADD COLUMN referral_code TEXT`);
+  }
+
+  // Migration: guest reviews from the recap page land in `testimonials`
+  // unpublished (published = 0) until the DJ approves them.
+  const testimonialColumns = db.prepare(`PRAGMA table_info(testimonials)`).all();
+  if (!testimonialColumns.some((c) => c.name === 'source')) {
+    db.exec(`ALTER TABLE testimonials ADD COLUMN source TEXT NOT NULL DEFAULT 'admin'`);
+  }
+  if (!testimonialColumns.some((c) => c.name === 'event_id')) {
+    db.exec(`ALTER TABLE testimonials ADD COLUMN event_id INTEGER`);
+  }
+  if (!testimonialColumns.some((c) => c.name === 'client_id')) {
+    db.exec(`ALTER TABLE testimonials ADD COLUMN client_id TEXT`);
+  }
+
+  // Migration: which recap/referral code (if any) a booking inquiry came from.
+  const inquiryColumns = db.prepare(`PRAGMA table_info(inquiries)`).all();
+  if (!inquiryColumns.some((c) => c.name === 'referral_code')) {
+    db.exec(`ALTER TABLE inquiries ADD COLUMN referral_code TEXT`);
+  }
+
   // Migration: "color" lets each guest's browser pick a display color for
   // their chat bubble / guestbook name — cosmetic only, not an identity.
   const chatColumns = db.prepare(`PRAGMA table_info(chat_messages)`).all();
@@ -234,6 +324,9 @@ function getFeatureFlags() {
     guestbook: getSetting('feature_guestbook') !== '0',
     effects: getSetting('feature_effects') !== '0',
     energy: getSetting('feature_energy') !== '0',
+    tips: getSetting('feature_tips') !== '0',
+    battles: getSetting('feature_battles') !== '0',
+    photoWall: getSetting('feature_photowall') !== '0',
   };
 }
 

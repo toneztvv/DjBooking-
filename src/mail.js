@@ -21,6 +21,7 @@ async function sendInquiryNotification(inquiry) {
     inquiry.eventType && `Event type: ${inquiry.eventType}`,
     inquiry.location && `Venue / location: ${inquiry.location}`,
     inquiry.guestCount && `Estimated guests: ${inquiry.guestCount}`,
+    inquiry.referralCode && `Referral code: ${inquiry.referralCode}`,
     inquiry.message && `\nMessage:\n${inquiry.message}`,
   ].filter(Boolean);
 

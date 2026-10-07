@@ -24,4 +24,13 @@ async function liveQrBuffer(size = 512) {
   });
 }
 
-module.exports = { getSiteUrl, getLiveUrl, getQrTargetUrl, liveQrBuffer };
+async function urlQrBuffer(url, size = 400) {
+  return QRCode.toBuffer(url, {
+    type: 'png',
+    width: size,
+    margin: 2,
+    color: { dark: '#0b0b12', light: '#ffffff' },
+  });
+}
+
+module.exports = { getSiteUrl, getLiveUrl, getQrTargetUrl, liveQrBuffer, urlQrBuffer };

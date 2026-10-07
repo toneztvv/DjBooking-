@@ -242,11 +242,59 @@ Log in at: ${siteUrl}/admin
                                               songs, booking conversion)
                                               and CSV exports of requests,
                                               inquiries, and guestbook
+  Tips & Extras          /admin/extras       Venmo/Cash App/Zelle, referral
+                                              offer, Google review link
   Services & Billing     /admin/services     One-click links to every
                                               paid account this site
                                               depends on
   This Guide             /admin/setup-guide  This document, downloadable
                                               any time
+
+=====================================================================
+NEWER EXTRAS — HOW EACH ONE WORKS
+=====================================================================
+DEDICATIONS: the "Shoutout / Dedication" box on a request now shows under
+  the song on the live board, your dashboard, and the Big Screen; when that
+  song plays, the Big Screen flashes it as a banner. Bad language is blocked.
+
+TIP JAR (Tips & Extras page, /admin/extras): enter your Venmo username,
+  Cash App $cashtag and/or Zelle email/phone. Guests see pay buttons on the
+  live page and a scan-to-tip QR on the Big Screen. Leave a box blank to
+  hide that method. Switch the whole thing on/off from the dashboard.
+
+SONG BATTLES (dashboard, "Song Battle" card): type two songs, pick a voting
+  time, press Start Battle. Guests vote once each. Press "Close Battle" (or
+  wait for the timer): the winner is added to Up Next as Accepted, a tie adds
+  both, and confetti + a banner announce it.
+
+LIVE PHOTO WALL — A PAID ADD-ON:
+  - It stays LOCKED for each event until YOU unlock it. Either tick "Photo
+    Wall add-on is paid" when you press Go Live, or press "Unlock Photo
+    Wall" on the Photo Wall card later. (There is no online checkout — you
+    collect payment yourself, then unlock it.)
+  - Guests pick a photo on the live page; their phone shrinks it first.
+  - EVERY photo waits for your OK. New ones appear in the Photo Wall card on
+    the dashboard (the browser tab title shows "(2) photos waiting"). Tap
+    Approve to put it on the Big Screen, Reject to delete it. You can remove
+    approved photos any time.
+  - Limits: JPEG only, 350 KB max on the server, 3 waiting + 12 total per
+    guest per night. Files are stored in data/photowall/ on the Render disk.
+
+CLIENT PLANNING PAGE: on Booking Inquiries press "Create Planning Link", then
+  Copy Link or Email It to your client. They fill in must-play songs,
+  do-not-play songs, a timeline, name pronunciations and notes. Press
+  "View Plan" to read, print, or download it. The link is private (random
+  and hidden from search engines); "Delete Planning Page" kills it.
+
+REVIEWS: every shared recap page asks guests "How was the night?". Their
+  review is saved HIDDEN in Testimonials — press "Approve & Publish" to put
+  it on the homepage. Add your Google review link in Tips & Extras and
+  4-5 star reviewers get a button to post it on Google too.
+
+REFERRALS: each shared recap has a code like DJX-AB12C and a share button.
+  Friends who book through the link (or type the code) are tagged on the
+  inquiry so you can see which event sent them. Write the perk you offer in
+  Tips & Extras (for example "$50 off for you and a friend").
 
 =====================================================================
 BIG SCREEN SOUNDBOARD — ONE-TIME SETUP EACH EVENT

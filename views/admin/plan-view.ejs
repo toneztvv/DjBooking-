@@ -1,0 +1,57 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Event Plan' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container" style="max-width: 820px;">
+    <div class="flex-between no-print" style="margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+      <h1 style="margin:0;">Event Plan</h1>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()">&#128424; Print</button>
+        <a href="/admin/plans/<%= plan.inquiry_id %>/download" class="btn btn-secondary btn-sm">Download .txt</a>
+        <a href="/admin/inquiries" class="btn btn-secondary btn-sm">&larr; Back to Inquiries</a>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 20px;">
+      <h2 style="margin-top:0;"><%= plan.client_name %></h2>
+      <p class="small-muted" style="margin:0;">
+        <%= [plan.event_type, plan.event_date, plan.location].filter(Boolean).join(' · ') || 'No event details on the inquiry' %>
+      </p>
+      <p class="small-muted" style="margin:8px 0 0;">
+        <% if (plan.submitted_at) { %>&#9989; Sent to you by the client (<%= plan.submitted_at %> UTC). They can still make changes.
+        <% } else if (plan.updated_at) { %>&#9999;&#65039; Draft saved <%= plan.updated_at %> UTC &mdash; the client hasn't pressed "Send to DJ" yet.
+        <% } else { %>The client hasn't opened or filled this in yet.<% } %>
+      </p>
+    </div>
+
+    <div class="card plan-section" style="margin-bottom: 20px;">
+      <h3>&#127926; Must-Play</h3>
+      <div class="plan-text"><%= plan.must_play || 'Nothing yet.' %></div>
+    </div>
+    <div class="card plan-section" style="margin-bottom: 20px;">
+      <h3>&#128683; Do-Not-Play</h3>
+      <div class="plan-text"><%= plan.do_not_play || 'Nothing yet.' %></div>
+    </div>
+    <div class="card plan-section" style="margin-bottom: 20px;">
+      <h3>&#128337; Timeline</h3>
+      <% if (timeline.length) { %>
+        <table>
+          <tbody>
+            <% timeline.forEach(function(r) { %>
+              <tr><td style="white-space:nowrap; width:120px;"><strong><%= r.time || '—' %></strong></td><td><%= r.label %></td></tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } else { %><div class="plan-text">Nothing yet.</div><% } %>
+    </div>
+    <div class="card plan-section" style="margin-bottom: 20px;">
+      <h3>&#127908; Announcements &amp; Name Pronunciations</h3>
+      <div class="plan-text"><%= plan.announcements || 'Nothing yet.' %></div>
+    </div>
+    <div class="card plan-section" style="margin-bottom: 20px;">
+      <h3>&#128221; Other Notes</h3>
+      <div class="plan-text"><%= plan.notes || 'Nothing yet.' %></div>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

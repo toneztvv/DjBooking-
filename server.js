@@ -75,6 +75,18 @@ app.use('/api/reactions', (req, res, next) => (req.method === 'POST' ? reactionL
 app.use('/api/guestbook', (req, res, next) => (req.method === 'POST' ? formLimiter(req, res, next) : next()));
 app.use('/api/requests/upvote', formLimiter);
 
+// Photo uploads, reviews, battle votes and planning-page saves are all
+// POST-only actions from real people; these just stop a script flooding them.
+// Everyone at a venue shares one wifi IP, so battle votes and photo uploads
+// get roomy limits — they're just a flood guard, not a per-guest cap.
+const uploadLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
+const battleLimiter = rateLimit({ windowMs: 60 * 1000, max: 400, standardHeaders: true, legacyHeaders: false });
+const postOnly = (limiter) => (req, res, next) => (req.method === 'POST' ? limiter(req, res, next) : next());
+app.use('/api/wall', postOnly(uploadLimiter));
+app.use('/api/reviews', postOnly(formLimiter));
+app.use('/api/battles', postOnly(battleLimiter));
+app.use('/plan', postOnly(formLimiter));
+
 app.use('/', publicRoutes);
 app.use('/api', apiRoutes);
 app.use('/admin', adminRoutes);

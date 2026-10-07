@@ -16,6 +16,7 @@
   if (nowPlayingArt) nowPlayingArt.addEventListener('error', () => (nowPlayingArt.style.display = 'none'));
   const nowPlayingTitle = document.getElementById('now-playing-title');
   const nowPlayingArtist = document.getElementById('now-playing-artist');
+  const nowPlayingDedication = document.getElementById('now-playing-dedication');
 
   const chatWrap = document.getElementById('chat-wrap');
   const chatLog = document.getElementById('chat-log');
@@ -119,6 +120,12 @@
     }
   }
 
+  // "For Maria's 15th" notes people attach to a request, shown under the song.
+  function dedicationHtml(r) {
+    if (!r.dedication) return '';
+    return `<br><span class="dedication-note">&#128140; ${escapeHtml(r.dedication)}${r.dedication_by ? ` <span class="small-muted">&mdash; ${escapeHtml(r.dedication_by)}</span>` : ''}</span>`;
+  }
+
   function renderPending(rows) {
     if (!rows.length) {
       pendingBody.innerHTML = '';
@@ -131,7 +138,7 @@
       .map(
         (r) => `
       <tr>
-        <td><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}${r.accepted ? '<br><span class="badge badge-booked">&#10003; Accepted</span>' : ''}</td>
+        <td><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}${r.accepted ? '<br><span class="badge badge-booked">&#10003; Accepted</span>' : ''}${dedicationHtml(r)}</td>
         <td>${escapeHtml(r.requesters)}</td>
         <td>${formatTime(r.first_requested_at)}</td>
         <td><span class="count-pill">${r.times_requested}</span></td>
@@ -176,7 +183,7 @@
       .map(
         (r) => `
       <tr>
-        <td><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}</td>
+        <td><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}${dedicationHtml(r)}</td>
         <td>${escapeHtml(r.requesters)}</td>
         <td>${formatTime(r.played_at)}</td>
         <td><span class="count-pill">${r.times_requested}</span></td>
@@ -535,6 +542,11 @@
           nowPlayingWrap.style.display = 'flex';
           nowPlayingTitle.textContent = data.nowPlaying.song_title;
           nowPlayingArtist.textContent = data.nowPlaying.artist || '';
+          if (nowPlayingDedication) {
+            const d = data.nowPlaying.dedication;
+            nowPlayingDedication.textContent = d ? `\u{1F48C} ${d}${data.nowPlaying.dedication_by ? ` — ${data.nowPlaying.dedication_by}` : ''}` : '';
+            nowPlayingDedication.style.display = d ? 'block' : 'none';
+          }
           if (data.nowPlaying.artwork_url) {
             nowPlayingArt.src = data.nowPlaying.artwork_url;
             nowPlayingArt.style.display = 'block';
@@ -550,6 +562,14 @@
         window.DJXMoments.update({
           energy: isLive ? data.energy : null,
           countdown: isLive ? data.countdown : null,
+        });
+      }
+
+      if (window.DJXExtras) {
+        window.DJXExtras.update({
+          tips: isLive && features.tips ? data.tips : null,
+          battle: isLive && features.battles ? data.battle : null,
+          battleResult: isLive && features.battles ? data.battleResult : null,
         });
       }
 
@@ -598,6 +618,7 @@
     });
   }
 
+  window.DJXExtrasRefresh = refresh;
   refresh();
   setInterval(refresh, 5000);
 

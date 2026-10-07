@@ -10,7 +10,8 @@
       <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
         <a href="/admin/events" class="btn btn-secondary btn-sm">Event History</a>
         <a href="/admin/guestbook" class="btn btn-secondary btn-sm">Guestbook</a>
-        <a href="/admin/testimonials" class="btn btn-secondary btn-sm">Testimonials</a>
+        <a href="/admin/testimonials" class="btn btn-secondary btn-sm">Testimonials<% if (pendingReviews > 0) { %> <span class="badge badge-new"><%= pendingReviews %> new</span><% } %></a>
+        <a href="/admin/extras" class="btn btn-secondary btn-sm">Tips &amp; Extras</a>
         <a href="/admin/gallery" class="btn btn-secondary btn-sm">Gallery</a>
         <a href="/admin/analytics" class="btn btn-secondary btn-sm">Analytics</a>
         <a href="/admin/services" class="btn btn-secondary btn-sm">Services &amp; Billing</a>
@@ -80,6 +81,33 @@
             <button type="submit" class="btn btn-sm <%= features.energy ? 'btn-success' : 'btn-ghost' %>"><%= features.energy ? 'ON' : 'OFF' %></button>
           </form>
         </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Tip Jar</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Venmo / Cash App / Zelle tip buttons for guests. Set your handles in <a href="/admin/extras">Tips &amp; Extras</a>.</p>
+          </div>
+          <form method="POST" action="/admin/features/tips/toggle">
+            <button type="submit" class="btn btn-sm <%= features.tips ? 'btn-success' : 'btn-ghost' %>"><%= features.tips ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Song Battles</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Pit two songs against each other &mdash; guests vote and the winner plays next.</p>
+          </div>
+          <form method="POST" action="/admin/features/battles/toggle">
+            <button type="submit" class="btn btn-sm <%= features.battles ? 'btn-success' : 'btn-ghost' %>"><%= features.battles ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Live Photo Wall <span class="badge badge-contacted">Paid add-on</span></strong>
+            <p class="small-muted" style="margin:2px 0 0;">Guests send small photos and you approve each one before it hits the Big Screen. Also needs to be unlocked per event (below).</p>
+          </div>
+          <form method="POST" action="/admin/features/photowall/toggle">
+            <button type="submit" class="btn btn-sm <%= features.photoWall ? 'btn-success' : 'btn-ghost' %>"><%= features.photoWall ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
       </div>
     </div>
 
@@ -93,6 +121,10 @@
               <label for="event_name">Event Name (optional)</label>
               <input type="text" id="event_name" name="event_name" maxlength="120" placeholder="e.g. Smith Wedding Reception" />
             </div>
+            <label class="check-row" for="photowall_unlocked">
+              <input type="checkbox" id="photowall_unlocked" name="photowall_unlocked" value="1" />
+              <span><strong>&#128274; Photo Wall add-on is paid</strong><br><span class="small-muted">Only tick this once the client has paid for the Live Photo Wall. You can also unlock it later from the Photo Wall card.</span></span>
+            </label>
             <button type="submit" class="btn btn-success btn-block">Go Live &amp; Start Fresh Board</button>
           <% } else { %>
             <p class="small-muted">Currently live<% if (eventName) { %>: <strong><%= eventName %></strong><% } %></p>
@@ -179,6 +211,73 @@
       <% } %>
 
       <p id="hype-status" class="small-muted" style="margin-top:12px; min-height:1.4em;" role="status"></p>
+    </div>
+    <% } %>
+
+    <% if (isLive && features.battles) { %>
+    <div class="card" id="battle-card" style="margin-bottom: 30px;" data-battle-id="<%= battle ? battle.id : '' %>">
+      <h3>&#9876;&#65039; Song Battle</h3>
+      <% if (battle) { %>
+        <p class="small-muted" style="margin-bottom:14px;">Guests are voting right now. When you close it (or the timer ends), the winner is added to Up Next as <strong>Accepted</strong> and a confetti banner announces it.</p>
+        <div class="battle-admin-row"><span id="battle-admin-a"><strong><%= battle.songA %></strong><% if (battle.artistA) { %> <span class="small-muted">&mdash; <%= battle.artistA %></span><% } %></span><span class="count-pill" id="battle-admin-votes-a"><%= battle.votesA %></span></div>
+        <div class="battle-admin-row"><span id="battle-admin-b"><strong><%= battle.songB %></strong><% if (battle.artistB) { %> <span class="small-muted">&mdash; <%= battle.artistB %></span><% } %></span><span class="count-pill" id="battle-admin-votes-b"><%= battle.votesB %></span></div>
+        <% if (battle.endsInSeconds !== null) { %><p class="small-muted" style="margin-top:10px;">&#9201; Closes automatically in <strong id="battle-admin-timer"><%= Math.floor(battle.endsInSeconds / 60) %>:<%= String(battle.endsInSeconds % 60).padStart(2, '0') %></strong></p><% } %>
+        <form method="POST" action="/admin/battles/<%= battle.id %>/close" style="margin-top:14px;">
+          <button type="submit" class="btn btn-success btn-block btn-sm">&#127942; Close Battle &amp; Queue the Winner</button>
+        </form>
+      <% } else { %>
+        <p class="small-muted" style="margin-bottom:14px;">Put two songs head to head. Guests vote on their phones, you see it live on the Big Screen, and the winner is added to Up Next for you. Great for those "what do we play next?" moments.</p>
+        <form method="POST" action="/admin/battles">
+          <div class="form-grid">
+            <div class="field">
+              <label for="battle_song_a">Song A *</label>
+              <input type="text" id="battle_song_a" name="song_a" maxlength="120" required placeholder="e.g. Gasolina" />
+              <input type="text" name="artist_a" maxlength="120" placeholder="Artist (optional)" style="margin-top:6px;" />
+            </div>
+            <div class="field">
+              <label for="battle_song_b">Song B *</label>
+              <input type="text" id="battle_song_b" name="song_b" maxlength="120" required placeholder="e.g. Pepas" />
+              <input type="text" name="artist_b" maxlength="120" placeholder="Artist (optional)" style="margin-top:6px;" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="battle_minutes">Voting time</label>
+            <select id="battle_minutes" name="minutes">
+              <option value="0">I'll close it myself</option>
+              <option value="1">1 minute</option>
+              <option value="2" selected>2 minutes</option>
+              <option value="3">3 minutes</option>
+              <option value="5">5 minutes</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Start Battle</button>
+        </form>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (isLive && features.photoWall) { %>
+    <div class="card" id="wall-card" style="margin-bottom: 30px;" data-unlocked="<%= photoWallUnlocked ? '1' : '0' %>">
+      <h3>&#128248; Live Photo Wall <span class="badge badge-contacted">Paid add-on</span></h3>
+      <% if (!photoWallUnlocked) { %>
+        <p class="small-muted" style="margin-bottom:14px;">&#128274; <strong>Locked for this event.</strong> The Photo Wall lets guests send small photos from their phones; you approve each one before it appears on the Big Screen. Unlock it once the client has paid for the add-on &mdash; guests won't see anything about it until you do.</p>
+        <form method="POST" action="/admin/wall/unlock" onsubmit="return confirm('Unlock the Photo Wall for this event? Only do this after the client has paid for the add-on.');">
+          <input type="hidden" name="unlock" value="1" />
+          <button type="submit" class="btn btn-primary btn-block">&#128275; Unlock Photo Wall (client paid)</button>
+        </form>
+      <% } else { %>
+        <p class="small-muted" style="margin-bottom:14px;">&#128275; <strong>Unlocked.</strong> Guests can send photos from the live page. <strong>Nothing shows anywhere until you tap Approve.</strong> Photos are shrunk to small sizes on the guest's phone first.</p>
+        <h4 class="hype-heading">Waiting for your OK <span id="wall-pending-count" class="count-pill">0</span></h4>
+        <div id="wall-pending" class="wall-admin-grid"></div>
+        <p id="wall-pending-empty" class="small-muted">No photos waiting. They'll appear here within a few seconds of being sent.</p>
+        <h4 class="hype-heading">On the wall <span id="wall-approved-count" class="count-pill">0</span></h4>
+        <div id="wall-approved" class="wall-admin-grid wall-admin-grid-small"></div>
+        <p id="wall-approved-empty" class="small-muted">Nothing approved yet.</p>
+        <form method="POST" action="/admin/wall/unlock" style="margin-top:14px;" onsubmit="return confirm('Lock the Photo Wall again? Guests will no longer be able to send photos, and the wall disappears from the screens. Approved photos are kept.');">
+          <input type="hidden" name="unlock" value="0" />
+          <button type="submit" class="btn btn-ghost btn-sm">&#128274; Lock Photo Wall again</button>
+        </form>
+      <% } %>
     </div>
     <% } %>
 
@@ -269,6 +368,7 @@
                     <strong><%= r.song_title %></strong>
                     <% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %>
                     <% if (r.accepted) { %><br><span class="badge badge-booked">&#10003; Accepted</span><% } %>
+                    <% if (r.dedication) { %><br><span class="dedication-note">&#128140; <%= r.dedication %><% if (r.dedication_by) { %> <span class="small-muted">&mdash; <%= r.dedication_by %></span><% } %></span><% } %>
                   </td>
                   <td><%= r.requesters %></td>
                   <td><span class="count-pill"><%= r.times_requested %></span></td>
@@ -333,6 +433,8 @@
 <script src="/js/detect.js"></script>
 <script src="/js/admin-chat.js"></script>
 <script src="/js/admin-hype.js"></script>
+<script src="/js/admin-battle.js"></script>
+<script src="/js/admin-wall.js"></script>
 <% } %>
 
 <%- include('../partials/footer') %>

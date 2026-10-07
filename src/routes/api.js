@@ -1,6 +1,14 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const crypto = require('crypto');
+const fs = require('fs');
 const { db, getSetting, normalizeKey, getFeatureFlags } = require('../db');
-const { liveQrBuffer } = require('../qr');
+const { liveQrBuffer, urlQrBuffer } = require('../qr');
+const { getBattleState } = require('../battles');
+const { getTipJar, getTipMethods } = require('../tips');
+const { WALL_DIR, MAX_PHOTO_BYTES, WALL_FILE_RE, looksLikeJpeg } = require('../wall');
+const { cleanReferral, getReferralInfo } = require('../referrals');
 const { sendInquiryNotification } = require('../mail');
 const { sendSms } = require('../sms');
 const { containsBannedWord } = require('../moderation');
@@ -35,23 +43,25 @@ router.post('/inquiries', (req, res) => {
   const location = clean(body.location, 200);
   const guestCount = clean(body.guest_count, 60);
   const message = clean(body.message, 2000);
+  const referralCode = cleanReferral(body.referral_code);
 
   if (!name || !email || !isValidEmail(email)) {
     return res.status(400).render('book', {
       page: 'book',
       submitted: false,
       error: 'Please provide a valid name and email address.',
-      values: { name, email, phone, eventDate, eventType, location, guestCount, message },
+      values: { name, email, phone, eventDate, eventType, location, guestCount, message, referralCode },
+      referral: getReferralInfo(referralCode),
     });
   }
 
   db.prepare(
     `INSERT INTO inquiries
-      (name, email, phone, event_date, event_type, location, guest_count, message)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(name, email, phone, eventDate, eventType, location, guestCount, message);
+      (name, email, phone, event_date, event_type, location, guest_count, message, referral_code)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(name, email, phone, eventDate, eventType, location, guestCount, message, referralCode || null);
 
-  sendInquiryNotification({ name, email, phone, eventDate, eventType, location, guestCount, message }).catch(
+  sendInquiryNotification({ name, email, phone, eventDate, eventType, location, guestCount, message, referralCode }).catch(
     (err) => console.error('Failed to send inquiry notification email:', err.message)
   );
 
@@ -78,7 +88,15 @@ function getPendingBoard(eventId) {
               GROUP_CONCAT(DISTINCT sr.requested_by) AS requesters,
               MAX(sr.accepted) AS accepted,
               (SELECT COUNT(*) FROM request_upvotes u
-                WHERE u.event_id = sr.event_id AND u.normalized_key = sr.normalized_key) AS upvotes
+                WHERE u.event_id = sr.event_id AND u.normalized_key = sr.normalized_key) AS upvotes,
+              (SELECT d.dedication FROM song_requests d
+                WHERE d.event_id = sr.event_id AND d.normalized_key = sr.normalized_key
+                  AND d.status = 'pending' AND d.dedication IS NOT NULL AND d.dedication != ''
+                ORDER BY d.id LIMIT 1) AS dedication,
+              (SELECT d.requested_by FROM song_requests d
+                WHERE d.event_id = sr.event_id AND d.normalized_key = sr.normalized_key
+                  AND d.status = 'pending' AND d.dedication IS NOT NULL AND d.dedication != ''
+                ORDER BY d.id LIMIT 1) AS dedication_by
        FROM song_requests sr
        WHERE sr.event_id = ? AND sr.status = 'pending'
        GROUP BY sr.normalized_key
@@ -96,11 +114,21 @@ function getRecentlyPlayed(eventId) {
               played_at,
               MAX(artwork_url) AS artwork_url,
               COUNT(*) AS times_requested,
-              GROUP_CONCAT(DISTINCT requested_by) AS requesters
-       FROM song_requests
-       WHERE event_id = ? AND status = 'played'
-       GROUP BY normalized_key, played_at
-       ORDER BY played_at DESC
+              GROUP_CONCAT(DISTINCT requested_by) AS requesters,
+              (SELECT d.dedication FROM song_requests d
+                WHERE d.event_id = sr.event_id AND d.normalized_key = sr.normalized_key
+                  AND d.status = 'played' AND d.played_at = sr.played_at
+                  AND d.dedication IS NOT NULL AND d.dedication != ''
+                ORDER BY d.id LIMIT 1) AS dedication,
+              (SELECT d.requested_by FROM song_requests d
+                WHERE d.event_id = sr.event_id AND d.normalized_key = sr.normalized_key
+                  AND d.status = 'played' AND d.played_at = sr.played_at
+                  AND d.dedication IS NOT NULL AND d.dedication != ''
+                ORDER BY d.id LIMIT 1) AS dedication_by
+       FROM song_requests sr
+       WHERE sr.event_id = ? AND sr.status = 'played'
+       GROUP BY sr.normalized_key, sr.played_at
+       ORDER BY sr.played_at DESC
        LIMIT 50`
     )
     .all(eventId);
@@ -157,11 +185,12 @@ function getCountdown() {
 router.get('/live-state', (req, res) => {
   const isLive = getSetting('is_live') === '1';
   const eventId = Number(getSetting('current_event_id') || '1');
-  const currentEvent = db.prepare('SELECT name FROM events WHERE id = ?').get(eventId);
+  const currentEvent = db.prepare('SELECT name, photowall_unlocked FROM events WHERE id = ?').get(eventId);
   const eventName = (currentEvent && currentEvent.name) || '';
   const features = getFeatureFlags();
 
   const recentlyPlayed = getRecentlyPlayed(eventId);
+  const battleState = isLive && features.battles ? getBattleState(eventId) : { active: null, result: null };
 
   res.json({
     isLive,
@@ -172,6 +201,10 @@ router.get('/live-state', (req, res) => {
     nowPlaying: isLive ? recentlyPlayed[0] || null : null,
     energy: isLive && features.energy ? getEnergy() : null,
     countdown: isLive && features.effects ? getCountdown() : null,
+    tips: isLive && features.tips ? getTipJar() : null,
+    battle: battleState.active,
+    battleResult: battleState.result,
+    photoWall: { enabled: isLive && features.photoWall && !!(currentEvent && currentEvent.photowall_unlocked) },
     pending: getPendingBoard(eventId),
     recentlyPlayed,
   });
@@ -243,6 +276,12 @@ router.post('/requests', (req, res) => {
 
   if (!songTitle || !requestedBy) {
     return res.status(400).json({ ok: false, error: 'Please enter your name and a song title.' });
+  }
+
+  // Dedications and names are shown to the whole room (and on the Big
+  // Screen), so they get the same language filter as chat and the guestbook.
+  if (containsBannedWord(requestedBy) || containsBannedWord(dedication)) {
+    return res.status(400).json({ ok: false, error: 'That name or dedication isn’t allowed. Please remove the inappropriate language and try again.' });
   }
 
   const eventId = Number(getSetting('current_event_id') || '1');
@@ -532,6 +571,215 @@ router.post('/guestbook', (req, res) => {
     .get(result.lastInsertRowid);
 
   res.status(201).json({ ok: true, entry: saved });
+});
+
+// --- Song battles ----------------------------------------------------------------
+
+router.post('/battles/:id/vote', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  const features = getFeatureFlags();
+  if (!isLive || !features.battles) {
+    return res.status(409).json({ ok: false, error: 'Song battles are turned off right now.' });
+  }
+
+  const battleId = Number(req.params.id);
+  const choice = clean((req.body || {}).choice, 1);
+  const clientId = clean((req.body || {}).client_id, 100);
+  if (!['a', 'b'].includes(choice) || !clientId) {
+    return res.status(400).json({ ok: false, error: 'Missing vote choice.' });
+  }
+
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const battle = db
+    .prepare(`SELECT * FROM battles WHERE id = ? AND event_id = ? AND closed_at IS NULL`)
+    .get(battleId, eventId);
+  if (!battle || (battle.ends_at && Date.now() >= battle.ends_at)) {
+    return res.status(410).json({ ok: false, error: 'This battle has ended.' });
+  }
+
+  try {
+    db.prepare(`INSERT INTO battle_votes (battle_id, choice, client_id) VALUES (?, ?, ?)`).run(
+      battleId,
+      choice,
+      clientId
+    );
+  } catch (err) {
+    return res.status(409).json({ ok: false, error: 'You already voted in this battle.' });
+  }
+
+  res.status(201).json({ ok: true });
+});
+
+// --- Live photo wall ---------------------------------------------------------------
+
+// Small photos only: guests' phones shrink pictures before sending (see
+// public/js/wall.js) and this is the hard ceiling on the server too.
+const wallUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_PHOTO_BYTES, files: 1, fields: 6 },
+});
+
+function wallUploadMiddleware(req, res, next) {
+  wallUpload.single('photo')(req, res, (err) => {
+    if (!err) return next();
+    const tooBig = err.code === 'LIMIT_FILE_SIZE';
+    res.status(tooBig ? 413 : 400).json({
+      ok: false,
+      error: tooBig ? 'That photo is too big — please try a smaller one.' : 'Upload failed — please try again.',
+    });
+  });
+}
+
+// The wall only exists when it is live, switched on, AND this event has been
+// unlocked by the DJ (the paid add-on).
+function getWallAccess() {
+  const isLive = getSetting('is_live') === '1';
+  const features = getFeatureFlags();
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const event = db.prepare('SELECT photowall_unlocked FROM events WHERE id = ?').get(eventId);
+  const enabled = isLive && features.photoWall && !!(event && event.photowall_unlocked);
+  return { enabled, eventId };
+}
+
+function wallUrl(filename) {
+  return `/api/wall/photo/${filename}`;
+}
+
+router.get('/wall', (req, res) => {
+  const { enabled, eventId } = getWallAccess();
+  if (!enabled) return res.json({ enabled: false, photos: [], mine: { pending: 0 } });
+
+  const photos = db
+    .prepare(
+      `SELECT id, filename, uploader_name, caption FROM wall_photos
+       WHERE event_id = ? AND status = 'approved' ORDER BY id DESC LIMIT 60`
+    )
+    .all(eventId)
+    .map((p) => ({ id: p.id, url: wallUrl(p.filename), name: p.uploader_name || '', caption: p.caption || '' }));
+
+  const clientId = clean(req.query.client_id, 100);
+  const pending = clientId
+    ? db
+        .prepare(`SELECT COUNT(*) AS c FROM wall_photos WHERE event_id = ? AND client_id = ? AND status = 'pending'`)
+        .get(eventId, clientId).c
+    : 0;
+
+  res.json({ enabled: true, photos, mine: { pending } });
+});
+
+router.post('/wall', wallUploadMiddleware, (req, res) => {
+  const { enabled, eventId } = getWallAccess();
+  if (!enabled) {
+    return res.status(409).json({ ok: false, error: 'The photo wall isn’t open right now.' });
+  }
+
+  const body = req.body || {};
+  if (clean(body.company_website)) return res.status(201).json({ ok: true });
+
+  if (!req.file || !looksLikeJpeg(req.file.buffer)) {
+    return res.status(400).json({ ok: false, error: 'Please choose a photo.' });
+  }
+
+  const clientId = clean(body.client_id, 100);
+  const name = clean(body.name, 60);
+  const caption = clean(body.caption, 80);
+  if (!clientId) return res.status(400).json({ ok: false, error: 'Please reload the page and try again.' });
+
+  if (containsBannedWord(name) || containsBannedWord(caption)) {
+    return res.status(400).json({ ok: false, error: 'That name or caption isn’t allowed. Please remove the inappropriate language and try again.' });
+  }
+
+  const counts = db
+    .prepare(
+      `SELECT COUNT(*) AS total, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending
+       FROM wall_photos WHERE event_id = ? AND client_id = ?`
+    )
+    .get(eventId, clientId);
+  if ((counts.pending || 0) >= 3) {
+    return res.status(429).json({ ok: false, error: 'You have photos waiting for the DJ — give them a minute to approve those first.' });
+  }
+  if (counts.total >= 12) {
+    return res.status(429).json({ ok: false, error: 'You’ve shared the max number of photos for tonight — thank you!' });
+  }
+
+  const filename = `${crypto.randomUUID()}.jpg`;
+  fs.writeFileSync(path.join(WALL_DIR, filename), req.file.buffer);
+  db.prepare(
+    `INSERT INTO wall_photos (event_id, filename, uploader_name, caption, client_id) VALUES (?, ?, ?, ?, ?)`
+  ).run(eventId, filename, name || null, caption || null, clientId);
+
+  res.status(201).json({ ok: true });
+});
+
+// Approved photos are public (anyone with the unguessable link can see
+// them, which is how the recap page shows them); pending ones are only
+// visible to the DJ through /admin/wall/photo/.
+router.get('/wall/photo/:file', (req, res) => {
+  const file = String(req.params.file || '');
+  if (!WALL_FILE_RE.test(file)) return res.status(404).end();
+  const row = db.prepare(`SELECT 1 FROM wall_photos WHERE filename = ? AND status = 'approved'`).get(file);
+  if (!row) return res.status(404).end();
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.type('image/jpeg').sendFile(path.join(WALL_DIR, file));
+});
+
+// --- Guest reviews (from the shareable recap page) -----------------------------
+
+router.post('/reviews', (req, res) => {
+  const body = req.body || {};
+  if (clean(body.company_website)) return res.status(201).json({ ok: true });
+
+  const token = clean(body.token, 64);
+  const event = token && db.prepare(`SELECT id, name FROM events WHERE share_token = ?`).get(token);
+  if (!event) return res.status(404).json({ ok: false, error: 'This recap link is no longer active.' });
+
+  const rating = Math.round(Number(body.rating));
+  const name = clean(body.name, 80);
+  const quote = clean(body.quote, 600);
+  const clientId = clean(body.client_id, 100);
+
+  if (!(rating >= 1 && rating <= 5)) {
+    return res.status(400).json({ ok: false, error: 'Please tap a star rating first.' });
+  }
+  if (!name || quote.length < 3) {
+    return res.status(400).json({ ok: false, error: 'Please add your name and a short comment.' });
+  }
+  if (containsBannedWord(name) || containsBannedWord(quote)) {
+    return res.status(400).json({ ok: false, error: 'That review isn’t allowed. Please remove the inappropriate language and try again.' });
+  }
+
+  if (clientId) {
+    const already = db
+      .prepare(`SELECT 1 FROM testimonials WHERE event_id = ? AND client_id = ? LIMIT 1`)
+      .get(event.id, clientId);
+    if (already) {
+      return res.status(409).json({ ok: false, error: 'You already left a review — thank you!' });
+    }
+  }
+
+  // Saved hidden: nothing shows on the homepage until the DJ approves it.
+  db.prepare(
+    `INSERT INTO testimonials (client_name, quote, event_type, rating, published, source, event_id, client_id)
+     VALUES (?, ?, ?, ?, 0, 'guest', ?, ?)`
+  ).run(name, quote, event.name || null, rating, event.id, clientId || null);
+
+  const googleUrl = getSetting('google_review_url') || '';
+  res.status(201).json({ ok: true, googleUrl: rating >= 4 && /^https:\/\//.test(googleUrl) ? googleUrl : '' });
+});
+
+// --- Tip jar QR codes (for the Big Screen) -----------------------------------------
+
+router.get('/tip-qr/:method.png', async (req, res, next) => {
+  try {
+    const method = getTipMethods().find((m) => m.id === req.params.method && m.url);
+    if (!method) return res.status(404).end();
+    const buffer = await urlQrBuffer(method.url, 360);
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'no-cache');
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
 });
 
 // --- QR code ---------------------------------------------------------------

@@ -7,7 +7,7 @@
       <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
     </div>
     <p class="small-muted" style="margin-bottom: 24px; max-width: 720px;">
-      Type in reviews you've gotten (from Google, Facebook, a text message, wherever) to show off on the homepage. Only "Published" ones show up there — use the button to hide one without deleting it.
+      Type in reviews you've gotten (from Google, Facebook, a text message, wherever) to show off on the homepage. Reviews guests leave on their shareable recap page land here too, hidden, until you tap <strong>Approve &amp; Publish</strong>. Only "Published" ones show up on the homepage — use the button to hide one without deleting it.
     </p>
 
     <div class="form-card" style="margin-bottom: 30px;">
@@ -42,7 +42,9 @@
     </div>
 
     <% testimonials.forEach(function(t) { %>
-      <div class="card" style="margin-bottom: 16px;">
+      <% const isPendingReview = t.source === 'guest' && !t.published; %>
+      <div class="card<%= isPendingReview ? ' review-pending' : '' %>" style="margin-bottom: 16px;">
+        <% if (isPendingReview) { %><div style="margin-bottom:8px;"><span class="badge badge-new">New review from a recap page &mdash; waiting for your OK</span></div><% } %>
         <div class="flex-between">
           <div>
             <div class="star-rating"><% for (let i = 0; i < 5; i++) { %><%- i < t.rating ? '&#9733;' : '&#9734;' %><% } %></div>
@@ -51,7 +53,7 @@
           </div>
           <div style="display:flex; flex-direction:column; gap:8px;">
             <form method="POST" action="/admin/testimonials/<%= t.id %>/toggle">
-              <button type="submit" class="btn btn-sm <%= t.published ? 'btn-success' : 'btn-ghost' %>"><%= t.published ? 'Published' : 'Hidden' %></button>
+              <button type="submit" class="btn btn-sm <%= t.published ? 'btn-success' : (isPendingReview ? 'btn-primary' : 'btn-ghost') %>"><%= t.published ? 'Published' : (isPendingReview ? 'Approve & Publish' : 'Hidden') %></button>
             </form>
             <form method="POST" action="/admin/testimonials/<%= t.id %>/delete" onsubmit="return confirm('Delete this testimonial?');">
               <button type="submit" class="btn btn-danger btn-sm">Delete</button>

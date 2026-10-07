@@ -1,0 +1,69 @@
+<%- include('partials/header', { page, title, noindex }) %>
+
+<section class="hero" style="padding: 60px 0 20px;">
+  <div class="container">
+    <span class="eyebrow">Your Private Planning Page</span>
+    <h1 style="font-size: clamp(2rem, 5vw, 3rem);">Plan Your <span class="gradient">Night</span></h1>
+    <p class="lead">
+      Hi <%= plan.client_name.split(' ')[0] %>! Fill this in at your own pace &mdash; it takes about 5 minutes.
+      <% if (plan.event_type || plan.event_date) { %><br><span class="small-muted"><%= [plan.event_type, plan.event_date, plan.location].filter(Boolean).join(' · ') %></span><% } %>
+    </p>
+    <p class="small-muted">Nothing here is public &mdash; only you and your DJ can see it. You can come back and change it any time using this same link.</p>
+  </div>
+</section>
+
+<section style="padding-top: 10px;">
+  <div class="container">
+    <form id="plan-form" class="plan-wrap" data-timeline="<%= JSON.stringify(timeline) %>" novalidate>
+
+      <div class="form-card plan-step" style="max-width:100%;">
+        <h3>&#127926; 1. Songs we MUST hear</h3>
+        <p class="small-muted">The songs you can't imagine the night without. Put one per line &mdash; like <em>"Bailando &ndash; Enrique Iglesias"</em>. Don't worry about spelling, we'll figure it out.</p>
+        <textarea id="plan-must" name="must_play" rows="7" maxlength="4000" placeholder="One song per line..."><%= plan.must_play || '' %></textarea>
+      </div>
+
+      <div class="form-card plan-step" style="max-width:100%;">
+        <h3>&#128683; 2. Songs to NEVER play</h3>
+        <p class="small-muted">Anything you or your family don't want to hear &mdash; an ex's song, a song with sad memories, a genre you can't stand. We'll skip it, no questions asked.</p>
+        <textarea id="plan-skip" name="do_not_play" rows="5" maxlength="4000" placeholder="One song, artist or style per line..."><%= plan.do_not_play || '' %></textarea>
+      </div>
+
+      <div class="form-card plan-step" style="max-width:100%;">
+        <h3>&#128337; 3. The timeline</h3>
+        <p class="small-muted">Tap the special moments you're having to add them, then put roughly what time each one happens. You can change the order by editing the times &mdash; no stress if you're not sure yet.</p>
+        <div class="plan-chips" id="plan-chips">
+          <% ['Grand Entrance','Welcome / Intro','Dinner','Toasts','First Dance','Parent Dances','Quinceañera Waltz','Surprise Dance','Cake Cutting','Bouquet Toss','Dollar Dance','Games / Activities','Last Dance'].forEach(function(label) { %>
+            <button type="button" class="plan-chip" data-label="<%= label %>">+ <%= label %></button>
+          <% }); %>
+        </div>
+        <div id="plan-timeline"></div>
+        <button type="button" id="plan-add-row" class="btn btn-ghost btn-sm">+ Add another moment</button>
+      </div>
+
+      <div class="form-card plan-step" style="max-width:100%;">
+        <h3>&#127908; 4. Announcements &amp; names</h3>
+        <p class="small-muted">How should the DJ say everyone's names? Who should we announce (the wedding party, the court of honor, special guests)? Spell out any names that are tricky to pronounce.</p>
+        <textarea id="plan-announce" name="announcements" rows="5" maxlength="1500" placeholder="e.g. Please introduce the bride &amp; groom as Mr. &amp; Mrs. Ramírez (rah-MEER-ez)"><%= plan.announcements || '' %></textarea>
+      </div>
+
+      <div class="form-card plan-step" style="max-width:100%;">
+        <h3>&#128221; 5. Anything else?</h3>
+        <p class="small-muted">The vibe you're going for, a surprise we should know about, venue rules, a grandma who loves cumbias&hellip; anything.</p>
+        <textarea id="plan-notes" name="notes" rows="4" maxlength="2000" placeholder="Anything else we should know..."><%= plan.notes || '' %></textarea>
+      </div>
+
+      <div class="plan-savebar">
+        <button type="button" id="plan-save" class="btn btn-secondary">Save Draft</button>
+        <button type="button" id="plan-send" class="btn btn-primary">Send to My DJ &#10003;</button>
+        <span id="plan-status" class="small-muted" role="status">
+          <% if (plan.submitted_at) { %>&#9989; You sent this to your DJ. You can still make changes and send again.<% } else if (plan.updated_at) { %>Draft saved earlier.<% } %>
+        </span>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script src="/js/plan.js"></script>
+<script src="/js/polish.js"></script>
+
+<%- include('partials/footer') %>

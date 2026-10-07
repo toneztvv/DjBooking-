@@ -24,6 +24,13 @@
       <p class="small-muted" style="margin-top:12px; text-align:center;"><span class="cal-legend-dot cal-booked"></span> Already booked &nbsp; <span class="cal-legend-dot cal-open"></span> Open</p>
     </div>
 
+    <% if (typeof referral !== 'undefined' && referral) { %>
+    <div class="alert alert-success referral-banner">
+      &#127873; <strong>Referral code <%= referral.code %> applied.</strong>
+      <% if (referral.offer) { %> <%= referral.offer %><% } else { %> Thanks for coming through a friend!<% } %>
+    </div>
+    <% } %>
+
     <div class="form-card reveal">
       <% if (typeof submitted !== 'undefined' && submitted) { %>
         <div class="alert alert-success">Thanks! Your inquiry has been sent. DJXpress will reach out soon.</div>
@@ -99,6 +106,12 @@
           <label for="message">Tell us about your event</label>
           <textarea id="message" name="message" rows="5" maxlength="2000"
             placeholder="Music style, timeline, special requests..."><%= typeof values !== 'undefined' ? values.message : '' %></textarea>
+        </div>
+
+        <div class="field">
+          <label for="referral_code">Referral code <span class="small-muted">(optional &mdash; from a friend's event recap)</span></label>
+          <input type="text" id="referral_code" name="referral_code" maxlength="20" placeholder="e.g. DJX-AB12C" autocomplete="off"
+            value="<%= typeof values !== 'undefined' && values.referralCode ? values.referralCode : '' %>" />
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">Send Booking Inquiry</button>

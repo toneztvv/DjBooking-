@@ -1582,3 +1582,518 @@ footer a {
   max-width: 720px;
   margin: 0 auto;
 }
+
+/* =====================================================================
+   Dedications, tip jar, song battles, photo wall, planning page,
+   reviews, referrals
+   ===================================================================== */
+
+.check-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px dashed var(--card-border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.check-row input {
+  width: auto;
+  margin-top: 4px;
+  accent-color: var(--accent);
+}
+
+/* --- Dedications --- */
+
+.dedication-note {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--accent-2);
+}
+
+.now-playing-dedication {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--accent-2);
+}
+
+/* --- Tip jar --- */
+
+.tips-card {
+  max-width: 640px;
+  margin: 0 auto 30px;
+  padding: 22px 24px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(51, 224, 255, 0.1));
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  border-radius: var(--radius);
+}
+
+.tips-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.tips-screen-body {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  text-align: left;
+}
+
+.tips-qr {
+  width: 140px;
+  height: 140px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.tips-handles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 1.05rem;
+}
+
+.tips-card-screen {
+  max-width: none;
+  margin: 24px 0 0;
+}
+
+/* --- Song battle --- */
+
+.battle-card {
+  max-width: 640px;
+  margin: 0 auto 30px;
+  padding: 20px 22px;
+  background: linear-gradient(135deg, rgba(255, 47, 191, 0.14), rgba(51, 224, 255, 0.12));
+  border: 1px solid rgba(255, 47, 191, 0.4);
+  border-radius: var(--radius);
+}
+
+.battle-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-weight: 800;
+}
+
+.battle-timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--warning);
+}
+
+.battle-sides {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.battle-side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  padding: 14px;
+  border-radius: 12px;
+  border: 2px solid var(--card-border);
+  background: rgba(26, 26, 41, 0.8);
+  color: var(--text);
+  font: inherit;
+}
+
+button.battle-side {
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+button.battle-side:not(:disabled):hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+button.battle-side:disabled {
+  cursor: default;
+  opacity: 0.95;
+}
+
+.battle-side.battle-picked {
+  border-color: var(--accent-2);
+  box-shadow: 0 0 18px rgba(51, 224, 255, 0.35);
+}
+
+.battle-song {
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.battle-artist {
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-height: 1.1em;
+}
+
+.battle-bar {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.battle-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent-3));
+  transition: width 0.5s ease;
+}
+
+.battle-pct {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.battle-vs {
+  align-self: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+
+.battle-note {
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+.battle-result {
+  max-width: 640px;
+  margin: 0 auto 30px;
+  padding: 16px 20px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  border-radius: var(--radius);
+  background: rgba(251, 191, 36, 0.14);
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  animation: battle-pop 0.5s ease;
+}
+
+@keyframes battle-pop {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.battle-admin-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--card-border);
+}
+
+/* --- Photo wall (guest side) --- */
+
+.wall-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 260px;
+  margin: 14px auto 0;
+  border-radius: 10px;
+}
+
+.wall-pick {
+  cursor: pointer;
+}
+
+.wall-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.wall-thumb {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--bg-alt);
+}
+
+.wall-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.wall-thumb figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 6px 4px;
+  font-size: 0.7rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Photo wall (DJ moderation) --- */
+
+.wall-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.wall-admin-grid-small {
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+}
+
+.wall-admin-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--bg-alt);
+}
+
+.wall-admin-tile img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.wall-admin-meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.wall-admin-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+#wall-card.wall-has-pending {
+  border-color: var(--warning);
+  box-shadow: 0 0 22px rgba(251, 191, 36, 0.25);
+}
+
+/* --- Photo wall (Big Screen spotlight) --- */
+
+.screen-wall-frame {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 4 / 3;
+}
+
+.screen-wall-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transition: opacity 0.25s ease;
+}
+
+.screen-wall-frame img.screen-wall-fade {
+  opacity: 0;
+}
+
+.screen-wall-new {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  background: var(--accent);
+  color: #fff;
+  animation: battle-pop 0.5s ease;
+}
+
+.screen-wall-caption {
+  min-height: 1.4em;
+  margin-top: 8px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* --- Client planning page --- */
+
+.plan-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.plan-step {
+  margin-bottom: 22px;
+}
+
+.plan-step h3 {
+  margin-top: 0;
+}
+
+.plan-step textarea {
+  min-height: 150px;
+}
+
+.plan-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.plan-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--card-border);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.plan-chip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.plan-timeline-row {
+  display: grid;
+  grid-template-columns: 110px 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.plan-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  margin-top: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  background: rgba(19, 19, 32, 0.95);
+  backdrop-filter: blur(8px);
+}
+
+.plan-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  .site-nav, .site-footer, .no-print, footer { display: none !important; }
+  body { background: #fff; color: #000; }
+  .card { border: 1px solid #999; background: #fff; color: #000; box-shadow: none; break-inside: avoid; }
+  .card h3, .card p, .small-muted { color: #000 !important; }
+}
+
+/* --- Reviews & referrals on the recap page --- */
+
+.review-pending {
+  border-color: var(--warning);
+}
+
+.star-picker {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin: 10px 0 18px;
+}
+
+.star-picker button {
+  border: 0;
+  background: transparent;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--card-border);
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: transform 0.12s ease, color 0.12s ease;
+}
+
+.star-picker button.on {
+  color: var(--warning);
+}
+
+.star-picker button:hover {
+  transform: scale(1.15);
+}
+
+.referral-code {
+  display: inline-block;
+  margin: 8px 0 16px;
+  padding: 10px 22px;
+  border-radius: 12px;
+  border: 2px dashed var(--accent);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+}
+
+.recap-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.recap-photo-grid .wall-thumb {
+  border: 1px solid var(--card-border);
+}
+
+.referral-banner {
+  max-width: 640px;
+  margin: 0 auto 24px;
+}
+
+@media (max-width: 560px) {
+  .battle-sides {
+    grid-template-columns: 1fr;
+  }
+  .battle-vs {
+    text-align: center;
+  }
+  .plan-timeline-row {
+    grid-template-columns: 90px 1fr auto;
+  }
+  .tips-screen-body {
+    flex-direction: column;
+    text-align: center;
+  }
+}

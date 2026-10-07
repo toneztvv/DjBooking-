@@ -10,6 +10,11 @@ const { recognizeAudio } = require('../audd');
 const { getSetupGuideText } = require('../setupGuide');
 const { toCsv } = require('../csv');
 const { fetchArtworkUrl } = require('../albumArt');
+const { closeBattle, getBattleState } = require('../battles');
+const { getTipMethods, VENMO_RE, CASHAPP_RE } = require('../tips');
+const { WALL_DIR, WALL_FILE_RE, deleteWallFile } = require('../wall');
+const { ensureEventReferralCode } = require('../referrals');
+const { getSiteUrl } = require('../qr');
 
 const router = express.Router();
 
@@ -58,7 +63,15 @@ function getPendingBoard(eventId) {
               GROUP_CONCAT(DISTINCT sr.requested_by) AS requesters,
               MAX(sr.accepted) AS accepted,
               (SELECT COUNT(*) FROM request_upvotes u
-                WHERE u.event_id = sr.event_id AND u.normalized_key = sr.normalized_key) AS upvotes
+                WHERE u.event_id = sr.event_id AND u.normalized_key = sr.normalized_key) AS upvotes,
+              (SELECT d.dedication FROM song_requests d
+                WHERE d.event_id = sr.event_id AND d.normalized_key = sr.normalized_key
+                  AND d.status = 'pending' AND d.dedication IS NOT NULL AND d.dedication != ''
+                ORDER BY d.id LIMIT 1) AS dedication,
+              (SELECT d.requested_by FROM song_requests d
+                WHERE d.event_id = sr.event_id AND d.normalized_key = sr.normalized_key
+                  AND d.status = 'pending' AND d.dedication IS NOT NULL AND d.dedication != ''
+                ORDER BY d.id LIMIT 1) AS dedication_by
        FROM song_requests sr
        WHERE sr.event_id = ? AND sr.status = 'pending'
        GROUP BY sr.normalized_key
@@ -89,10 +102,10 @@ function getEventById(id) {
   return db.prepare('SELECT * FROM events WHERE id = ?').get(id);
 }
 
-function startNewEvent(name) {
+function startNewEvent(name, photowallUnlocked = false) {
   const result = db
-    .prepare(`INSERT INTO events (name, started_at) VALUES (?, datetime('now'))`)
-    .run(name || null);
+    .prepare(`INSERT INTO events (name, started_at, photowall_unlocked) VALUES (?, datetime('now'), ?)`)
+    .run(name || null, photowallUnlocked ? 1 : 0);
   return result.lastInsertRowid;
 }
 
@@ -135,6 +148,10 @@ router.get('/', (req, res) => {
     features: getFeatureFlags(),
     activePoll: getActivePollWithCounts(eventId),
     energyLevel: Math.min(10, Math.max(0, Number(getSetting('energy_level')) || 0)),
+    battle: getBattleState(eventId).active,
+    photoWallUnlocked: !!(currentEvent && currentEvent.photowall_unlocked),
+    tipMethodCount: getTipMethods().length,
+    pendingReviews: db.prepare(`SELECT COUNT(*) AS c FROM testimonials WHERE source = 'guest' AND published = 0`).get().c,
   });
 });
 
@@ -147,6 +164,9 @@ const TOGGLEABLE_FEATURES = {
   guestbook: 'feature_guestbook',
   effects: 'feature_effects',
   energy: 'feature_energy',
+  tips: 'feature_tips',
+  battles: 'feature_battles',
+  photowall: 'feature_photowall',
 };
 
 router.post('/features/:feature/toggle', (req, res) => {
@@ -167,7 +187,9 @@ router.post('/live/toggle', (req, res) => {
     // Going live: close out any dangling unended event left over from a
     // "Clear Board" done while offline, then start a fresh one.
     endEvent(currentEventId);
-    const newEventId = startNewEvent(nextEventName);
+    // The Photo Wall is a paid add-on: it stays locked unless the DJ ticks
+    // the box, which they only do once the client has paid for it.
+    const newEventId = startNewEvent(nextEventName, req.body.photowall_unlocked === '1');
     setSetting('current_event_id', newEventId);
     setSetting('is_live', '1');
     setSetting('energy_level', '0');
@@ -327,7 +349,10 @@ router.post('/requests/clear', (req, res) => {
   // same name, so "Clear Board" mid-gig still shows up as its own chapter
   // in the event history rather than silently merging with the next one.
   endEvent(currentEventId);
-  const newEventId = startNewEvent(currentEvent ? currentEvent.name : null);
+  const newEventId = startNewEvent(
+    currentEvent ? currentEvent.name : null,
+    !!(currentEvent && currentEvent.photowall_unlocked)
+  );
   setSetting('current_event_id', newEventId);
 
   res.redirect('/admin');
@@ -498,9 +523,19 @@ router.post('/countdown/clear', (req, res) => {
 
 router.get('/inquiries', (req, res) => {
   const inquiries = db
-    .prepare(`SELECT * FROM inquiries ORDER BY created_at DESC`)
+    .prepare(
+      `SELECT i.*,
+              p.token AS plan_token,
+              p.updated_at AS plan_updated_at,
+              p.submitted_at AS plan_submitted_at,
+              (SELECT e.name FROM events e WHERE e.referral_code = i.referral_code LIMIT 1) AS referred_by_event,
+              (SELECT 1 FROM events e WHERE e.referral_code = i.referral_code LIMIT 1) AS referral_known
+       FROM inquiries i
+       LEFT JOIN event_plans p ON p.inquiry_id = i.id
+       ORDER BY i.created_at DESC`
+    )
     .all();
-  res.render('admin/inquiries', { page: 'admin', inquiries });
+  res.render('admin/inquiries', { page: 'admin', inquiries, baseUrl: getSiteUrl() });
 });
 
 router.post('/inquiries/:id/status', (req, res) => {
@@ -518,6 +553,7 @@ router.post('/inquiries/:id/status', (req, res) => {
 router.post('/inquiries/:id/delete', (req, res) => {
   const id = Number(req.params.id);
   if (id) {
+    db.prepare(`DELETE FROM event_plans WHERE inquiry_id = ?`).run(id);
     db.prepare(`DELETE FROM inquiries WHERE id = ?`).run(id);
   }
   res.redirect('/admin/inquiries');
@@ -604,6 +640,7 @@ router.post('/events/:id/share', (req, res) => {
     // Unguessable token: the recap is reachable only by people given the link.
     const token = crypto.randomBytes(12).toString('base64url');
     db.prepare(`UPDATE events SET share_token = ? WHERE id = ?`).run(token, id);
+    ensureEventReferralCode(id);
   }
   res.redirect(`/admin/events/${id}`);
 });
@@ -627,6 +664,10 @@ router.post('/events/:id/delete', (req, res) => {
     const deletePollVotes = db.prepare(`DELETE FROM poll_votes WHERE poll_id IN (SELECT id FROM polls WHERE event_id = ?)`);
     const deletePolls = db.prepare(`DELETE FROM polls WHERE event_id = ?`);
     const deleteGuestbook = db.prepare(`DELETE FROM guestbook_entries WHERE event_id = ?`);
+    const deleteBattleVotes = db.prepare(`DELETE FROM battle_votes WHERE battle_id IN (SELECT id FROM battles WHERE event_id = ?)`);
+    const deleteBattles = db.prepare(`DELETE FROM battles WHERE event_id = ?`);
+    const deleteWall = db.prepare(`DELETE FROM wall_photos WHERE event_id = ?`);
+    const wallFiles = db.prepare(`SELECT filename FROM wall_photos WHERE event_id = ?`).all(id);
     const deleteEvent = db.prepare(`DELETE FROM events WHERE id = ?`);
     db.transaction(() => {
       deleteRequests.run(id);
@@ -637,11 +678,244 @@ router.post('/events/:id/delete', (req, res) => {
       deletePollVotes.run(id);
       deletePolls.run(id);
       deleteGuestbook.run(id);
+      deleteBattleVotes.run(id);
+      deleteBattles.run(id);
+      deleteWall.run(id);
       deleteEvent.run(id);
     })();
+    wallFiles.forEach((f) => deleteWallFile(f.filename));
   }
 
   res.redirect('/admin/events');
+});
+
+// --- Song battles -------------------------------------------------------------------
+
+router.get('/battles/state', (req, res) => {
+  const eventId = Number(getSetting('current_event_id') || '1');
+  res.json(getBattleState(eventId));
+});
+
+router.post('/battles', (req, res) => {
+  const isLive = getSetting('is_live') === '1';
+  if (!isLive || !getFeatureFlags().battles) return res.redirect('/admin');
+
+  const songA = clean(req.body.song_a, 120);
+  const artistA = clean(req.body.artist_a, 120);
+  const songB = clean(req.body.song_b, 120);
+  const artistB = clean(req.body.artist_b, 120);
+  const minutes = Number(req.body.minutes);
+
+  if (songA && songB) {
+    const eventId = Number(getSetting('current_event_id') || '1');
+    // One battle at a time — starting a new one settles the last.
+    const open = db.prepare(`SELECT id FROM battles WHERE event_id = ? AND closed_at IS NULL`).all(eventId);
+    open.forEach((b) => closeBattle(b.id));
+
+    const endsAt = minutes > 0 && minutes <= 30 ? Date.now() + Math.round(minutes * 60 * 1000) : null;
+    db.prepare(
+      `INSERT INTO battles (event_id, song_a, artist_a, song_b, artist_b, ends_at) VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(eventId, songA, artistA || null, songB, artistB || null, endsAt);
+  }
+  res.redirect('/admin');
+});
+
+router.post('/battles/:id/close', (req, res) => {
+  const id = Number(req.params.id);
+  if (id) closeBattle(id);
+  res.redirect('/admin');
+});
+
+// --- Live photo wall (paid add-on, DJ approves every photo) ---------------------
+
+function wallPhotoJson(row) {
+  return {
+    id: row.id,
+    name: row.uploader_name || '',
+    caption: row.caption || '',
+    url: `/admin/wall/photo/${row.filename}`,
+    createdAt: row.created_at,
+  };
+}
+
+router.get('/wall/state', (req, res) => {
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const event = getEventById(eventId);
+  const pending = db
+    .prepare(`SELECT * FROM wall_photos WHERE event_id = ? AND status = 'pending' ORDER BY id ASC`)
+    .all(eventId);
+  const approved = db
+    .prepare(`SELECT * FROM wall_photos WHERE event_id = ? AND status = 'approved' ORDER BY id DESC LIMIT 60`)
+    .all(eventId);
+  res.json({
+    unlocked: !!(event && event.photowall_unlocked),
+    pending: pending.map(wallPhotoJson),
+    approved: approved.map(wallPhotoJson),
+  });
+});
+
+// The DJ always sees a photo (pending or approved) through this route;
+// guests can only ever reach approved ones.
+router.get('/wall/photo/:file', (req, res) => {
+  const file = String(req.params.file || '');
+  if (!WALL_FILE_RE.test(file)) return res.status(404).end();
+  const row = db.prepare(`SELECT 1 FROM wall_photos WHERE filename = ?`).get(file);
+  if (!row) return res.status(404).end();
+  res.set('Cache-Control', 'private, max-age=3600');
+  res.type('image/jpeg').sendFile(path.join(WALL_DIR, file));
+});
+
+router.post('/wall/unlock', (req, res) => {
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const unlock = req.body.unlock === '1';
+  db.prepare(`UPDATE events SET photowall_unlocked = ? WHERE id = ?`).run(unlock ? 1 : 0, eventId);
+  res.redirect('/admin');
+});
+
+router.post('/wall/:id/approve', (req, res) => {
+  const id = Number(req.params.id);
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const result = db
+    .prepare(
+      `UPDATE wall_photos SET status = 'approved', approved_at = datetime('now')
+       WHERE id = ? AND event_id = ? AND status = 'pending'`
+    )
+    .run(id, eventId);
+  res.json({ ok: result.changes > 0 });
+});
+
+// Used both to turn a pending photo down and to take an approved one off
+// the wall — either way the picture is deleted from the disk.
+router.post('/wall/:id/remove', (req, res) => {
+  const id = Number(req.params.id);
+  const row = id && db.prepare(`SELECT * FROM wall_photos WHERE id = ?`).get(id);
+  if (row) {
+    db.prepare(`DELETE FROM wall_photos WHERE id = ?`).run(id);
+    deleteWallFile(row.filename);
+  }
+  res.json({ ok: !!row });
+});
+
+// --- Tips & extras settings ----------------------------------------------------------
+
+router.get('/extras', (req, res) => {
+  res.render('admin/extras', {
+    page: 'admin',
+    values: {
+      venmo: getSetting('tip_venmo') || '',
+      cashapp: getSetting('tip_cashapp') || '',
+      zelle: getSetting('tip_zelle') || '',
+      tipMessage: getSetting('tip_message') || '',
+      referralOffer: getSetting('referral_offer') || '',
+      googleReviewUrl: getSetting('google_review_url') || '',
+    },
+    saved: req.query.saved === '1',
+    error: req.query.error || '',
+    features: getFeatureFlags(),
+  });
+});
+
+router.post('/extras', (req, res) => {
+  const venmo = clean(req.body.venmo, 60).replace(/^@+/, '');
+  const cashapp = clean(req.body.cashapp, 60).replace(/^\$+/, '');
+  const zelle = clean(req.body.zelle, 80);
+  const tipMessage = clean(req.body.tip_message, 140);
+  const referralOffer = clean(req.body.referral_offer, 140);
+  const googleReviewUrl = clean(req.body.google_review_url, 300);
+
+  const fail = (msg) => res.redirect(`/admin/extras?error=${encodeURIComponent(msg)}`);
+  if (venmo && !VENMO_RE.test(venmo)) return fail('Venmo username can only use letters, numbers, dots, dashes and underscores.');
+  if (cashapp && !CASHAPP_RE.test(cashapp)) return fail('Cash App $cashtag can only use letters, numbers and underscores.');
+  const zelleOk = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(zelle) || /^[+()\d\s.-]{7,25}$/.test(zelle);
+  if (zelle && !zelleOk) {
+    return fail('Zelle should be the email or phone number linked to your Zelle account.');
+  }
+  if (googleReviewUrl && !/^https:\/\/[^\s<>"']+$/.test(googleReviewUrl)) {
+    return fail('The Google review link must start with https:// and have no spaces.');
+  }
+
+  setSetting('tip_venmo', venmo);
+  setSetting('tip_cashapp', cashapp);
+  setSetting('tip_zelle', zelle);
+  setSetting('tip_message', tipMessage);
+  setSetting('referral_offer', referralOffer);
+  setSetting('google_review_url', googleReviewUrl);
+  res.redirect('/admin/extras?saved=1');
+});
+
+// --- Client planning pages ---------------------------------------------------------------
+
+function getPlanForInquiry(inquiryId) {
+  return db
+    .prepare(
+      `SELECT p.*, i.name AS client_name, i.email AS client_email, i.event_type, i.event_date, i.location
+       FROM event_plans p JOIN inquiries i ON i.id = p.inquiry_id
+       WHERE p.inquiry_id = ?`
+    )
+    .get(inquiryId);
+}
+
+function parseTimeline(raw) {
+  try {
+    const rows = JSON.parse(raw || '[]');
+    return Array.isArray(rows) ? rows : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+router.post('/inquiries/:id/plan', (req, res) => {
+  const id = Number(req.params.id);
+  const inquiry = id && db.prepare(`SELECT id FROM inquiries WHERE id = ?`).get(id);
+  if (inquiry && !db.prepare(`SELECT 1 FROM event_plans WHERE inquiry_id = ?`).get(id)) {
+    db.prepare(`INSERT INTO event_plans (inquiry_id, token) VALUES (?, ?)`).run(
+      id,
+      crypto.randomBytes(16).toString('base64url')
+    );
+  }
+  res.redirect(`/admin/inquiries#inq-${id}`);
+});
+
+router.post('/inquiries/:id/plan/delete', (req, res) => {
+  const id = Number(req.params.id);
+  if (id) db.prepare(`DELETE FROM event_plans WHERE inquiry_id = ?`).run(id);
+  res.redirect(`/admin/inquiries#inq-${id}`);
+});
+
+router.get('/plans/:inquiryId', (req, res) => {
+  const plan = getPlanForInquiry(Number(req.params.inquiryId));
+  if (!plan) return res.status(404).render('404');
+  res.render('admin/plan-view', { page: 'admin', plan, timeline: parseTimeline(plan.timeline) });
+});
+
+router.get('/plans/:inquiryId/download', (req, res) => {
+  const plan = getPlanForInquiry(Number(req.params.inquiryId));
+  if (!plan) return res.status(404).render('404');
+  const timeline = parseTimeline(plan.timeline);
+  const out = [
+    `EVENT PLAN — ${plan.client_name}`,
+    [plan.event_type, plan.event_date, plan.location].filter(Boolean).join(' · '),
+    '',
+    'MUST-PLAY',
+    plan.must_play || '(none yet)',
+    '',
+    'DO-NOT-PLAY',
+    plan.do_not_play || '(none yet)',
+    '',
+    'TIMELINE',
+    ...(timeline.length ? timeline.map((r) => `${r.time || '—'}  ${r.label || ''}`) : ['(none yet)']),
+    '',
+    'ANNOUNCEMENTS & NAME PRONUNCIATIONS',
+    plan.announcements || '(none yet)',
+    '',
+    'OTHER NOTES',
+    plan.notes || '(none yet)',
+    '',
+  ].join('\n');
+  const safeName = plan.client_name.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'client';
+  res.set('Content-Type', 'text/plain; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="event-plan-${safeName}.txt"`);
+  res.send(out);
 });
 
 // --- Services & billing -----------------------------------------------------
@@ -697,7 +971,9 @@ router.get('/setup-guide/download', (req, res) => {
 // --- Testimonials ------------------------------------------------------------
 
 router.get('/testimonials', (req, res) => {
-  const testimonials = db.prepare(`SELECT * FROM testimonials ORDER BY created_at DESC`).all();
+  const testimonials = db
+    .prepare(`SELECT * FROM testimonials ORDER BY (source = 'guest' AND published = 0) DESC, created_at DESC`)
+    .all();
   res.render('admin/testimonials', { page: 'admin', testimonials });
 });
 
@@ -861,6 +1137,7 @@ router.get('/export/inquiries.csv', (req, res) => {
     { key: 'location', label: 'Location' },
     { key: 'guest_count', label: 'Guest Count' },
     { key: 'message', label: 'Message' },
+    { key: 'referral_code', label: 'Referral Code' },
     { key: 'status', label: 'Status' },
   ]);
 

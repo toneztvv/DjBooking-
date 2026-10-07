@@ -18,12 +18,13 @@
               <th>Event</th>
               <th>Details</th>
               <th>Status</th>
+              <th>Planning Page</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             <% inquiries.forEach(function(inq) { %>
-              <tr>
+              <tr id="inq-<%= inq.id %>">
                 <td><%= inq.created_at %></td>
                 <td><strong><%= inq.name %></strong></td>
                 <td>
@@ -36,7 +37,9 @@
                   <% if (inq.location) { %><br><span class="small-muted"><%= inq.location %></span><% } %>
                   <% if (inq.guest_count) { %><br><span class="small-muted"><%= inq.guest_count %> guests</span><% } %>
                 </td>
-                <td style="max-width: 260px; white-space: pre-wrap;"><%= inq.message %></td>
+                <td style="max-width: 260px; white-space: pre-wrap;"><%= inq.message %><% if (inq.referral_code) { %>
+
+&#127873; Referral code <strong><%= inq.referral_code %></strong><% if (inq.referral_known) { %> &mdash; from the recap of <em><%= inq.referred_by_event || 'a past event' %></em><% } %><% } %></td>
                 <td>
                   <span class="badge badge-<%= inq.status %>"><%= inq.status %></span>
                   <form method="POST" action="/admin/inquiries/<%= inq.id %>/status" class="inline-form" style="margin-top:8px;">
@@ -47,6 +50,27 @@
                       <option value="declined" <%= inq.status === 'declined' ? 'selected' : '' %>>Declined</option>
                     </select>
                   </form>
+                </td>
+                <td style="min-width: 220px;">
+                  <% if (!inq.plan_token) { %>
+                    <form method="POST" action="/admin/inquiries/<%= inq.id %>/plan">
+                      <button type="submit" class="btn btn-primary btn-sm">Create Planning Link</button>
+                    </form>
+                    <p class="small-muted" style="margin:6px 0 0;">A private page where your client fills in must-play songs, do-not-plays and the timeline.</p>
+                  <% } else { %>
+                    <% const planUrl = baseUrl + '/plan/' + inq.plan_token; %>
+                    <% if (inq.plan_submitted_at) { %><span class="badge badge-booked">&#10003; Client sent it</span>
+                    <% } else if (inq.plan_updated_at) { %><span class="badge badge-contacted">Draft saved</span>
+                    <% } else { %><span class="badge badge-new">Not started</span><% } %>
+                    <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                      <button type="button" class="btn btn-secondary btn-sm copy-plan-link" data-url="<%= planUrl %>">Copy Link</button>
+                      <a class="btn btn-secondary btn-sm" href="mailto:<%= inq.email %>?subject=<%= encodeURIComponent('Plan your night with DJXpress') %>&body=<%= encodeURIComponent('Hi ' + inq.name + ',\n\nHere is your private planning page. Add your must-play songs, anything we should skip, and the timeline for your night:\n\n' + planUrl + '\n\nIt saves as you go and you can change it any time.\n\n- DJXpress') %>">Email It</a>
+                      <a class="btn btn-ghost btn-sm" href="/admin/plans/<%= inq.id %>">View Plan</a>
+                    </div>
+                    <form method="POST" action="/admin/inquiries/<%= inq.id %>/plan/delete" style="margin-top:6px;" onsubmit="return confirm('Delete this planning page and everything the client entered? The link will stop working.');">
+                      <button type="submit" class="btn btn-ghost btn-sm">Delete Planning Page</button>
+                    </form>
+                  <% } %>
                 </td>
                 <td>
                   <form method="POST" action="/admin/inquiries/<%= inq.id %>/delete"
@@ -63,5 +87,19 @@
     </div>
   </div>
 </section>
+
+<script>
+  document.querySelectorAll('.copy-plan-link').forEach(function (btn) {
+    btn.addEventListener('click', async function () {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.url);
+        btn.textContent = 'Copied!';
+      } catch (err) {
+        window.prompt('Copy this link:', btn.dataset.url);
+      }
+      setTimeout(function () { btn.textContent = 'Copy Link'; }, 1800);
+    });
+  });
+</script>
 
 <%- include('../partials/footer') %>

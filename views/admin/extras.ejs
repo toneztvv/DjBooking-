@@ -1,0 +1,63 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Tips & Extras' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container">
+    <div class="flex-between" style="margin-bottom: 20px;">
+      <h1 style="margin:0;">Tips &amp; Extras</h1>
+      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
+    </div>
+    <p class="small-muted" style="margin-bottom: 24px; max-width: 720px;">
+      Fill in whatever you want to use &mdash; anything you leave blank is simply hidden. Nothing here goes live until you save, and you can change it any time.
+    </p>
+
+    <% if (saved) { %><div class="alert alert-success" style="max-width:720px;">Saved! Your changes are live.</div><% } %>
+    <% if (error) { %><div class="alert alert-error" style="max-width:720px;"><%= error %></div><% } %>
+
+    <form method="POST" action="/admin/extras" style="max-width:720px;">
+      <div class="form-card" style="margin-bottom: 30px;">
+        <h3 style="margin-top:0;">&#128184; Tip Jar</h3>
+        <p class="small-muted">Guests see these as tap-to-pay buttons on the live page, and a scan-to-tip QR code shows on the Big Screen. Tipping is never required &mdash; this just makes it easy. <% if (!features.tips) { %><strong>The Tip Jar is currently switched OFF on the dashboard.</strong><% } %></p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="venmo">Venmo username</label>
+            <input type="text" id="venmo" name="venmo" maxlength="60" value="<%= values.venmo %>" placeholder="e.g. DJXpress (no @ needed)" />
+          </div>
+          <div class="field">
+            <label for="cashapp">Cash App $cashtag</label>
+            <input type="text" id="cashapp" name="cashapp" maxlength="60" value="<%= values.cashapp %>" placeholder="e.g. DJXpress (no $ needed)" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="zelle">Zelle (email or phone number)</label>
+          <input type="text" id="zelle" name="zelle" maxlength="80" value="<%= values.zelle %>" placeholder="e.g. you@example.com" />
+        </div>
+        <div class="field">
+          <label for="tip_message">Message above the buttons</label>
+          <input type="text" id="tip_message" name="tip_message" maxlength="140" value="<%= values.tipMessage %>" />
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-bottom: 30px;">
+        <h3 style="margin-top:0;">&#127873; Referral Offer</h3>
+        <p class="small-muted">Every shared recap page has its own referral code. Friends who book through it show up in your Booking Inquiries marked with which event referred them. Type the perk you want to offer &mdash; leave it blank to just show the code.</p>
+        <div class="field">
+          <label for="referral_offer">Offer text</label>
+          <input type="text" id="referral_offer" name="referral_offer" maxlength="140" value="<%= values.referralOffer %>" placeholder="e.g. $50 off your booking for you and your friend" />
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-bottom: 30px;">
+        <h3 style="margin-top:0;">&#11088; Google Review Link</h3>
+        <p class="small-muted">When a guest leaves a 4 or 5 star review on a recap page, we'll offer them a button to post it on Google too. Paste your Google review link here (in Google Maps, open your business &rarr; <em>Share</em> &rarr; <em>Ask for reviews</em>). Optional.</p>
+        <div class="field">
+          <label for="google_review_url">Google review link</label>
+          <input type="url" id="google_review_url" name="google_review_url" maxlength="300" value="<%= values.googleReviewUrl %>" placeholder="https://g.page/r/..." />
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+    </form>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

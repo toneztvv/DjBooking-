@@ -127,7 +127,7 @@
 
 .screen-qr-card img {
   width: 100%;
-  max-width: 260px;
+  max-width: 200px;
   border-radius: 10px;
 }
 
@@ -159,4 +159,37 @@
   .screen-offline h1 {
     font-size: 2.6rem;
   }
+}
+
+/* Song battle, tip jar and dedications are bigger on the Big Screen. */
+.screen-body .battle-card,
+.screen-body .battle-result {
+  max-width: none;
+  margin: 24px 0 0;
+}
+
+.screen-body .battle-song {
+  font-size: 1.5rem;
+}
+
+.screen-body .battle-artist {
+  font-size: 1.05rem;
+}
+
+.screen-body .battle-pct,
+.screen-body .battle-timer {
+  font-size: 1.1rem;
+}
+
+.screen-body .battle-result {
+  font-size: 1.6rem;
+}
+
+.screen-body .dedication-note,
+.screen-body .now-playing-dedication {
+  font-size: 1.05rem;
+}
+
+.screen-body .tips-card-screen .tips-handle {
+  font-size: 1.2rem;
 }

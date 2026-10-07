@@ -31,6 +31,7 @@
         <div class="now-playing-label">NOW PLAYING</div>
         <div id="now-playing-title" class="now-playing-title"></div>
         <div id="now-playing-artist" class="now-playing-artist"></div>
+        <div id="now-playing-dedication" class="now-playing-dedication" style="display:none;"></div>
       </div>
     </div>
 
@@ -45,6 +46,37 @@
         <span id="energy-label" class="energy-label"></span>
       </div>
       <div id="energy-bar" class="energy-bar" aria-hidden="true"></div>
+    </div>
+
+    <div id="battle-wrap" class="battle-card" data-interactive="1" style="display:none;">
+      <div class="battle-head">
+        <span class="battle-title">&#9876;&#65039; Song Battle &mdash; you decide what plays!</span>
+        <span id="battle-timer" class="battle-timer"></span>
+      </div>
+      <div class="battle-sides">
+        <button type="button" class="battle-side" id="battle-side-a">
+          <span class="battle-song" id="battle-song-a"></span>
+          <span class="battle-artist" id="battle-artist-a"></span>
+          <span class="battle-bar"><span class="battle-fill" id="battle-fill-a"></span></span>
+          <span class="battle-pct" id="battle-pct-a"></span>
+        </button>
+        <div class="battle-vs" aria-hidden="true">VS</div>
+        <button type="button" class="battle-side" id="battle-side-b">
+          <span class="battle-song" id="battle-song-b"></span>
+          <span class="battle-artist" id="battle-artist-b"></span>
+          <span class="battle-bar"><span class="battle-fill" id="battle-fill-b"></span></span>
+          <span class="battle-pct" id="battle-pct-b"></span>
+        </button>
+      </div>
+      <p id="battle-note" class="small-muted battle-note">Tap a song to vote. The winner goes straight into Up Next.</p>
+    </div>
+    <div id="battle-result" class="battle-result" style="display:none;"></div>
+
+    <div id="tips-wrap" class="tips-card" style="display:none;">
+      <h3 style="margin-top:0;">&#128184; Tip the DJ</h3>
+      <p id="tips-message" class="small-muted" style="margin-bottom:14px;"></p>
+      <div id="tips-buttons" class="tips-buttons"></div>
+      <p id="tips-copied" class="small-muted" style="display:none; margin-top:10px;"></p>
     </div>
 
     <div id="request-form-wrap" style="display: <%= isLive ? 'block' : 'none' %>;">
@@ -129,6 +161,36 @@
       </div>
     </div>
 
+    <div id="wall-wrap" style="display:none; margin-bottom: 30px;">
+      <div class="form-card" style="max-width: 100%;">
+        <h3 style="margin-top:0;">&#128248; Photo Wall</h3>
+        <p class="small-muted" style="margin-bottom:14px;">Share a photo from tonight! The DJ checks every photo first, then it shows up on the Big Screen. Photos are shrunk automatically so they send fast.</p>
+        <form id="wall-form">
+          <div class="honeypot" aria-hidden="true">
+            <label for="wall_company_website">Website</label>
+            <input type="text" id="wall_company_website" name="company_website" tabindex="-1" autocomplete="off" />
+          </div>
+          <label class="btn btn-secondary btn-block wall-pick" for="wall-file">&#128247; Choose or take a photo</label>
+          <input type="file" id="wall-file" accept="image/*" hidden />
+          <img id="wall-preview" class="wall-preview" alt="Preview of your photo" hidden />
+          <div class="form-grid" style="margin-top:14px;">
+            <div class="field" style="margin-bottom:0;">
+              <label for="wall-name">Your Name</label>
+              <input type="text" id="wall-name" maxlength="60" />
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label for="wall-caption">Caption (optional)</label>
+              <input type="text" id="wall-caption" maxlength="80" autocomplete="off" />
+            </div>
+          </div>
+          <div id="wall-message" style="margin-top:12px;"></div>
+          <button type="submit" id="wall-submit" class="btn btn-primary btn-block" style="margin-top:14px;" disabled>Send to the Wall</button>
+        </form>
+        <div id="wall-grid" class="wall-grid"></div>
+        <div id="wall-empty" class="empty-state" style="display:none;">No photos on the wall yet &mdash; send the first one!</div>
+      </div>
+    </div>
+
     <div id="guestbook-wrap" style="display:none; margin-bottom: 30px;">
       <div class="form-card" style="max-width: 100%;">
         <h3 style="margin-top:0;">&#128213; Guestbook</h3>
@@ -203,6 +265,8 @@
 
 <script src="/js/effects.js"></script>
 <script src="/js/moments.js"></script>
+<script src="/js/extras.js"></script>
+<script src="/js/wall.js"></script>
 <script src="/js/live.js"></script>
 
 <%- include('partials/footer') %>

@@ -40,6 +40,7 @@
             <div class="now-playing-label">NOW PLAYING</div>
             <div id="now-playing-title" class="now-playing-title"></div>
             <div id="now-playing-artist" class="now-playing-artist"></div>
+            <div id="now-playing-dedication" class="now-playing-dedication" style="display:none;"></div>
           </div>
         </div>
 
@@ -55,6 +56,30 @@
           </div>
           <div id="energy-bar" class="energy-bar" aria-hidden="true"></div>
         </div>
+
+        <div id="battle-wrap" class="battle-card" data-interactive="0" style="display:none;">
+          <div class="battle-head">
+            <span class="battle-title">&#9876;&#65039; Song Battle &mdash; vote on your phone!</span>
+            <span id="battle-timer" class="battle-timer"></span>
+          </div>
+          <div class="battle-sides">
+            <div class="battle-side" id="battle-side-a">
+              <span class="battle-song" id="battle-song-a"></span>
+              <span class="battle-artist" id="battle-artist-a"></span>
+              <span class="battle-bar"><span class="battle-fill" id="battle-fill-a"></span></span>
+              <span class="battle-pct" id="battle-pct-a"></span>
+            </div>
+            <div class="battle-vs" aria-hidden="true">VS</div>
+            <div class="battle-side" id="battle-side-b">
+              <span class="battle-song" id="battle-song-b"></span>
+              <span class="battle-artist" id="battle-artist-b"></span>
+              <span class="battle-bar"><span class="battle-fill" id="battle-fill-b"></span></span>
+              <span class="battle-pct" id="battle-pct-b"></span>
+            </div>
+          </div>
+          <p id="battle-note" class="small-muted battle-note"></p>
+        </div>
+        <div id="battle-result" class="battle-result" style="display:none;"></div>
 
         <h2 class="screen-section-title">&#127925; Up Next</h2>
         <div id="screen-pending" class="screen-list"></div>
@@ -79,6 +104,26 @@
           <p>Scan to request a song</p>
         </div>
 
+        <div id="screen-wall" class="screen-wall" style="display:none;">
+          <h2 class="screen-section-title">&#128248; Photo Wall</h2>
+          <div class="screen-wall-frame">
+            <img id="screen-wall-img" alt="" />
+            <span id="screen-wall-new" class="screen-wall-new" style="display:none;">NEW</span>
+          </div>
+          <div id="screen-wall-caption" class="screen-wall-caption"></div>
+        </div>
+
+        <div id="tips-wrap" class="tips-card tips-card-screen" style="display:none;">
+          <h2 class="screen-section-title" style="margin-top:0;">&#128184; Tip the DJ</h2>
+          <div class="tips-screen-body">
+            <img id="tips-qr" class="tips-qr" alt="Scan to tip" />
+            <div>
+              <p id="tips-message" class="small-muted" style="margin:0 0 8px;"></p>
+              <div id="tips-buttons" class="tips-handles"></div>
+            </div>
+          </div>
+        </div>
+
         <h2 class="screen-section-title">Guestbook</h2>
         <div id="screen-guestbook" class="screen-guestbook"></div>
       </div>
@@ -90,6 +135,7 @@
   <script src="/js/soundboard.js"></script>
   <script src="/js/effects.js"></script>
   <script src="/js/moments.js"></script>
+  <script src="/js/extras.js"></script>
   <script src="/js/screen.js"></script>
 </body>
 </html>
