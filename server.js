@@ -8,6 +8,8 @@ const rateLimit = require('express-rate-limit');
 
 const { initDb } = require('./src/db');
 const { getSiteUrl } = require('./src/qr');
+const stripe = require('./src/stripe');
+const { applyPaidSession } = require('./src/payments');
 
 initDb();
 
@@ -37,6 +39,26 @@ app.use(
   })
 );
 app.use(compression());
+// Stripe's payment notifications must be read as the untouched raw body (the
+// signature is computed over it), so this sits before the JSON parser.
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }), (req, res) => {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) return res.status(503).json({ ok: false, error: 'Webhook secret not set.' });
+
+  const event = stripe.verifyWebhook(req.body, req.headers['stripe-signature'], secret);
+  if (!event) return res.status(400).json({ ok: false, error: 'Bad signature.' });
+
+  if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
+    try {
+      applyPaidSession(event.data && event.data.object);
+    } catch (err) {
+      console.error('Stripe webhook handling failed:', err.message);
+      return res.status(500).json({ ok: false });
+    }
+  }
+  res.json({ received: true });
+});
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));

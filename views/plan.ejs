@@ -12,6 +12,26 @@
   </div>
 </section>
 
+<section style="padding-top: 10px; padding-bottom: 0;">
+  <div class="container">
+    <div class="plan-wrap">
+      <% if (payment.paid) { %>
+        <div class="alert alert-success">&#9989; <strong>Your Live Photo Wall add-on is paid</strong> &mdash; thank you! It will be switched on for your event.</div>
+      <% } else if (payment.canPay) { %>
+        <div class="form-card plan-step pay-card" style="max-width:100%;">
+          <h3>&#128248; Add the Live Photo Wall <span class="pay-price"><%= payment.price %></span></h3>
+          <p class="small-muted">Your guests send photos from their phones and they pop up on the big screen during your event &mdash; every photo is approved by your DJ first, so nothing unwanted ever shows. It's optional.</p>
+          <% if (payment.cancelled) { %><p class="small-muted">No problem &mdash; nothing was charged. You can add it any time.</p><% } %>
+          <% if (payment.note) { %><div class="alert alert-info"><%= payment.note %></div><% } %>
+          <button type="button" id="pay-photowall" class="btn btn-primary">Add it &mdash; <%= payment.price %> &#8594;</button>
+          <p id="pay-message" class="small-muted" style="margin:10px 0 0; min-height:1.4em;" role="status"></p>
+          <p class="small-muted" style="margin:6px 0 0;">&#128274; Secure checkout by Stripe &mdash; pay with a card, Apple Pay / Google Pay, or Cash App if shown. We never see your card details.</p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</section>
+
 <section style="padding-top: 10px;">
   <div class="container">
     <form id="plan-form" class="plan-wrap" data-timeline="<%= JSON.stringify(timeline) %>" novalidate>

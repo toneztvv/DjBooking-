@@ -71,6 +71,17 @@
                       <button type="submit" class="btn btn-ghost btn-sm">Delete Planning Page</button>
                     </form>
                   <% } %>
+                  <div class="pay-status-row">
+                    <% if (inq.photowall_paid_at) { %>
+                      <span class="badge badge-booked">&#128248; Photo Wall paid<%= inq.photowall_amount_cents ? ' $' + (inq.photowall_amount_cents / 100) : '' %> (<%= inq.photowall_pay_method === 'stripe' ? 'Stripe' : 'by hand' %>)</span>
+                      <% if (inq.photowall_pay_method === 'manual') { %>
+                        <form method="POST" action="/admin/inquiries/<%= inq.id %>/photowall-paid"><input type="hidden" name="paid" value="0" /><button type="submit" class="btn btn-ghost btn-sm">Undo</button></form>
+                      <% } %>
+                    <% } else { %>
+                      <span class="badge badge-new">&#128248; Photo Wall not paid</span>
+                      <form method="POST" action="/admin/inquiries/<%= inq.id %>/photowall-paid" onsubmit="return confirm('Mark the Photo Wall add-on as paid for <%= inq.name.replace(/['\\]/g, '') %>? Do this once you see their payment (Cash App, Zelle, cash...).');"><input type="hidden" name="paid" value="1" /><button type="submit" class="btn btn-ghost btn-sm">Mark paid</button></form>
+                    <% } %>
+                  </div>
                 </td>
                 <td>
                   <form method="POST" action="/admin/inquiries/<%= inq.id %>/delete"

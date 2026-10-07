@@ -221,6 +221,7 @@ function initDb() {
     tip_message: 'Loving the music? Tips are never expected, always appreciated. \u{1F49C}',
     referral_offer: '',
     google_review_url: '',
+    photowall_price: '',
   };
   const insert = db.prepare(
     'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)'
@@ -286,6 +287,17 @@ function initDb() {
   const inquiryColumns = db.prepare(`PRAGMA table_info(inquiries)`).all();
   if (!inquiryColumns.some((c) => c.name === 'referral_code')) {
     db.exec(`ALTER TABLE inquiries ADD COLUMN referral_code TEXT`);
+  }
+  // Photo Wall add-on payment (automatic via Stripe, or marked by hand).
+  if (!inquiryColumns.some((c) => c.name === 'photowall_paid_at')) {
+    db.exec(`ALTER TABLE inquiries ADD COLUMN photowall_paid_at TEXT`);
+    db.exec(`ALTER TABLE inquiries ADD COLUMN photowall_amount_cents INTEGER`);
+    db.exec(`ALTER TABLE inquiries ADD COLUMN photowall_pay_ref TEXT`);
+    db.exec(`ALTER TABLE inquiries ADD COLUMN photowall_pay_method TEXT`);
+  }
+  // Which booking a live event is for, so a paid add-on unlocks it by itself.
+  if (!eventColumns.some((c) => c.name === 'inquiry_id')) {
+    db.exec(`ALTER TABLE events ADD COLUMN inquiry_id INTEGER`);
   }
 
   // Migration: "color" lets each guest's browser pick a display color for

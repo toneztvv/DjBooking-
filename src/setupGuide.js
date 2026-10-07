@@ -280,6 +280,18 @@ LIVE PHOTO WALL — A PAID ADD-ON:
   - Limits: JPEG only, 350 KB max on the server, 3 waiting + 12 total per
     guest per night. Files are stored in data/photowall/ on the Render disk.
 
+AUTOMATIC PHOTO WALL PAYMENT (STRIPE): Set the price on /admin/extras. Add
+  STRIPE_SECRET_KEY (and STRIPE_WEBHOOK_SECRET) in Render -> your service ->
+  Environment. The client's planning page then shows a "Add the Live Photo
+  Wall" pay button (Stripe's own checkout: card, Apple/Google Pay and, if you
+  switch it on in Stripe -> Settings -> Payment methods, Cash App Pay).
+  When they pay, their booking is marked paid and the Photo Wall unlocks by
+  itself. When you press Go Live, pick the client in "Which booking is this
+  for?" so the event is connected to them. Paid outside Stripe (cash, Zelle,
+  Cash App sent straight to you)? Press "Mark paid" on Booking Inquiries.
+  Stripe charges 2.9% + 30 cents per card payment and nothing monthly.
+  /admin/extras has a step-by-step guide and a Test Stripe Connection button.
+
 CLIENT PLANNING PAGE: on Booking Inquiries press "Create Planning Link", then
   Copy Link or Email It to your client. They fill in must-play songs,
   do-not-play songs, a timeline, name pronunciations and notes. Press

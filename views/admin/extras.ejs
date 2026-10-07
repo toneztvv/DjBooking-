@@ -13,7 +13,52 @@
     <% if (saved) { %><div class="alert alert-success" style="max-width:720px;">Saved! Your changes are live.</div><% } %>
     <% if (error) { %><div class="alert alert-error" style="max-width:720px;"><%= error %></div><% } %>
 
+    <div class="card" id="payments" style="max-width:720px; margin-bottom: 30px;">
+      <h3 style="margin-top:0;">&#128179; Online Payments (Stripe)</h3>
+      <p class="small-muted">Lets your clients pay for the Photo Wall add-on by themselves on their planning page. The moment they pay, it's marked paid on their booking and unlocks automatically &mdash; no checking, no button to press. Clients can pay by card, Apple Pay / Google Pay, or <strong>Cash App Pay</strong> (if you switch it on in Stripe).</p>
+
+      <% if (stripeStatus.configured) { %>
+        <div class="alert alert-success">&#9989; Stripe is connected in <strong><%= stripeStatus.mode === 'test' ? 'TEST mode (no real money moves)' : 'LIVE mode (real payments)' %></strong>.</div>
+      <% } else { %>
+        <div class="alert alert-info">&#9888;&#65039; Stripe isn't connected yet. Follow the 5 steps below &mdash; it takes about 10 minutes.</div>
+      <% } %>
+
+      <% if (stripeStatus.testResult === 'ok') { %><div class="alert alert-success">Test passed &mdash; Stripe accepted your key.</div><% } %>
+      <% if (stripeStatus.testResult === 'fail') { %><div class="alert alert-error">Stripe rejected the key. Double-check you pasted the whole secret key (starts with sk_live_ or sk_test_) with no spaces.</div><% } %>
+      <% if (stripeStatus.testResult === 'missing') { %><div class="alert alert-error">No key found yet. Add STRIPE_SECRET_KEY in Render first (step 3).</div><% } %>
+
+      <ul class="small-muted" style="line-height:1.9; padding-left:18px;">
+        <li><%- stripeStatus.configured ? '&#9989;' : '&#11036;' %> Secret key added to Render</li>
+        <li><%- stripeStatus.webhook ? '&#9989;' : '&#11036;' %> Payment notifications (webhook) connected <span class="small-muted">&mdash; recommended, so payments register even if a client closes the page right after paying</span></li>
+        <li><%- stripeStatus.priceOk ? '&#9989;' : '&#11036;' %> Photo Wall price set (below)</li>
+      </ul>
+      <form method="POST" action="/admin/stripe/test" style="margin-bottom:16px;">
+        <button type="submit" class="btn btn-secondary btn-sm">Test Stripe Connection</button>
+      </form>
+
+      <details>
+        <summary style="cursor:pointer; font-weight:700;">Show me the setup steps</summary>
+        <ol class="small-muted" style="line-height:1.8; padding-left:20px; margin-top:12px;">
+          <li><strong>Make a free Stripe account</strong> at <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener">dashboard.stripe.com/register</a> and finish "Activate payments" (it asks for your business details and where to send the money &mdash; your bank account).</li>
+          <li><strong>Turn on Cash App Pay (optional):</strong> in Stripe go to <em>Settings &rarr; Payment methods</em> and switch on <em>Cash App Pay</em> (and Apple Pay / Google Pay if you like).</li>
+          <li><strong>Copy your secret key:</strong> <em>Developers &rarr; API keys &rarr; Secret key &rarr; Reveal</em>. In <a href="https://dashboard.render.com" target="_blank" rel="noopener">Render</a>, open this site &rarr; <em>Environment</em> &rarr; add a variable named <code>STRIPE_SECRET_KEY</code> and paste the key. (Start with the <em>test</em> key to try it with fake cards; swap in the live key when ready.)</li>
+          <li><strong>Connect payment notifications:</strong> in Stripe go to <em>Developers &rarr; Webhooks &rarr; Add endpoint</em>. Endpoint URL: <code><%= stripeStatus.siteUrl %>/api/stripe/webhook</code>. Select the events <code>checkout.session.completed</code> and <code>checkout.session.async_payment_succeeded</code>. Copy the <em>Signing secret</em> (starts with whsec_) and add it in Render as <code>STRIPE_WEBHOOK_SECRET</code>.</li>
+          <li><strong>Set your price below, save, then press "Test Stripe Connection".</strong> Clients will see the pay button on their planning page. In test mode pay with card number <code>4242 4242 4242 4242</code>, any future date, any CVC.</li>
+        </ol>
+        <p class="small-muted">Render restarts the site by itself after you change an environment variable &mdash; wait a minute or two before testing.</p>
+      </details>
+    </div>
+
     <form method="POST" action="/admin/extras" style="max-width:720px;">
+      <div class="form-card" style="margin-bottom: 30px;">
+        <h3 style="margin-top:0;">&#128248; Photo Wall Price</h3>
+        <p class="small-muted">What you charge for the Live Photo Wall add-on, in dollars. Clients see it on their planning page along with a pay button (needs Stripe connected above). Leave blank to hide online payment &mdash; you can still unlock the wall by hand.</p>
+        <div class="field">
+          <label for="photowall_price">Price (USD)</label>
+          <input type="text" id="photowall_price" name="photowall_price" maxlength="12" inputmode="decimal" value="<%= values.photowallPrice %>" placeholder="e.g. 75" />
+        </div>
+      </div>
+
       <div class="form-card" style="margin-bottom: 30px;">
         <h3 style="margin-top:0;">&#128184; Tip Jar</h3>
         <p class="small-muted">Guests see these as tap-to-pay buttons on the live page, and a scan-to-tip QR code shows on the Big Screen. Tipping is never required &mdash; this just makes it easy. <% if (!features.tips) { %><strong>The Tip Jar is currently switched OFF on the dashboard.</strong><% } %></p>

@@ -121,6 +121,16 @@
               <label for="event_name">Event Name (optional)</label>
               <input type="text" id="event_name" name="event_name" maxlength="120" placeholder="e.g. Smith Wedding Reception" />
             </div>
+            <div class="field">
+              <label for="inquiry_id">Which booking is this for? (optional)</label>
+              <select id="inquiry_id" name="inquiry_id">
+                <option value="">— not linked —</option>
+                <% bookings.forEach(function(b) { %>
+                  <option value="<%= b.id %>"><%= b.name %><%= b.event_type ? ' — ' + b.event_type : '' %><%= b.event_date ? ' (' + b.event_date + ')' : '' %><%= b.photowall_paid_at ? ' ✓ Photo Wall paid' : '' %></option>
+                <% }); %>
+              </select>
+              <p class="small-muted" style="margin:4px 0 0;">Pick the client and, if they paid for the Photo Wall, it unlocks automatically (and the event name fills in if you leave it blank).</p>
+            </div>
             <label class="check-row" for="photowall_unlocked">
               <input type="checkbox" id="photowall_unlocked" name="photowall_unlocked" value="1" />
               <span><strong>&#128274; Photo Wall add-on is paid</strong><br><span class="small-muted">Only tick this once the client has paid for the Live Photo Wall. You can also unlock it later from the Photo Wall card.</span></span>
@@ -260,12 +270,25 @@
     <div class="card" id="wall-card" style="margin-bottom: 30px;" data-unlocked="<%= photoWallUnlocked ? '1' : '0' %>">
       <h3>&#128248; Live Photo Wall <span class="badge badge-contacted">Paid add-on</span></h3>
       <% if (!photoWallUnlocked) { %>
-        <p class="small-muted" style="margin-bottom:14px;">&#128274; <strong>Locked for this event.</strong> The Photo Wall lets guests send small photos from their phones; you approve each one before it appears on the Big Screen. Unlock it once the client has paid for the add-on &mdash; guests won't see anything about it until you do.</p>
+        <p class="small-muted" style="margin-bottom:14px;">&#128274; <strong>Locked for this event.</strong> The Photo Wall lets guests send small photos from their phones; you approve each one before it appears on the Big Screen. It unlocks <strong>automatically</strong> when the client pays on their planning page &mdash; guests won't see anything about it until then.</p>
+        <% if (eventBooking) { %>
+          <p class="small-muted">&#128279; This event is linked to <strong><%= eventBooking.name %></strong> &mdash; waiting for their payment.</p>
+        <% } else if (bookings.length) { %>
+          <form method="POST" action="/admin/wall/link" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+            <select name="inquiry_id" required style="flex:1; min-width:180px;" aria-label="Booking this event is for">
+              <option value="">Link this event to a booking…</option>
+              <% bookings.forEach(function(b) { %><option value="<%= b.id %>"><%= b.name %><%= b.event_type ? ' — ' + b.event_type : '' %><%= b.photowall_paid_at ? ' ✓ paid' : '' %></option><% }); %>
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm">Link</button>
+          </form>
+        <% } %>
+        <p class="small-muted" style="margin-bottom:8px;">Took payment another way (cash, Zelle...)? Unlock it by hand:</p>
         <form method="POST" action="/admin/wall/unlock" onsubmit="return confirm('Unlock the Photo Wall for this event? Only do this after the client has paid for the add-on.');">
           <input type="hidden" name="unlock" value="1" />
           <button type="submit" class="btn btn-primary btn-block">&#128275; Unlock Photo Wall (client paid)</button>
         </form>
       <% } else { %>
+        <% if (eventBooking && eventBooking.photowall_paid_at) { %><p class="small-muted">&#128179; Paid by <strong><%= eventBooking.name %></strong><%= eventBooking.photowall_pay_method === 'manual' ? ' (marked paid by you)' : ' via Stripe' %>.</p><% } %>
         <p class="small-muted" style="margin-bottom:14px;">&#128275; <strong>Unlocked.</strong> Guests can send photos from the live page. <strong>Nothing shows anywhere until you tap Approve.</strong> Photos are shrunk to small sizes on the guest's phone first.</p>
         <h4 class="hype-heading">Waiting for your OK <span id="wall-pending-count" class="count-pill">0</span></h4>
         <div id="wall-pending" class="wall-admin-grid"></div>

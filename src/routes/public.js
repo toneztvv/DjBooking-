@@ -2,6 +2,8 @@ const express = require('express');
 const { db, getSetting } = require('../db');
 const { getLiveUrl, getSiteUrl } = require('../qr');
 const { cleanReferral, ensureEventReferralCode, getReferralInfo } = require('../referrals');
+const stripe = require('../stripe');
+const { getPhotoWallPriceCents, formatMoney, applyPaidSession } = require('../payments');
 
 const router = express.Router();
 
@@ -156,7 +158,8 @@ function getPlanByToken(token) {
   if (!safe) return null;
   return db
     .prepare(
-      `SELECT p.*, i.name AS client_name, i.event_type, i.event_date, i.location
+      `SELECT p.*, i.name AS client_name, i.email AS client_email, i.event_type, i.event_date, i.location,
+              i.photowall_paid_at
        FROM event_plans p JOIN inquiries i ON i.id = p.inquiry_id
        WHERE p.token = ?`
     )
@@ -172,16 +175,75 @@ function parseTimeline(raw) {
   }
 }
 
-router.get('/plan/:token', (req, res) => {
+router.get('/plan/:token', async (req, res, next) => {
+  try {
+    let plan = getPlanByToken(req.params.token);
+    if (!plan) return res.status(404).render('404');
+
+    // Coming back from Stripe: confirm the payment directly with Stripe so the
+    // page shows "paid" right away, even before the notification arrives.
+    const sessionId = String(req.query.session_id || '');
+    let paymentNote = '';
+    if (stripe.isConfigured() && /^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId) && !plan.photowall_paid_at) {
+      try {
+        const session = await stripe.retrieveSession(sessionId);
+        if (String((session.metadata || {}).inquiry_id) === String(plan.inquiry_id) && applyPaidSession(session)) {
+          plan = getPlanByToken(req.params.token);
+        } else if (session.payment_status !== 'paid') {
+          paymentNote = 'We haven’t received your payment yet — if you paid, give it a minute and refresh.';
+        }
+      } catch (err) {
+        console.error('Could not confirm Stripe session:', err.message);
+      }
+    }
+
+    const priceCents = getPhotoWallPriceCents();
+    res.render('plan', {
+      page: 'plan',
+      title: 'Plan Your Night | DJXpress',
+      noindex: true,
+      plan,
+      timeline: parseTimeline(plan.timeline),
+      payment: {
+        paid: !!plan.photowall_paid_at,
+        canPay: stripe.isConfigured() && priceCents > 0 && !plan.photowall_paid_at,
+        price: priceCents ? formatMoney(priceCents) : '',
+        cancelled: req.query.cancelled === '1',
+        note: paymentNote,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Starts a Stripe checkout for the Photo Wall add-on. The price comes from the
+// server's settings — nothing in the request can change it.
+router.post('/plan/:token/checkout', async (req, res) => {
   const plan = getPlanByToken(req.params.token);
-  if (!plan) return res.status(404).render('404');
-  res.render('plan', {
-    page: 'plan',
-    title: 'Plan Your Night | DJXpress',
-    noindex: true,
-    plan,
-    timeline: parseTimeline(plan.timeline),
-  });
+  if (!plan) return res.status(404).json({ ok: false, error: 'This planning link is no longer active.' });
+  if (plan.photowall_paid_at) return res.json({ ok: false, error: 'The Photo Wall add-on is already paid — thank you!' });
+
+  const priceCents = getPhotoWallPriceCents();
+  if (!stripe.isConfigured() || !priceCents) {
+    return res.status(503).json({ ok: false, error: 'Online payment isn’t available right now — please ask your DJ.' });
+  }
+
+  try {
+    const base = getSiteUrl();
+    const session = await stripe.createCheckoutSession({
+      amountCents: priceCents,
+      productName: 'DJXpress Live Photo Wall add-on',
+      email: plan.client_email,
+      inquiryId: plan.inquiry_id,
+      successUrl: `${base}/plan/${encodeURIComponent(plan.token)}?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${base}/plan/${encodeURIComponent(plan.token)}?cancelled=1`,
+    });
+    res.json({ ok: true, url: session.url });
+  } catch (err) {
+    console.error('Stripe checkout failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Couldn’t start checkout. Please try again in a moment.' });
+  }
 });
 
 router.post('/plan/:token', (req, res) => {

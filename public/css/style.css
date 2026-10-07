@@ -2097,3 +2097,29 @@ button.battle-side:disabled {
     text-align: center;
   }
 }
+
+.pay-card {
+  border-color: rgba(255, 47, 191, 0.4);
+  background: linear-gradient(135deg, rgba(255, 47, 191, 0.08), rgba(124, 77, 255, 0.08));
+}
+
+.pay-price {
+  margin-left: 8px;
+  padding: 2px 12px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  background: var(--accent);
+  color: #fff;
+  vertical-align: middle;
+}
+
+.pay-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--card-border);
+  font-size: 0.85rem;
+}

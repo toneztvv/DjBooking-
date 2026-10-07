@@ -15,6 +15,8 @@ const { getTipMethods, VENMO_RE, CASHAPP_RE } = require('../tips');
 const { WALL_DIR, WALL_FILE_RE, deleteWallFile } = require('../wall');
 const { ensureEventReferralCode } = require('../referrals');
 const { getSiteUrl } = require('../qr');
+const stripe = require('../stripe');
+const { getPhotoWallPriceCents, formatMoney, recordPhotoWallPayment } = require('../payments');
 
 const router = express.Router();
 
@@ -129,6 +131,17 @@ function getActivePollWithCounts(eventId) {
   return poll;
 }
 
+// Bookings the DJ can attach an event to, so a paid Photo Wall unlocks itself.
+function getBookingsForPicker() {
+  return db
+    .prepare(
+      `SELECT id, name, event_type, event_date, photowall_paid_at FROM inquiries
+       WHERE status != 'declined'
+       ORDER BY (status = 'booked') DESC, created_at DESC LIMIT 100`
+    )
+    .all();
+}
+
 router.get('/', (req, res) => {
   const isLive = getSetting('is_live') === '1';
   const eventId = Number(getSetting('current_event_id') || '1');
@@ -150,6 +163,11 @@ router.get('/', (req, res) => {
     energyLevel: Math.min(10, Math.max(0, Number(getSetting('energy_level')) || 0)),
     battle: getBattleState(eventId).active,
     photoWallUnlocked: !!(currentEvent && currentEvent.photowall_unlocked),
+    bookings: getBookingsForPicker(),
+    eventBooking:
+      currentEvent && currentEvent.inquiry_id
+        ? db.prepare(`SELECT id, name, photowall_paid_at, photowall_pay_method FROM inquiries WHERE id = ?`).get(currentEvent.inquiry_id)
+        : null,
     tipMethodCount: getTipMethods().length,
     pendingReviews: db.prepare(`SELECT COUNT(*) AS c FROM testimonials WHERE source = 'guest' AND published = 0`).get().c,
   });
@@ -189,7 +207,13 @@ router.post('/live/toggle', (req, res) => {
     endEvent(currentEventId);
     // The Photo Wall is a paid add-on: it stays locked unless the DJ ticks
     // the box, which they only do once the client has paid for it.
-    const newEventId = startNewEvent(nextEventName, req.body.photowall_unlocked === '1');
+    const booking = Number(req.body.inquiry_id)
+      ? db.prepare(`SELECT id, name, event_type, photowall_paid_at FROM inquiries WHERE id = ?`).get(Number(req.body.inquiry_id))
+      : null;
+    const eventName = nextEventName || (booking ? `${booking.name}${booking.event_type ? ' — ' + booking.event_type : ''}` : '');
+    const unlock = req.body.photowall_unlocked === '1' || !!(booking && booking.photowall_paid_at);
+    const newEventId = startNewEvent(eventName, unlock);
+    if (booking) db.prepare(`UPDATE events SET inquiry_id = ? WHERE id = ?`).run(booking.id, newEventId);
     setSetting('current_event_id', newEventId);
     setSetting('is_live', '1');
     setSetting('energy_level', '0');
@@ -353,6 +377,9 @@ router.post('/requests/clear', (req, res) => {
     currentEvent ? currentEvent.name : null,
     !!(currentEvent && currentEvent.photowall_unlocked)
   );
+  if (currentEvent && currentEvent.inquiry_id) {
+    db.prepare(`UPDATE events SET inquiry_id = ? WHERE id = ?`).run(currentEvent.inquiry_id, newEventId);
+  }
   setSetting('current_event_id', newEventId);
 
   res.redirect('/admin');
@@ -772,6 +799,22 @@ router.post('/wall/unlock', (req, res) => {
   res.redirect('/admin');
 });
 
+// "My client already paid" — attach this live event to their booking; if that
+// booking's Photo Wall is paid the wall unlocks right away.
+router.post('/wall/link', (req, res) => {
+  const eventId = Number(getSetting('current_event_id') || '1');
+  const booking = db
+    .prepare(`SELECT id, photowall_paid_at FROM inquiries WHERE id = ?`)
+    .get(Number(req.body.inquiry_id));
+  if (booking) {
+    db.prepare(`UPDATE events SET inquiry_id = ? WHERE id = ?`).run(booking.id, eventId);
+    if (booking.photowall_paid_at) {
+      db.prepare(`UPDATE events SET photowall_unlocked = 1 WHERE id = ?`).run(eventId);
+    }
+  }
+  res.redirect('/admin');
+});
+
 router.post('/wall/:id/approve', (req, res) => {
   const id = Number(req.params.id);
   const eventId = Number(getSetting('current_event_id') || '1');
@@ -808,6 +851,15 @@ router.get('/extras', (req, res) => {
       tipMessage: getSetting('tip_message') || '',
       referralOffer: getSetting('referral_offer') || '',
       googleReviewUrl: getSetting('google_review_url') || '',
+      photowallPrice: getSetting('photowall_price') || '',
+    },
+    stripeStatus: {
+      configured: stripe.isConfigured(),
+      mode: stripe.getMode(),
+      webhook: stripe.hasWebhookSecret(),
+      priceOk: getPhotoWallPriceCents() > 0,
+      siteUrl: getSiteUrl(),
+      testResult: String(req.query.stripetest || ''),
     },
     saved: req.query.saved === '1',
     error: req.query.error || '',
@@ -822,6 +874,7 @@ router.post('/extras', (req, res) => {
   const tipMessage = clean(req.body.tip_message, 140);
   const referralOffer = clean(req.body.referral_offer, 140);
   const googleReviewUrl = clean(req.body.google_review_url, 300);
+  const photowallPrice = clean(req.body.photowall_price, 12).replace(/^\$/, '');
 
   const fail = (msg) => res.redirect(`/admin/extras?error=${encodeURIComponent(msg)}`);
   if (venmo && !VENMO_RE.test(venmo)) return fail('Venmo username can only use letters, numbers, dots, dashes and underscores.');
@@ -829,6 +882,9 @@ router.post('/extras', (req, res) => {
   const zelleOk = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(zelle) || /^[+()\d\s.-]{7,25}$/.test(zelle);
   if (zelle && !zelleOk) {
     return fail('Zelle should be the email or phone number linked to your Zelle account.');
+  }
+  if (photowallPrice && !(/^\d{1,4}(\.\d{1,2})?$/.test(photowallPrice) && Number(photowallPrice) >= 1 && Number(photowallPrice) <= 2000)) {
+    return fail('The Photo Wall price should be a dollar amount between 1 and 2000, like 75 or 99.50.');
   }
   if (googleReviewUrl && !/^https:\/\/[^\s<>"']+$/.test(googleReviewUrl)) {
     return fail('The Google review link must start with https:// and have no spaces.');
@@ -840,7 +896,24 @@ router.post('/extras', (req, res) => {
   setSetting('tip_message', tipMessage);
   setSetting('referral_offer', referralOffer);
   setSetting('google_review_url', googleReviewUrl);
+  setSetting('photowall_price', photowallPrice);
   res.redirect('/admin/extras?saved=1');
+});
+
+// Quick "is Stripe really connected?" check for the DJ.
+router.post('/stripe/test', async (req, res) => {
+  let result;
+  if (!stripe.isConfigured()) {
+    result = 'missing';
+  } else {
+    try {
+      await stripe.checkConnection();
+      result = 'ok';
+    } catch (err) {
+      result = 'fail';
+    }
+  }
+  res.redirect(`/admin/extras?stripetest=${result}#payments`);
 });
 
 // --- Client planning pages ---------------------------------------------------------------
@@ -863,6 +936,24 @@ function parseTimeline(raw) {
     return [];
   }
 }
+
+// For money that arrives outside Stripe (Cash App / Venmo / Zelle / cash): the
+// DJ taps this once they see the payment, and the add-on counts as paid.
+router.post('/inquiries/:id/photowall-paid', (req, res) => {
+  const id = Number(req.params.id);
+  if (id && db.prepare(`SELECT 1 FROM inquiries WHERE id = ?`).get(id)) {
+    if (req.body.paid === '1') {
+      recordPhotoWallPayment(id, { amountCents: getPhotoWallPriceCents() || null, ref: null, method: 'manual' });
+    } else {
+      db.prepare(
+        `UPDATE inquiries SET photowall_paid_at = NULL, photowall_amount_cents = NULL,
+                photowall_pay_ref = NULL, photowall_pay_method = NULL
+         WHERE id = ? AND photowall_pay_method = 'manual'`
+      ).run(id);
+    }
+  }
+  res.redirect(`/admin/inquiries#inq-${id}`);
+});
 
 router.post('/inquiries/:id/plan', (req, res) => {
   const id = Number(req.params.id);
@@ -944,6 +1035,13 @@ const EXTERNAL_SERVICES = [
     purpose: 'Powers automatic song detection (identifies what’s playing).',
     cost: 'Pay-as-you-go, ~$5 per 1,000 recognitions',
     url: 'https://dashboard.audd.io',
+  },
+  {
+    name: 'Stripe',
+    purpose: 'Takes online payment for the Photo Wall add-on and unlocks it automatically.',
+    cost: 'No monthly fee — 2.9% + 30¢ per card payment',
+    url: 'https://dashboard.stripe.com',
+    status: 'Optional — set up on the Tips & Extras page',
   },
   {
     name: 'Twilio',

@@ -2,6 +2,29 @@
   const form = document.getElementById('plan-form');
   if (!form) return;
 
+  const payBtn = document.getElementById('pay-photowall');
+  if (payBtn) {
+    const payMsg = document.getElementById('pay-message');
+    payBtn.addEventListener('click', async () => {
+      payBtn.disabled = true;
+      payMsg.textContent = 'Taking you to secure checkout…';
+      try {
+        // Keep anything they've typed — they'll come back to this page after paying.
+        if (dirty) await save(false);
+        const res = await fetch(`${window.location.pathname}/checkout`, { method: 'POST' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok && data.url) {
+          window.location.href = data.url;
+          return;
+        }
+        payMsg.textContent = data.error || 'Something went wrong. Please try again.';
+      } catch (err) {
+        payMsg.textContent = 'Network error. Please try again.';
+      }
+      payBtn.disabled = false;
+    });
+  }
+
   const timelineEl = document.getElementById('plan-timeline');
   const status = document.getElementById('plan-status');
   const saveBtn = document.getElementById('plan-save');
