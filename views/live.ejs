@@ -21,6 +21,8 @@
 
 <section style="padding-top: 0;">
   <div class="container">
+    <nav id="live-jump" class="live-jump" aria-label="Jump to a section" style="display:none;"></nav>
+
     <div id="pass-banner" class="alert alert-success" style="display:none; max-width: 640px; margin: 0 auto 30px;"></div>
 
     <div id="offline-notice" class="alert alert-info" style="display: <%= isLive ? 'none' : 'block' %>; max-width: 640px; margin: 0 auto 30px;">
@@ -73,13 +75,6 @@
       <p id="battle-note" class="small-muted battle-note">Tap a song to vote. The winner goes straight into Up Next.</p>
     </div>
     <div id="battle-result" class="battle-result" style="display:none;"></div>
-
-    <div id="tips-wrap" class="tips-card" style="display:none;">
-      <h3 style="margin-top:0;">&#128184; Tip the DJ</h3>
-      <p id="tips-message" class="small-muted" style="margin-bottom:14px;"></p>
-      <div id="tips-buttons" class="tips-buttons"></div>
-      <p id="tips-copied" class="small-muted" style="display:none; margin-top:10px;"></p>
-    </div>
 
     <div id="request-form-wrap" style="display: <%= isLive ? 'block' : 'none' %>;">
       <div class="form-card">
@@ -233,7 +228,15 @@
       </div>
     </div>
 
-    <div class="board">
+    <div id="tips-spot"></div>
+    <div id="tips-wrap" class="tips-card" style="display:none;">
+      <h3 style="margin-top:0;">&#128184; Tip the DJ</h3>
+      <p id="tips-message" class="small-muted" style="margin-bottom:14px;"></p>
+      <div id="tips-buttons" class="tips-buttons"></div>
+      <p id="tips-copied" class="small-muted" style="display:none; margin-top:10px;"></p>
+    </div>
+
+    <div class="board" id="board">
       <div class="card">
         <h3>&#127925; Up Next</h3>
         <p class="small-muted" style="margin-bottom:14px;">A green &#10003; Accepted means the DJ's confirmed it's coming up. Requested by more than one person? It stays as one row with everyone's name. Tap &#128077; to boost a song without requesting it again.</p>

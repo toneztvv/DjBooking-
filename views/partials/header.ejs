@@ -32,4 +32,5 @@
       </div>
     </div>
   </nav>
+  <% if (typeof page !== 'undefined' && page === 'admin') { %><%- include('admin-nav') %><% } %>
   <main>

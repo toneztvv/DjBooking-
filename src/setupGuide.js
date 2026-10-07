@@ -251,6 +251,25 @@ Log in at: ${siteUrl}/admin
                                               any time
 
 =====================================================================
+FINDING YOUR WAY AROUND THE ADMIN
+  A bar of shortcuts sits at the top of every admin page: Dashboard,
+  Bookings, Events, Reviews, Guestbook, Gallery, Passes, Extras, Stats,
+  Billing, Help (little red numbers = new bookings / reviews to look at).
+  On the Dashboard, the live-night tools run top to bottom in the order you
+  use them: Requests, Hype, Battle, Photos, Poll, Chat — with chips under the
+  title that jump straight to each one. Rarely-changed switches live in the
+  collapsed "Live Page Features" card at the bottom.
+
+SAFETY — WHAT PROTECTS YOU (nothing to do, just good to know)
+  - No double charges: tapping Pay twice (or in two tabs) reuses ONE checkout;
+    a phone that already has a pass can't buy another; if someone somehow
+    pays twice, the second payment is refunded automatically.
+  - A refunded or disputed payment switches that Photo Pass off by itself
+    (needs the webhook set up with all four events listed on Tips & Extras).
+  - Other websites can't push your admin buttons, and repeated wrong-password
+    guesses get locked out for 15 minutes.
+  - Anything guests type is shown as plain text, never as code.
+
 NEWER EXTRAS — HOW EACH ONE WORKS
 =====================================================================
 DEDICATIONS: the "Shoutout / Dedication" box on a request now shows under

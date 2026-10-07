@@ -4,7 +4,6 @@
   <div class="container">
     <div class="flex-between" style="margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
       <h1 style="margin:0;">Photo Passes</h1>
-      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
     </div>
     <p class="small-muted" style="margin-bottom: 24px; max-width: 760px;">
       A Photo Pass lets <strong>one guest</strong> upload photos to the Photo Wall <strong>forever</strong> (every future event too). Their phone remembers them automatically; if they switch phones they type their code (like <code>PASS-AB12CD</code>) &mdash; and you can look it up here if they lose it. Every photo still waits for your approval.
@@ -22,7 +21,7 @@
       <div class="alert alert-success" style="max-width:760px;">Free pass created. Give them this code: <strong style="letter-spacing:2px;"><%= created %></strong></div>
     <% } %>
 
-    <div class="form-card" style="max-width:760px; margin-bottom: 30px;">
+    <div class="form-card" style="max-width:760px; margin: 0 0 30px;">
       <h3 style="margin-top:0;">&#127873; Give a free pass</h3>
       <p class="small-muted">For the host, a friend, someone who paid you in cash &mdash; whoever you want. They enter the code on the live page.</p>
       <form method="POST" action="/admin/passes">

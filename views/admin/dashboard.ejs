@@ -5,112 +5,34 @@
     <div class="admin-header">
       <div>
         <h1 style="margin: 0 0 6px;">DJ Control Panel</h1>
-        <p class="small-muted" style="margin:0;">Manage your live event, requests and bookings.</p>
+        <p class="small-muted" style="margin:0;">Run your live event, requests and bookings from one place.</p>
       </div>
-      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <a href="/admin/events" class="btn btn-secondary btn-sm">Event History</a>
-        <a href="/admin/guestbook" class="btn btn-secondary btn-sm">Guestbook</a>
-        <a href="/admin/testimonials" class="btn btn-secondary btn-sm">Testimonials<% if (pendingReviews > 0) { %> <span class="badge badge-new"><%= pendingReviews %> new</span><% } %></a>
-        <a href="/admin/extras" class="btn btn-secondary btn-sm">Tips &amp; Extras</a>
-        <a href="/admin/passes" class="btn btn-secondary btn-sm">Photo Passes</a>
-        <a href="/admin/gallery" class="btn btn-secondary btn-sm">Gallery</a>
-        <a href="/admin/analytics" class="btn btn-secondary btn-sm">Analytics</a>
-        <a href="/admin/services" class="btn btn-secondary btn-sm">Services &amp; Billing</a>
-        <a href="/admin/setup-guide" class="btn btn-secondary btn-sm">Setup Guide</a>
-        <div class="status-chip">
-          <span class="pulse-dot <%= isLive ? '' : 'offline' %>" style="width:10px;height:10px;"></span>
-          <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
-        </div>
+      <div class="status-chip">
+        <span class="pulse-dot <%= isLive ? '' : 'offline' %>" style="width:10px;height:10px;"></span>
+        <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
       </div>
     </div>
 
-    <div class="card" style="margin-bottom: 30px;">
-      <h3>Live Page Features</h3>
-      <p class="small-muted" style="margin-bottom:14px;">Turn any of these on or off for guests at any time &mdash; before, during, or after an event. Turning one off just hides it from guests; nothing already saved gets deleted, and turning it back on brings everything back.</p>
-      <div class="feature-toggle-grid">
-        <div class="feature-toggle-row">
-          <div>
-            <strong>Guest Counter</strong>
-            <p class="small-muted" style="margin:2px 0 0;">Shows guests how many people are on the live page right now.</p>
-          </div>
-          <form method="POST" action="/admin/features/guest_counter/toggle">
-            <button type="submit" class="btn btn-sm <%= features.guestCounter ? 'btn-success' : 'btn-ghost' %>"><%= features.guestCounter ? 'ON' : 'OFF' %></button>
-          </form>
-        </div>
-        <div class="feature-toggle-row">
-          <div>
-            <strong>Live Reactions</strong>
-            <p class="small-muted" style="margin:2px 0 0;">Tappable emoji buttons that float across everyone's screen.</p>
-          </div>
-          <form method="POST" action="/admin/features/reactions/toggle">
-            <button type="submit" class="btn btn-sm <%= features.reactions ? 'btn-success' : 'btn-ghost' %>"><%= features.reactions ? 'ON' : 'OFF' %></button>
-          </form>
-        </div>
-        <div class="feature-toggle-row">
-          <div>
-            <strong>Quick Polls</strong>
-            <p class="small-muted" style="margin:2px 0 0;">Post a this-or-that question guests vote on live.</p>
-          </div>
-          <form method="POST" action="/admin/features/polls/toggle">
-            <button type="submit" class="btn btn-sm <%= features.polls ? 'btn-success' : 'btn-ghost' %>"><%= features.polls ? 'ON' : 'OFF' %></button>
-          </form>
-        </div>
-        <div class="feature-toggle-row">
-          <div>
-            <strong>Guestbook</strong>
-            <p class="small-muted" style="margin:2px 0 0;">A wall of notes from guests, kept forever as a keepsake.</p>
-          </div>
-          <form method="POST" action="/admin/features/guestbook/toggle">
-            <button type="submit" class="btn btn-sm <%= features.guestbook ? 'btn-success' : 'btn-ghost' %>"><%= features.guestbook ? 'ON' : 'OFF' %></button>
-          </form>
-        </div>
-        <div class="feature-toggle-row">
-          <div>
-            <strong>Drops &amp; Countdowns</strong>
-            <p class="small-muted" style="margin:2px 0 0;">Confetti, fireworks, shoutouts and "moment" countdowns you fire onto every screen.</p>
-          </div>
-          <form method="POST" action="/admin/features/effects/toggle">
-            <button type="submit" class="btn btn-sm <%= features.effects ? 'btn-success' : 'btn-ghost' %>"><%= features.effects ? 'ON' : 'OFF' %></button>
-          </form>
-        </div>
-        <div class="feature-toggle-row">
-          <div>
-            <strong>Energy Meter</strong>
-            <p class="small-muted" style="margin:2px 0 0;">A crowd-energy meter you control from here, shown to guests.</p>
-          </div>
-          <form method="POST" action="/admin/features/energy/toggle">
-            <button type="submit" class="btn btn-sm <%= features.energy ? 'btn-success' : 'btn-ghost' %>"><%= features.energy ? 'ON' : 'OFF' %></button>
-          </form>
-        </div>
-        <div class="feature-toggle-row">
-          <div>
-            <strong>Tip Jar</strong>
-            <p class="small-muted" style="margin:2px 0 0;">Venmo / Cash App / Zelle tip buttons for guests. Set your handles in <a href="/admin/extras">Tips &amp; Extras</a>.</p>
-          </div>
-          <form method="POST" action="/admin/features/tips/toggle">
-            <button type="submit" class="btn btn-sm <%= features.tips ? 'btn-success' : 'btn-ghost' %>"><%= features.tips ? 'ON' : 'OFF' %></button>
-          </form>
-        </div>
-        <div class="feature-toggle-row">
-          <div>
-            <strong>Song Battles</strong>
-            <p class="small-muted" style="margin:2px 0 0;">Pit two songs against each other &mdash; guests vote and the winner plays next.</p>
-          </div>
-          <form method="POST" action="/admin/features/battles/toggle">
-            <button type="submit" class="btn btn-sm <%= features.battles ? 'btn-success' : 'btn-ghost' %>"><%= features.battles ? 'ON' : 'OFF' %></button>
-          </form>
-        </div>
-        <div class="feature-toggle-row">
-          <div>
-            <strong>Live Photo Wall <span class="badge badge-contacted">Photo Pass</span></strong>
-            <p class="small-muted" style="margin:2px 0 0;">Guests send small photos and you approve each one before it hits the Big Screen. Guests can buy a cheap one-time Photo Pass to upload (you choose per event below).</p>
-          </div>
-          <form method="POST" action="/admin/features/photowall/toggle">
-            <button type="submit" class="btn btn-sm <%= features.photoWall ? 'btn-success' : 'btn-ghost' %>"><%= features.photoWall ? 'ON' : 'OFF' %></button>
-          </form>
-        </div>
-      </div>
+    <% if (defaultPassword) { %>
+    <div class="alert alert-error" style="margin-bottom: 20px;">
+      &#9888;&#65039; <strong>Your admin password is still the default.</strong> Set a strong <code>ADMIN_PASSWORD</code> in Render (Environment) so nobody can guess it.
     </div>
+    <% } %>
+    <% if (newInquiries > 0) { %>
+    <a href="/admin/inquiries" class="alert alert-info" style="display:block; margin-bottom: 20px;">&#128235; <strong><%= newInquiries %> new booking inquir<%= newInquiries === 1 ? 'y' : 'ies' %></strong> waiting for you &rarr;</a>
+    <% } %>
+
+    <% if (isLive) { %>
+    <nav class="dash-jump" aria-label="Jump to a section">
+      <a href="#sec-board">&#127925; Requests</a>
+      <a href="#hype-card">&#9889; Hype</a>
+      <% if (features.battles) { %><a href="#battle-card">&#9876;&#65039; Battle</a><% } %>
+      <% if (features.photoWall) { %><a href="#wall-card">&#128248; Photos</a><% } %>
+      <% if (features.polls) { %><a href="#sec-poll">&#128202; Poll</a><% } %>
+      <a href="#sec-chat">&#128172; Chat</a>
+    </nav>
+    <% } %>
+
 
     <div class="grid grid-2" style="margin-bottom: 30px;">
       <div class="card">
@@ -175,6 +97,90 @@
         <% } else { %>
           <p class="small-muted"><em>Go live first to use auto-detect.</em></p>
         <% } %>
+      </div>
+    </div>
+
+
+    <div class="board" id="sec-board" style="margin-bottom: 30px;">
+      <div class="card">
+        <h3>&#127925; Up Next</h3>
+        <p class="small-muted" style="margin-bottom:14px;">
+          Songs requested by guests, most-requested first. <strong>Accept</strong> shows guests you've confirmed a song is coming up (it does not play it). <strong>Mark Played</strong> moves it to Recently Played once you actually play it. If the same song is requested by more than one guest, it stays as one row here with all their names listed &mdash; that's expected, not a duplicate bug.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Song</th>
+                <th>Requested By</th>
+                <th>Requests</th>
+                <th>Upvotes</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pending.forEach(function(r) { %>
+                <tr>
+                  <td>
+                    <strong><%= r.song_title %></strong>
+                    <% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %>
+                    <% if (r.accepted) { %><br><span class="badge badge-booked">&#10003; Accepted</span><% } %>
+                    <% if (r.dedication) { %><br><span class="dedication-note">&#128140; <%= r.dedication %><% if (r.dedication_by) { %> <span class="small-muted">&mdash; <%= r.dedication_by %></span><% } %></span><% } %>
+                  </td>
+                  <td><%= r.requesters %></td>
+                  <td><span class="count-pill"><%= r.times_requested %></span></td>
+                  <td><% if (r.upvotes) { %><span class="count-pill">&#128077; <%= r.upvotes %></span><% } else { %>&mdash;<% } %></td>
+                  <td style="white-space:nowrap;">
+                    <form method="POST" action="/admin/requests/accept" style="display:inline;">
+                      <input type="hidden" name="normalized_key" value="<%= r.normalized_key %>" />
+                      <% if (r.accepted) { %>
+                        <input type="hidden" name="unaccept" value="1" />
+                        <button type="submit" class="btn btn-ghost btn-sm">Unaccept</button>
+                      <% } else { %>
+                        <button type="submit" class="btn btn-secondary btn-sm">Accept</button>
+                      <% } %>
+                    </form>
+                    <form method="POST" action="/admin/requests/mark-played" style="display:inline;">
+                      <input type="hidden" name="normalized_key" value="<%= r.normalized_key %>" />
+                      <button type="submit" class="btn btn-success btn-sm">Mark Played</button>
+                    </form>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+          <% if (!pending.length) { %><div class="empty-state">No pending requests.</div><% } %>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>&#9989; Recently Played</h3>
+        <p class="small-muted" style="margin-bottom:14px;">
+          Everything played tonight. A song listed as requested by <strong>"DJ Pick"</strong> means nobody asked for it &mdash; Auto Song Detection (or you) played it anyway, and it's logged here so the setlist is complete.
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Song</th>
+                <th>Requested By</th>
+                <th>Played At</th>
+                <th>Requests</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recentlyPlayed.forEach(function(r) { %>
+                <tr>
+                  <td><strong><%= r.song_title %></strong><% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %></td>
+                  <td><%= r.requesters %></td>
+                  <td><%= r.played_at %></td>
+                  <td><span class="count-pill"><%= r.times_requested %></span></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+          <% if (!recentlyPlayed.length) { %><div class="empty-state">Nothing played yet.</div><% } %>
+        </div>
       </div>
     </div>
 
@@ -318,7 +324,7 @@
     <% } %>
 
     <% if (isLive && features.polls) { %>
-    <div class="card" style="margin-bottom: 30px;">
+    <div class="card" id="sec-poll" style="margin-bottom: 30px;">
       <h3>&#128202; Quick Poll</h3>
       <% if (activePoll) { %>
         <p class="small-muted" style="margin-bottom:14px;"><%= activePoll.question %></p>
@@ -360,7 +366,7 @@
     <% } %>
 
     <% if (isLive) { %>
-    <div class="card" style="margin-bottom: 30px;">
+    <div class="card" id="sec-chat" style="margin-bottom: 30px;">
       <h3>&#128172; Live Chat</h3>
       <p class="small-muted" style="margin-bottom:14px;">Everyone at the event sees this &mdash; type a reply and it shows up on their phones in a few seconds. Messages with inappropriate language are automatically blocked before they're sent.</p>
       <div id="admin-chat-log" class="chat-log" style="max-height: 360px;"></div>
@@ -373,95 +379,97 @@
     </div>
     <% } %>
 
-    <div class="flex-between" style="margin-bottom: 16px;">
-      <h2 style="margin:0;">Booking Inquiries</h2>
-      <a href="/admin/inquiries" class="btn btn-secondary btn-sm">
-        View All <% if (newInquiries > 0) { %>(<%= newInquiries %> new)<% } %>
-      </a>
-    </div>
-
-    <div class="board">
-      <div class="card">
-        <h3>&#127925; Up Next</h3>
-        <p class="small-muted" style="margin-bottom:14px;">
-          Songs requested by guests, most-requested first. <strong>Accept</strong> shows guests you've confirmed a song is coming up (it does not play it). <strong>Mark Played</strong> moves it to Recently Played once you actually play it. If the same song is requested by more than one guest, it stays as one row here with all their names listed &mdash; that's expected, not a duplicate bug.
-        </p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Song</th>
-                <th>Requested By</th>
-                <th>Requests</th>
-                <th>Upvotes</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <% pending.forEach(function(r) { %>
-                <tr>
-                  <td>
-                    <strong><%= r.song_title %></strong>
-                    <% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %>
-                    <% if (r.accepted) { %><br><span class="badge badge-booked">&#10003; Accepted</span><% } %>
-                    <% if (r.dedication) { %><br><span class="dedication-note">&#128140; <%= r.dedication %><% if (r.dedication_by) { %> <span class="small-muted">&mdash; <%= r.dedication_by %></span><% } %></span><% } %>
-                  </td>
-                  <td><%= r.requesters %></td>
-                  <td><span class="count-pill"><%= r.times_requested %></span></td>
-                  <td><% if (r.upvotes) { %><span class="count-pill">&#128077; <%= r.upvotes %></span><% } else { %>&mdash;<% } %></td>
-                  <td style="white-space:nowrap;">
-                    <form method="POST" action="/admin/requests/accept" style="display:inline;">
-                      <input type="hidden" name="normalized_key" value="<%= r.normalized_key %>" />
-                      <% if (r.accepted) { %>
-                        <input type="hidden" name="unaccept" value="1" />
-                        <button type="submit" class="btn btn-ghost btn-sm">Unaccept</button>
-                      <% } else { %>
-                        <button type="submit" class="btn btn-secondary btn-sm">Accept</button>
-                      <% } %>
-                    </form>
-                    <form method="POST" action="/admin/requests/mark-played" style="display:inline;">
-                      <input type="hidden" name="normalized_key" value="<%= r.normalized_key %>" />
-                      <button type="submit" class="btn btn-success btn-sm">Mark Played</button>
-                    </form>
-                  </td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-          <% if (!pending.length) { %><div class="empty-state">No pending requests.</div><% } %>
+    <details class="card features-card" id="sec-features" style="margin-bottom: 30px;">
+      <summary class="features-summary">
+        <span><strong>&#9881;&#65039; Live Page Features</strong> <span class="small-muted">&mdash; <%= Object.values(features).filter(Boolean).length %> of <%= Object.values(features).length %> switched on</span></span>
+        <span class="small-muted">Tap to open</span>
+      </summary>
+      <p class="small-muted" style="margin-bottom:14px;">Turn any of these on or off for guests at any time &mdash; before, during, or after an event. Turning one off just hides it from guests; nothing already saved gets deleted, and turning it back on brings everything back.</p>
+      <div class="feature-toggle-grid">
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Guest Counter</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Shows guests how many people are on the live page right now.</p>
+          </div>
+          <form method="POST" action="/admin/features/guest_counter/toggle">
+            <button type="submit" class="btn btn-sm <%= features.guestCounter ? 'btn-success' : 'btn-ghost' %>"><%= features.guestCounter ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Live Reactions</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Tappable emoji buttons that float across everyone's screen.</p>
+          </div>
+          <form method="POST" action="/admin/features/reactions/toggle">
+            <button type="submit" class="btn btn-sm <%= features.reactions ? 'btn-success' : 'btn-ghost' %>"><%= features.reactions ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Quick Polls</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Post a this-or-that question guests vote on live.</p>
+          </div>
+          <form method="POST" action="/admin/features/polls/toggle">
+            <button type="submit" class="btn btn-sm <%= features.polls ? 'btn-success' : 'btn-ghost' %>"><%= features.polls ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Guestbook</strong>
+            <p class="small-muted" style="margin:2px 0 0;">A wall of notes from guests, kept forever as a keepsake.</p>
+          </div>
+          <form method="POST" action="/admin/features/guestbook/toggle">
+            <button type="submit" class="btn btn-sm <%= features.guestbook ? 'btn-success' : 'btn-ghost' %>"><%= features.guestbook ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Drops &amp; Countdowns</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Confetti, fireworks, shoutouts and "moment" countdowns you fire onto every screen.</p>
+          </div>
+          <form method="POST" action="/admin/features/effects/toggle">
+            <button type="submit" class="btn btn-sm <%= features.effects ? 'btn-success' : 'btn-ghost' %>"><%= features.effects ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Energy Meter</strong>
+            <p class="small-muted" style="margin:2px 0 0;">A crowd-energy meter you control from here, shown to guests.</p>
+          </div>
+          <form method="POST" action="/admin/features/energy/toggle">
+            <button type="submit" class="btn btn-sm <%= features.energy ? 'btn-success' : 'btn-ghost' %>"><%= features.energy ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Tip Jar</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Venmo / Cash App / Zelle tip buttons for guests. Set your handles in <a href="/admin/extras">Tips &amp; Extras</a>.</p>
+          </div>
+          <form method="POST" action="/admin/features/tips/toggle">
+            <button type="submit" class="btn btn-sm <%= features.tips ? 'btn-success' : 'btn-ghost' %>"><%= features.tips ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Song Battles</strong>
+            <p class="small-muted" style="margin:2px 0 0;">Pit two songs against each other &mdash; guests vote and the winner plays next.</p>
+          </div>
+          <form method="POST" action="/admin/features/battles/toggle">
+            <button type="submit" class="btn btn-sm <%= features.battles ? 'btn-success' : 'btn-ghost' %>"><%= features.battles ? 'ON' : 'OFF' %></button>
+          </form>
+        </div>
+        <div class="feature-toggle-row">
+          <div>
+            <strong>Live Photo Wall <span class="badge badge-contacted">Photo Pass</span></strong>
+            <p class="small-muted" style="margin:2px 0 0;">Guests send small photos and you approve each one before it hits the Big Screen. Guests can buy a cheap one-time Photo Pass to upload (you choose per event below).</p>
+          </div>
+          <form method="POST" action="/admin/features/photowall/toggle">
+            <button type="submit" class="btn btn-sm <%= features.photoWall ? 'btn-success' : 'btn-ghost' %>"><%= features.photoWall ? 'ON' : 'OFF' %></button>
+          </form>
         </div>
       </div>
+    </details>
 
-      <div class="card">
-        <h3>&#9989; Recently Played</h3>
-        <p class="small-muted" style="margin-bottom:14px;">
-          Everything played tonight. A song listed as requested by <strong>"DJ Pick"</strong> means nobody asked for it &mdash; Auto Song Detection (or you) played it anyway, and it's logged here so the setlist is complete.
-        </p>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Song</th>
-                <th>Requested By</th>
-                <th>Played At</th>
-                <th>Requests</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% recentlyPlayed.forEach(function(r) { %>
-                <tr>
-                  <td><strong><%= r.song_title %></strong><% if (r.artist) { %><br><span class="small-muted"><%= r.artist %></span><% } %></td>
-                  <td><%= r.requesters %></td>
-                  <td><%= r.played_at %></td>
-                  <td><span class="count-pill"><%= r.times_requested %></span></td>
-                </tr>
-              <% }); %>
-            </tbody>
-          </table>
-          <% if (!recentlyPlayed.length) { %><div class="empty-state">Nothing played yet.</div><% } %>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 

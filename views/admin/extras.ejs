@@ -4,7 +4,6 @@
   <div class="container">
     <div class="flex-between" style="margin-bottom: 20px;">
       <h1 style="margin:0;">Tips &amp; Extras</h1>
-      <a href="/admin" class="btn btn-secondary btn-sm">&larr; Back to Dashboard</a>
     </div>
     <p class="small-muted" style="margin-bottom: 24px; max-width: 720px;">
       Fill in whatever you want to use &mdash; anything you leave blank is simply hidden. Nothing here goes live until you save, and you can change it any time.
@@ -42,7 +41,7 @@
           <li><strong>Make a free Stripe account</strong> at <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener">dashboard.stripe.com/register</a> and finish "Activate payments" (it asks for your business details and where to send the money &mdash; your bank account).</li>
           <li><strong>Turn on Cash App Pay (optional):</strong> in Stripe go to <em>Settings &rarr; Payment methods</em> and switch on <em>Cash App Pay</em> (and Apple Pay / Google Pay if you like).</li>
           <li><strong>Copy your secret key:</strong> <em>Developers &rarr; API keys &rarr; Secret key &rarr; Reveal</em>. In <a href="https://dashboard.render.com" target="_blank" rel="noopener">Render</a>, open this site &rarr; <em>Environment</em> &rarr; add a variable named <code>STRIPE_SECRET_KEY</code> and paste the key. (Start with the <em>test</em> key to try it with fake cards; swap in the live key when ready.)</li>
-          <li><strong>Connect payment notifications:</strong> in Stripe go to <em>Developers &rarr; Webhooks &rarr; Add endpoint</em>. Endpoint URL: <code><%= stripeStatus.siteUrl %>/api/stripe/webhook</code>. Select the events <code>checkout.session.completed</code> and <code>checkout.session.async_payment_succeeded</code>. Copy the <em>Signing secret</em> (starts with whsec_) and add it in Render as <code>STRIPE_WEBHOOK_SECRET</code>.</li>
+          <li><strong>Connect payment notifications:</strong> in Stripe go to <em>Developers &rarr; Webhooks &rarr; Add endpoint</em>. Endpoint URL: <code><%= stripeStatus.siteUrl %>/api/stripe/webhook</code>. Select these four events: <code>checkout.session.completed</code>, <code>checkout.session.async_payment_succeeded</code>, <code>charge.refunded</code> and <code>charge.dispute.created</code> (the last two switch a pass off if its payment is ever refunded or disputed). Copy the <em>Signing secret</em> (starts with whsec_) and add it in Render as <code>STRIPE_WEBHOOK_SECRET</code>.</li>
           <li><strong>Set your price below, save, then press "Test Stripe Connection".</strong> Clients will see the pay button on their planning page. In test mode pay with card number <code>4242 4242 4242 4242</code>, any future date, any CVC.</li>
         </ol>
         <p class="small-muted">Render restarts the site by itself after you change an environment variable &mdash; wait a minute or two before testing.</p>

@@ -52,6 +52,19 @@ function sameOriginOnly(req, res, next) {
 router.use(sameOriginOnly);
 router.use(adminAuth);
 
+// What the admin navigation bar needs on every page: which page is open and
+// the little "new" counters.
+router.use((req, res, next) => {
+  res.locals.adminPath = req.originalUrl.split('?')[0].replace(/\/+$/, '') || '/admin';
+  if (req.method === 'GET' && req.accepts('html') && !/^\/admin\/(wall|battles|chat|export|plans\/\d+\/download)/.test(res.locals.adminPath)) {
+    res.locals.adminBadges = {
+      inquiries: db.prepare(`SELECT COUNT(*) AS c FROM inquiries WHERE status = 'new'`).get().c,
+      reviews: db.prepare(`SELECT COUNT(*) AS c FROM testimonials WHERE source = 'guest' AND published = 0`).get().c,
+    };
+  }
+  next();
+});
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 }, // one short audio clip, generous cap

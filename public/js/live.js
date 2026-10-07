@@ -616,6 +616,34 @@
     });
   }
 
+  // A little "jump to" bar that only lists the sections currently showing, so
+  // a guest can get to Chat / Photos / Tip in one tap on a long page.
+  const jumpBar = document.getElementById('live-jump');
+  const JUMP_ITEMS = [
+    ['request-form-wrap', '\u{1F3B5} Request'],
+    ['battle-wrap', '\u2694\uFE0F Battle'],
+    ['chat-wrap', '\u{1F4AC} Chat'],
+    ['wall-wrap', '\u{1F4F8} Photos'],
+    ['guestbook-wrap', '\u{1F4D5} Guestbook'],
+    ['tips-wrap', '\u{1F4B8} Tip'],
+    ['board', '\u{1F4CB} Up Next'],
+  ];
+  let jumpSig = null;
+  function updateJump() {
+    if (!jumpBar) return;
+    const visible = JUMP_ITEMS.filter(([id]) => {
+      const el = document.getElementById(id);
+      return el && el.offsetParent !== null;
+    });
+    const sig = visible.map(([id]) => id).join(',');
+    if (sig === jumpSig) return;
+    jumpSig = sig;
+    jumpBar.style.display = visible.length > 2 ? 'flex' : 'none';
+    jumpBar.innerHTML = visible.map(([id, label]) => `<a href="#${id}">${label}</a>`).join('');
+  }
+  setInterval(updateJump, 1500);
+  setTimeout(updateJump, 600);
+
   window.DJXExtrasRefresh = refresh;
   refresh();
   setInterval(refresh, 5000);

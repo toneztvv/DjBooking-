@@ -40,6 +40,14 @@ A booking + live song-request website for DJXpress.
 - **Referral cards** — each shared recap gets its own code (`DJX-XXXXX`) and a "Know someone planning an event?" card with a share button. Friends who open `/book?ref=CODE` (or type the code) see the offer you wrote in Tips & Extras; the inquiry stores the code and Booking Inquiries shows which event referred them.
 - **Visual polish** — an animated glowing hero with an equalizer motif, glass-style cards, scroll-reveal animations, animated lifetime stat counters on the homepage, a branded favicon (`public/images/favicon.svg`), and a social share preview image (`public/images/og-image.png`). Both are plain static files — replace them with your own anytime to rebrand.
 
+## Security & payment safety
+
+- **Admin** (`/admin`): HTTP Basic login with timing-safe comparison; failed logins are rate-limited (lockout after 40 misses in 15 min); every state-changing admin request must come from this site itself (`Sec-Fetch-Site`/`Origin` check — blocks forged requests from other websites); admin and client planning pages are never cached; a banner warns if `ADMIN_PASSWORD` is still the default.
+- **Guest-typed text** is escaped everywhere it is shown (including inside HTML attributes), so a name, song, caption or dedication can never run as code on guests' phones, the Big Screen, or the DJ dashboard.
+- **Photo uploads**: real-JPEG structure check, ≤350 KB, picture size capped at 4096px / 12 MP (refuses "decompression bomb" files), per-guest and per-event caps, private until approved, unreviewed photos auto-deleted after 2 days.
+- **Payments never double-charge**: the price is always set on the server; one open Stripe checkout is reused instead of opening a second (double-taps, two tabs); a phone that already holds a pass is never sold another; each checkout expires after ~30 minutes; Stripe idempotency keys on every create/refund call. If someone *does* pay twice for the same thing (same email, or a booking already paid), the second payment is refunded automatically. A refund or chargeback (via the webhook's `charge.refunded` / `charge.dispute.created`) switches the pass or booking off. Webhooks are signature-checked with a 5-minute replay window.
+- **Live-night rate limits** are generous (a whole party shares one wifi address) but still stop floods; the booking form stays strict.
+
 ## Tech stack
 
 Plain Node.js + Express + EJS templates + SQLite (via `better-sqlite3`) — no build step, no frontend framework required. Easy to run anywhere Node runs.

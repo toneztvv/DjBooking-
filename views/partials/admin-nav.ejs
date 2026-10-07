@@ -1,0 +1,26 @@
+<%
+  const here = typeof adminPath !== 'undefined' ? adminPath : '';
+  const items = [
+    { href: '/admin', icon: '&#127899;&#65039;', label: 'Dashboard', exact: true },
+    { href: '/admin/inquiries', icon: '&#128235;', label: 'Bookings', badge: typeof adminBadges !== 'undefined' ? adminBadges.inquiries : 0 },
+    { href: '/admin/events', icon: '&#128197;', label: 'Events' },
+    { href: '/admin/testimonials', icon: '&#11088;', label: 'Reviews', badge: typeof adminBadges !== 'undefined' ? adminBadges.reviews : 0 },
+    { href: '/admin/guestbook', icon: '&#128214;', label: 'Guestbook' },
+    { href: '/admin/gallery', icon: '&#128444;&#65039;', label: 'Gallery' },
+    { href: '/admin/passes', icon: '&#127903;&#65039;', label: 'Passes' },
+    { href: '/admin/extras', icon: '&#128184;', label: 'Extras' },
+    { href: '/admin/analytics', icon: '&#128200;', label: 'Stats' },
+    { href: '/admin/services', icon: '&#129534;', label: 'Billing' },
+    { href: '/admin/setup-guide', icon: '&#10067;', label: 'Help' },
+  ];
+%>
+<nav class="admin-nav" aria-label="Admin sections">
+  <div class="admin-nav-inner">
+    <% items.forEach(function(item) { %>
+      <% const active = item.exact ? here === item.href : (here === item.href || here.indexOf(item.href + '/') === 0); %>
+      <a href="<%= item.href %>" class="admin-nav-link<%= active ? ' active' : '' %>"<%- active ? ' aria-current="page"' : '' %>>
+        <span class="admin-nav-icon" aria-hidden="true"><%- item.icon %></span><%= item.label %><% if (item.badge > 0) { %> <span class="admin-nav-badge"><%= item.badge %></span><% } %>
+      </a>
+    <% }); %>
+  </div>
+</nav>

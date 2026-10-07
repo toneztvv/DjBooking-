@@ -2202,3 +2202,175 @@ button.battle-side:disabled {
   margin: 0 auto;
   border-radius: 10px;
 }
+
+/* --- Admin navigation bar (shown on every admin page) --- */
+
+.admin-nav {
+  position: sticky;
+  top: 61px;
+  z-index: 40;
+  background: rgba(19, 19, 32, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.admin-nav-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 8px 16px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-nav-inner::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-nav-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-nav-link:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-nav-link.active {
+  color: var(--text);
+  background: linear-gradient(135deg, rgba(255, 47, 191, 0.22), rgba(124, 77, 255, 0.22));
+  border-color: rgba(255, 47, 191, 0.45);
+}
+
+.admin-nav-badge {
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* --- Dashboard organisation: jump chips + collapsible features --- */
+
+.dash-jump {
+  position: sticky;
+  top: 108px;
+  z-index: 30;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 2px 12px;
+  margin: 0 0 12px;
+  scrollbar-width: none;
+  background: linear-gradient(var(--bg) 70%, transparent);
+}
+
+.dash-jump::-webkit-scrollbar {
+  display: none;
+}
+
+.dash-jump a {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dash-jump a:hover {
+  border-color: var(--accent);
+}
+
+html {
+  scroll-padding-top: 160px;
+}
+
+.features-card > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.features-card > summary::-webkit-details-marker {
+  display: none;
+}
+
+.features-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.features-card[open] .features-summary {
+  margin-bottom: 14px;
+}
+
+/* --- Live page: jump bar --- */
+
+.live-jump {
+  position: sticky;
+  top: 61px;
+  z-index: 30;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 2px 12px;
+  margin: 0 0 14px;
+  scrollbar-width: none;
+  background: linear-gradient(var(--bg) 70%, transparent);
+}
+
+.live-jump::-webkit-scrollbar {
+  display: none;
+}
+
+.live-jump a {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.live-jump a:hover {
+  border-color: var(--accent);
+}
+
+.live-jump + * {
+  scroll-margin-top: 120px;
+}
+
+@media (max-width: 700px) {
+  /* On phones the top bars already take a lot of room — let the section chips scroll away. */
+  .dash-jump {
+    position: static;
+    background: none;
+  }
+  html {
+    scroll-padding-top: 120px;
+  }
+}
