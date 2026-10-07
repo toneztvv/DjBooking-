@@ -286,15 +286,16 @@ LIVE PHOTO WALL + PHOTO PASSES:
 
 AUTOMATIC PAYMENT (STRIPE): Set the prices on /admin/extras. Add
   STRIPE_SECRET_KEY (and STRIPE_WEBHOOK_SECRET) in Render -> your service ->
-  Environment. Guests then see an "Unlock for $5" button on the live page.
-  (Optional: the host can instead pay once for the whole party from their
-  planning page — "Add the Live Photo Wall" — if you set that price.) (Stripe's own checkout: card, Apple/Google Pay and, if you
-  switch it on in Stripe -> Settings -> Payment methods, Cash App Pay).
-  When they pay, their booking is marked paid and the Photo Wall unlocks by
-  itself. When you press Go Live, pick the client in "Which booking is this
-  for?" so the event is connected to them. Paid outside Stripe (cash, Zelle,
-  Cash App sent straight to you)? Press "Mark paid" on Booking Inquiries.
-  Stripe charges 2.9% + 30 cents per card payment and nothing monthly.
+  Environment. Guests then see an "Unlock for $5" Photo Pass button on the
+  live page. Checkout is Stripe's own page: card, Apple/Google Pay and, if
+  you switch it on in Stripe -> Settings -> Payment methods, Cash App Pay.
+  The moment they pay, their pass is active — nothing for you to press.
+  Optional: set a "whole party" price and the host can pay once from their
+  planning page instead; when you press Go Live, pick their booking under
+  "Which booking is this for?" and everyone at that party uploads free.
+  Paid outside Stripe (cash, Zelle, Cash App sent straight to you)? Give a
+  free pass on /admin/passes, or press "Mark paid" on Booking Inquiries.
+  Stripe charges 2.9% + 30 cents per payment and nothing monthly.
   /admin/extras has a step-by-step guide and a Test Stripe Connection button.
 
 CLIENT PLANNING PAGE: on Booking Inquiries press "Create Planning Link", then
