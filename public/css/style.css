@@ -2123,3 +2123,11 @@ button.battle-side:disabled {
   border-top: 1px dashed var(--card-border);
   font-size: 0.85rem;
 }
+
+.wall-pass-panel {
+  margin-bottom: 14px;
+  padding: 18px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 47, 191, 0.4);
+  background: linear-gradient(135deg, rgba(255, 47, 191, 0.1), rgba(124, 77, 255, 0.1));
+}

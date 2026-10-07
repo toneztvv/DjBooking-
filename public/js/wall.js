@@ -14,6 +14,29 @@
   const grid = document.getElementById('wall-grid');
   const empty = document.getElementById('wall-empty');
 
+  const passPanel = document.getElementById('wall-pass-panel');
+  const passHave = document.getElementById('wall-pass-have');
+  const passMessage = document.getElementById('wall-pass-message');
+  const passBuy = document.getElementById('wall-pass-buy');
+  const passBanner = document.getElementById('pass-banner');
+
+  const PASS_KEY = 'djxpress_photo_pass';
+  function getPass() {
+    try {
+      return localStorage.getItem(PASS_KEY) || '';
+    } catch (err) {
+      return '';
+    }
+  }
+  function setPass(code) {
+    try {
+      if (code) localStorage.setItem(PASS_KEY, code);
+      else localStorage.removeItem(PASS_KEY);
+    } catch (err) {
+      // ignore
+    }
+  }
+
   const MAX_DIMENSION = 900;
   const MAX_BYTES = 300 * 1024; // server allows 350KB; stay safely under
   let blob = null;
@@ -130,6 +153,7 @@
     fd.append('name', nameInput.value.trim());
     fd.append('caption', captionInput.value.trim());
     fd.append('client_id', getClientId());
+    fd.append('pass_code', getPass());
     fd.append('company_website', form.elements.company_website.value);
 
     try {
@@ -150,6 +174,7 @@
       } else {
         say(data.error || 'Something went wrong. Please try again.', 'error');
         submitBtn.disabled = false;
+        if (data.needsPass) refresh();
       }
     } catch (err) {
       say('Network error. Please try again.', 'error');
@@ -157,13 +182,131 @@
     }
   });
 
+  // --- Photo Pass: buy, restore with a code, claim after paying ---------------
+
+  function passSay(text, isError) {
+    passMessage.textContent = text;
+    passMessage.style.color = isError ? 'var(--danger)' : '';
+  }
+
+  if (passBuy) {
+    passBuy.addEventListener('click', async () => {
+      passBuy.disabled = true;
+      passSay('Taking you to secure checkout…');
+      try {
+        const res = await fetch('/api/wall/pass/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ client_id: getClientId() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok && data.url) {
+          window.location.href = data.url;
+          return;
+        }
+        passSay(data.error || 'Something went wrong. Please try again.', true);
+      } catch (err) {
+        passSay('Network error. Please try again.', true);
+      }
+      passBuy.disabled = false;
+    });
+  }
+
+  const codeForm = document.getElementById('wall-pass-code-form');
+  if (codeForm) {
+    codeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      passSay('Checking…');
+      try {
+        const res = await fetch('/api/wall/pass/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: document.getElementById('wall-pass-code-input').value }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          setPass(data.code);
+          passSay('');
+          refresh();
+        } else {
+          passSay(data.error || 'That code isn’t valid.', true);
+        }
+      } catch (err) {
+        passSay('Network error. Please try again.', true);
+      }
+    });
+  }
+
+  // Coming back from Stripe: confirm the payment and keep the pass on this phone.
+  function showBanner(html, isError) {
+    if (!passBanner) return;
+    passBanner.className = `alert ${isError ? 'alert-error' : 'alert-success'}`;
+    passBanner.innerHTML = html;
+    passBanner.style.display = 'block';
+    passBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  async function claimPass(sessionId, attempt) {
+    try {
+      const res = await fetch('/api/wall/pass/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        setPass(data.code);
+        showBanner(
+          `\u{1F389} <strong>You're unlocked — forever!</strong> You can now upload photos on this phone. Your pass code is <strong style="letter-spacing:2px;">${esc(data.code)}</strong> — screenshot it so you can restore your pass on a new phone.`,
+          false
+        );
+        refresh();
+        return;
+      }
+      if (res.status === 402 && attempt < 6) {
+        setTimeout(() => claimPass(sessionId, attempt + 1), 3000);
+        return;
+      }
+      showBanner(esc(data.error || 'We couldn’t confirm your payment.'), true);
+    } catch (err) {
+      if (attempt < 3) setTimeout(() => claimPass(sessionId, attempt + 1), 3000);
+      else showBanner('We couldn’t confirm your payment. Please refresh this page.', true);
+    }
+  }
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('pass_session');
+    if (sessionId) {
+      window.history.replaceState({}, '', window.location.pathname);
+      showBanner('Confirming your payment…', false);
+      claimPass(sessionId, 0);
+    }
+  } catch (err) {
+    // ignore
+  }
+
   async function refresh() {
     try {
-      const res = await fetch(`/api/wall?client_id=${encodeURIComponent(getClientId())}`, { headers: { Accept: 'application/json' } });
+      const sentPass = getPass();
+      const res = await fetch(`/api/wall?client_id=${encodeURIComponent(getClientId())}&pass_code=${encodeURIComponent(sentPass)}`, { headers: { Accept: 'application/json' } });
       if (!res.ok) return;
       const data = await res.json();
       wrap.style.display = data.enabled ? 'block' : 'none';
       if (!data.enabled) return;
+
+      // A saved code that no longer works (turned off by the DJ) is forgotten.
+      // (Only if the code we actually sent is still the saved one — a pass saved
+      // while this request was in flight must not be wiped by its older answer.)
+      if (data.mode === 2 && !data.canUpload && sentPass && getPass() === sentPass) setPass('');
+      const needsPass = data.mode === 2 && !data.canUpload;
+      form.style.display = needsPass ? 'none' : '';
+      passPanel.style.display = needsPass ? 'block' : 'none';
+      passHave.style.display = data.mode === 2 && data.canUpload ? 'block' : 'none';
+      if (needsPass) {
+        document.getElementById('wall-pass-price').textContent = data.passPrice;
+        document.getElementById('wall-pass-price-btn').textContent = data.passPrice;
+      }
 
       const sig = data.photos.map((p) => p.id).join(',');
       if (sig !== gridSig) {

@@ -20,7 +20,7 @@
       <% } else if (payment.canPay) { %>
         <div class="form-card plan-step pay-card" style="max-width:100%;">
           <h3>&#128248; Add the Live Photo Wall <span class="pay-price"><%= payment.price %></span></h3>
-          <p class="small-muted">Your guests send photos from their phones and they pop up on the big screen during your event &mdash; every photo is approved by your DJ first, so nothing unwanted ever shows. It's optional.</p>
+          <p class="small-muted">Your guests send photos from their phones and they pop up on the big screen during your event &mdash; every photo is approved by your DJ first, so nothing unwanted ever shows. <strong>One payment covers all your guests</strong> &mdash; they upload for free. It's optional.</p>
           <% if (payment.cancelled) { %><p class="small-muted">No problem &mdash; nothing was charged. You can add it any time.</p><% } %>
           <% if (payment.note) { %><div class="alert alert-info"><%= payment.note %></div><% } %>
           <button type="button" id="pay-photowall" class="btn btn-primary">Add it &mdash; <%= payment.price %> &#8594;</button>

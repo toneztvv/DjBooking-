@@ -257,7 +257,8 @@ DEDICATIONS: the "Shoutout / Dedication" box on a request now shows under
   the song on the live board, your dashboard, and the Big Screen; when that
   song plays, the Big Screen flashes it as a banner. Bad language is blocked.
 
-TIP JAR (Tips & Extras page, /admin/extras): enter your Venmo username,
+TIP JAR (Tips & Extras page, /admin/extras) — tips go straight to you, no
+  Stripe and no fees: enter your Venmo username,
   Cash App $cashtag and/or Zelle email/phone. Guests see pay buttons on the
   live page and a scan-to-tip QR on the Big Screen. Leave a box blank to
   hide that method. Switch the whole thing on/off from the dashboard.
@@ -267,23 +268,27 @@ SONG BATTLES (dashboard, "Song Battle" card): type two songs, pick a voting
   wait for the timer): the winner is added to Up Next as Accepted, a tie adds
   both, and confetti + a banner announce it.
 
-LIVE PHOTO WALL — A PAID ADD-ON:
-  - It stays LOCKED for each event until YOU unlock it. Either tick "Photo
-    Wall add-on is paid" when you press Go Live, or press "Unlock Photo
-    Wall" on the Photo Wall card later. (There is no online checkout — you
-    collect payment yourself, then unlock it.)
-  - Guests pick a photo on the live page; their phone shrinks it first.
-  - EVERY photo waits for your OK. New ones appear in the Photo Wall card on
-    the dashboard (the browser tab title shows "(2) photos waiting"). Tap
-    Approve to put it on the Big Screen, Reject to delete it. You can remove
-    approved photos any time.
+LIVE PHOTO WALL + PHOTO PASSES:
+  - Guests send small photos; EVERY photo waits for your OK. New ones appear
+    in the Photo Wall card on the dashboard (the browser tab title shows
+    "(2) photos waiting"). Approve puts it on the Big Screen, Reject deletes.
+  - For each event choose: OFF, "Guests unlock uploading with a Photo Pass",
+    or "Free for everyone (host paid)". Set it when you press Go Live or any
+    time on the Photo Wall card.
+  - PHOTO PASS: a guest pays once (default $5, change it on Tips & Extras)
+    and can upload photos FOREVER, at every future event. Their phone
+    remembers them. On a new phone they type their code (looks like
+    PASS-AB12CD). /admin/passes lists every code + email so you can look one
+    up, hand out free passes, or turn one off. Watching the wall is free.
+  - Stripe keeps about 44 cents of a $5 pass (2.9% + 30 cents).
   - Limits: JPEG only, 350 KB max on the server, 3 waiting + 12 total per
-    guest per night. Files are stored in data/photowall/ on the Render disk.
+    pass/phone per night. Files live in data/photowall/ on the Render disk.
 
-AUTOMATIC PHOTO WALL PAYMENT (STRIPE): Set the price on /admin/extras. Add
+AUTOMATIC PAYMENT (STRIPE): Set the prices on /admin/extras. Add
   STRIPE_SECRET_KEY (and STRIPE_WEBHOOK_SECRET) in Render -> your service ->
-  Environment. The client's planning page then shows a "Add the Live Photo
-  Wall" pay button (Stripe's own checkout: card, Apple/Google Pay and, if you
+  Environment. Guests then see an "Unlock for $5" button on the live page.
+  (Optional: the host can instead pay once for the whole party from their
+  planning page — "Add the Live Photo Wall" — if you set that price.) (Stripe's own checkout: card, Apple/Google Pay and, if you
   switch it on in Stripe -> Settings -> Payment methods, Cash App Pay).
   When they pay, their booking is marked paid and the Photo Wall unlocks by
   itself. When you press Go Live, pick the client in "Which booking is this

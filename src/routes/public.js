@@ -235,7 +235,9 @@ router.post('/plan/:token/checkout', async (req, res) => {
       amountCents: priceCents,
       productName: 'DJXpress Live Photo Wall add-on',
       email: plan.client_email,
-      inquiryId: plan.inquiry_id,
+      clientReferenceId: plan.inquiry_id,
+      metadata: { product: 'photowall', inquiry_id: String(plan.inquiry_id) },
+      description: `DJXpress Live Photo Wall add-on (booking #${plan.inquiry_id})`,
       successUrl: `${base}/plan/${encodeURIComponent(plan.token)}?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${base}/plan/${encodeURIComponent(plan.token)}?cancelled=1`,
     });

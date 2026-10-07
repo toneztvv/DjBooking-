@@ -54,21 +54,21 @@ async function stripeRequest(method, path, params) {
 // server — nothing the browser sends can change the price. Payment methods
 // (card, Apple Pay, Cash App Pay...) come from what's switched on in the
 // Stripe dashboard.
-function createCheckoutSession({ amountCents, productName, email, inquiryId, successUrl, cancelUrl }) {
+function createCheckoutSession({ amountCents, productName, email, clientReferenceId, metadata, description, successUrl, cancelUrl }) {
   return stripeRequest('POST', '/v1/checkout/sessions', {
     mode: 'payment',
     success_url: successUrl,
     cancel_url: cancelUrl,
     customer_email: email || undefined,
-    client_reference_id: String(inquiryId),
+    client_reference_id: clientReferenceId ? String(clientReferenceId) : undefined,
     line_items: [
       {
         quantity: 1,
         price_data: { currency: 'usd', unit_amount: amountCents, product_data: { name: productName } },
       },
     ],
-    metadata: { product: 'photowall', inquiry_id: String(inquiryId), amount_cents: String(amountCents) },
-    payment_intent_data: { description: `${productName} (booking #${inquiryId})` },
+    metadata: { ...metadata, amount_cents: String(amountCents) },
+    payment_intent_data: { description: description || productName },
   });
 }
 

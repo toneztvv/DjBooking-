@@ -15,7 +15,7 @@
 
     <div class="card" id="payments" style="max-width:720px; margin-bottom: 30px;">
       <h3 style="margin-top:0;">&#128179; Online Payments (Stripe)</h3>
-      <p class="small-muted">Lets your clients pay for the Photo Wall add-on by themselves on their planning page. The moment they pay, it's marked paid on their booking and unlocks automatically &mdash; no checking, no button to press. Clients can pay by card, Apple Pay / Google Pay, or <strong>Cash App Pay</strong> (if you switch it on in Stripe).</p>
+      <p class="small-muted">Lets guests buy a small <strong>Photo Pass</strong> on the live page (and, optionally, lets the host pay once for the whole party on their planning page). The moment someone pays it unlocks automatically &mdash; no checking, no button to press. Clients can pay by card, Apple Pay / Google Pay, or <strong>Cash App Pay</strong> (if you switch it on in Stripe).</p>
 
       <% if (stripeStatus.configured) { %>
         <div class="alert alert-success">&#9989; Stripe is connected in <strong><%= stripeStatus.mode === 'test' ? 'TEST mode (no real money moves)' : 'LIVE mode (real payments)' %></strong>.</div>
@@ -30,7 +30,7 @@
       <ul class="small-muted" style="line-height:1.9; padding-left:18px;">
         <li><%- stripeStatus.configured ? '&#9989;' : '&#11036;' %> Secret key added to Render</li>
         <li><%- stripeStatus.webhook ? '&#9989;' : '&#11036;' %> Payment notifications (webhook) connected <span class="small-muted">&mdash; recommended, so payments register even if a client closes the page right after paying</span></li>
-        <li><%- stripeStatus.priceOk ? '&#9989;' : '&#11036;' %> Photo Wall price set (below)</li>
+        <li><%- stripeStatus.priceOk ? '&#9989;' : '&#11036;' %> A price is set (below)</li>
       </ul>
       <form method="POST" action="/admin/stripe/test" style="margin-bottom:16px;">
         <button type="submit" class="btn btn-secondary btn-sm">Test Stripe Connection</button>
@@ -51,11 +51,20 @@
 
     <form method="POST" action="/admin/extras" style="max-width:720px;">
       <div class="form-card" style="margin-bottom: 30px;">
-        <h3 style="margin-top:0;">&#128248; Photo Wall Price</h3>
-        <p class="small-muted">What you charge for the Live Photo Wall add-on, in dollars. Clients see it on their planning page along with a pay button (needs Stripe connected above). Leave blank to hide online payment &mdash; you can still unlock the wall by hand.</p>
+        <h3 style="margin-top:0;">&#127903;&#65039; Photo Pass Price (per guest)</h3>
+        <p class="small-muted">What a single guest pays <strong>once</strong> to unlock photo uploading &mdash; for that person, forever, at every event. They get a short code (like <code>PASS-AB12CD</code>) that their phone remembers; if they switch phones they type the code in. Keep it small &mdash; <strong>$5</strong> is a good number. Stripe keeps about 14.5&cent; + 30&cent; of each one, so you net around $4.55 of a $5 pass. Needs Stripe connected above.</p>
         <div class="field">
-          <label for="photowall_price">Price (USD)</label>
-          <input type="text" id="photowall_price" name="photowall_price" maxlength="12" inputmode="decimal" value="<%= values.photowallPrice %>" placeholder="e.g. 75" />
+          <label for="photopass_price">Photo Pass price (USD)</label>
+          <input type="text" id="photopass_price" name="photopass_price" maxlength="12" inputmode="decimal" value="<%= values.photopassPrice %>" placeholder="5" />
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-bottom: 30px;">
+        <h3 style="margin-top:0;">&#128248; Host-Pays Photo Wall Price (optional)</h3>
+        <p class="small-muted">Optional: let the person who booked you pay <strong>once for the whole party</strong> so all their guests upload for free. They pay on their planning page. Leave blank if you only want guest Photo Passes.</p>
+        <div class="field">
+          <label for="photowall_price">Price for the whole party (USD)</label>
+          <input type="text" id="photowall_price" name="photowall_price" maxlength="12" inputmode="decimal" value="<%= values.photowallPrice %>" placeholder="e.g. 40" />
         </div>
       </div>
 

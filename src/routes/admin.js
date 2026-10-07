@@ -16,7 +16,13 @@ const { WALL_DIR, WALL_FILE_RE, deleteWallFile } = require('../wall');
 const { ensureEventReferralCode } = require('../referrals');
 const { getSiteUrl } = require('../qr');
 const stripe = require('../stripe');
-const { getPhotoWallPriceCents, formatMoney, recordPhotoWallPayment } = require('../payments');
+const {
+  getPhotoWallPriceCents,
+  formatMoney,
+  recordPhotoWallPayment,
+  getPassPriceCents,
+  createPassRow,
+} = require('../payments');
 
 const router = express.Router();
 
@@ -104,10 +110,17 @@ function getEventById(id) {
   return db.prepare('SELECT * FROM events WHERE id = ?').get(id);
 }
 
-function startNewEvent(name, photowallUnlocked = false) {
+// Photo Wall mode for an event: 0 = off, 1 = free for everyone (host paid),
+// 2 = each guest buys a Photo Pass to upload.
+function cleanWallMode(value) {
+  const n = Number(value);
+  return n === 1 || n === 2 ? n : 0;
+}
+
+function startNewEvent(name, wallMode = 0) {
   const result = db
     .prepare(`INSERT INTO events (name, started_at, photowall_unlocked) VALUES (?, datetime('now'), ?)`)
-    .run(name || null, photowallUnlocked ? 1 : 0);
+    .run(name || null, cleanWallMode(wallMode));
   return result.lastInsertRowid;
 }
 
@@ -162,7 +175,15 @@ router.get('/', (req, res) => {
     activePoll: getActivePollWithCounts(eventId),
     energyLevel: Math.min(10, Math.max(0, Number(getSetting('energy_level')) || 0)),
     battle: getBattleState(eventId).active,
-    photoWallUnlocked: !!(currentEvent && currentEvent.photowall_unlocked),
+    wallMode: currentEvent ? cleanWallMode(currentEvent.photowall_unlocked) : 0,
+    passReady: stripe.isConfigured() && getPassPriceCents() > 0,
+    passPrice: getPassPriceCents() ? formatMoney(getPassPriceCents()) : '',
+    passStats: db
+      .prepare(
+        `SELECT COUNT(*) AS active, COALESCE(SUM(CASE WHEN source = 'stripe' THEN amount_cents END), 0) AS cents
+         FROM photo_passes WHERE status = 'active'`
+      )
+      .get(),
     bookings: getBookingsForPicker(),
     eventBooking:
       currentEvent && currentEvent.inquiry_id
@@ -211,8 +232,10 @@ router.post('/live/toggle', (req, res) => {
       ? db.prepare(`SELECT id, name, event_type, photowall_paid_at FROM inquiries WHERE id = ?`).get(Number(req.body.inquiry_id))
       : null;
     const eventName = nextEventName || (booking ? `${booking.name}${booking.event_type ? ' — ' + booking.event_type : ''}` : '');
-    const unlock = req.body.photowall_unlocked === '1' || !!(booking && booking.photowall_paid_at);
-    const newEventId = startNewEvent(eventName, unlock);
+    // A booking whose Photo Wall add-on is paid makes it free for the whole
+    // room (mode 1); otherwise use what the DJ picked on the form.
+    const wallMode = booking && booking.photowall_paid_at ? 1 : cleanWallMode(req.body.wall_mode);
+    const newEventId = startNewEvent(eventName, wallMode);
     if (booking) db.prepare(`UPDATE events SET inquiry_id = ? WHERE id = ?`).run(booking.id, newEventId);
     setSetting('current_event_id', newEventId);
     setSetting('is_live', '1');
@@ -375,7 +398,7 @@ router.post('/requests/clear', (req, res) => {
   endEvent(currentEventId);
   const newEventId = startNewEvent(
     currentEvent ? currentEvent.name : null,
-    !!(currentEvent && currentEvent.photowall_unlocked)
+    currentEvent ? currentEvent.photowall_unlocked : 0
   );
   if (currentEvent && currentEvent.inquiry_id) {
     db.prepare(`UPDATE events SET inquiry_id = ? WHERE id = ?`).run(currentEvent.inquiry_id, newEventId);
@@ -775,7 +798,8 @@ router.get('/wall/state', (req, res) => {
     .prepare(`SELECT * FROM wall_photos WHERE event_id = ? AND status = 'approved' ORDER BY id DESC LIMIT 60`)
     .all(eventId);
   res.json({
-    unlocked: !!(event && event.photowall_unlocked),
+    unlocked: !!(event && Number(event.photowall_unlocked) > 0),
+    mode: event ? cleanWallMode(event.photowall_unlocked) : 0,
     pending: pending.map(wallPhotoJson),
     approved: approved.map(wallPhotoJson),
   });
@@ -792,10 +816,16 @@ router.get('/wall/photo/:file', (req, res) => {
   res.type('image/jpeg').sendFile(path.join(WALL_DIR, file));
 });
 
+router.post('/wall/mode', (req, res) => {
+  const eventId = Number(getSetting('current_event_id') || '1');
+  db.prepare(`UPDATE events SET photowall_unlocked = ? WHERE id = ?`).run(cleanWallMode(req.body.mode), eventId);
+  res.redirect('/admin');
+});
+
+// Older shortcut: 1 = free for everyone, 0 = off.
 router.post('/wall/unlock', (req, res) => {
   const eventId = Number(getSetting('current_event_id') || '1');
-  const unlock = req.body.unlock === '1';
-  db.prepare(`UPDATE events SET photowall_unlocked = ? WHERE id = ?`).run(unlock ? 1 : 0, eventId);
+  db.prepare(`UPDATE events SET photowall_unlocked = ? WHERE id = ?`).run(req.body.unlock === '1' ? 1 : 0, eventId);
   res.redirect('/admin');
 });
 
@@ -852,12 +882,13 @@ router.get('/extras', (req, res) => {
       referralOffer: getSetting('referral_offer') || '',
       googleReviewUrl: getSetting('google_review_url') || '',
       photowallPrice: getSetting('photowall_price') || '',
+      photopassPrice: getSetting('photopass_price') || '',
     },
     stripeStatus: {
       configured: stripe.isConfigured(),
       mode: stripe.getMode(),
       webhook: stripe.hasWebhookSecret(),
-      priceOk: getPhotoWallPriceCents() > 0,
+      priceOk: getPhotoWallPriceCents() > 0 || getPassPriceCents() > 0,
       siteUrl: getSiteUrl(),
       testResult: String(req.query.stripetest || ''),
     },
@@ -875,6 +906,7 @@ router.post('/extras', (req, res) => {
   const referralOffer = clean(req.body.referral_offer, 140);
   const googleReviewUrl = clean(req.body.google_review_url, 300);
   const photowallPrice = clean(req.body.photowall_price, 12).replace(/^\$/, '');
+  const photopassPrice = clean(req.body.photopass_price, 12).replace(/^\$/, '');
 
   const fail = (msg) => res.redirect(`/admin/extras?error=${encodeURIComponent(msg)}`);
   if (venmo && !VENMO_RE.test(venmo)) return fail('Venmo username can only use letters, numbers, dots, dashes and underscores.');
@@ -885,6 +917,9 @@ router.post('/extras', (req, res) => {
   }
   if (photowallPrice && !(/^\d{1,4}(\.\d{1,2})?$/.test(photowallPrice) && Number(photowallPrice) >= 1 && Number(photowallPrice) <= 2000)) {
     return fail('The Photo Wall price should be a dollar amount between 1 and 2000, like 75 or 99.50.');
+  }
+  if (photopassPrice && !(/^\d{1,3}(\.\d{1,2})?$/.test(photopassPrice) && Number(photopassPrice) >= 1 && Number(photopassPrice) <= 100)) {
+    return fail('The Photo Pass price should be a dollar amount between 1 and 100, like 5 or 7.50.');
   }
   if (googleReviewUrl && !/^https:\/\/[^\s<>"']+$/.test(googleReviewUrl)) {
     return fail('The Google review link must start with https:// and have no spaces.');
@@ -897,6 +932,7 @@ router.post('/extras', (req, res) => {
   setSetting('referral_offer', referralOffer);
   setSetting('google_review_url', googleReviewUrl);
   setSetting('photowall_price', photowallPrice);
+  setSetting('photopass_price', photopassPrice);
   res.redirect('/admin/extras?saved=1');
 });
 
@@ -1009,6 +1045,52 @@ router.get('/plans/:inquiryId/download', (req, res) => {
   res.send(out);
 });
 
+// --- Photo Passes -----------------------------------------------------------------------
+
+router.get('/passes', (req, res) => {
+  const passes = db
+    .prepare(
+      `SELECT p.*,
+              (SELECT COUNT(*) FROM wall_photos w WHERE w.pass_id = p.id) AS photo_count
+       FROM photo_passes p
+       WHERE p.status != 'pending' OR p.created_at >= datetime('now', '-1 day')
+       ORDER BY p.created_at DESC`
+    )
+    .all();
+  const totals = db
+    .prepare(
+      `SELECT COUNT(*) AS active, COALESCE(SUM(CASE WHEN source = 'stripe' THEN amount_cents END), 0) AS cents
+       FROM photo_passes WHERE status = 'active'`
+    )
+    .get();
+  res.render('admin/passes', {
+    page: 'admin',
+    passes,
+    totals,
+    created: String(req.query.created || ''),
+    price: getPassPriceCents() ? formatMoney(getPassPriceCents()) : '',
+    passReady: stripe.isConfigured() && getPassPriceCents() > 0,
+  });
+});
+
+// Give someone a free pass (a friend, the host, a guest who paid you in cash).
+router.post('/passes', (req, res) => {
+  const name = clean(req.body.name, 80);
+  const email = clean(req.body.email, 200);
+  const pass = createPassRow({ source: 'comp', status: 'active', name, email });
+  res.redirect(`/admin/passes?created=${encodeURIComponent(pass.code)}`);
+});
+
+router.post('/passes/:id/revoke', (req, res) => {
+  db.prepare(`UPDATE photo_passes SET status = 'revoked' WHERE id = ? AND status = 'active'`).run(Number(req.params.id));
+  res.redirect('/admin/passes');
+});
+
+router.post('/passes/:id/restore', (req, res) => {
+  db.prepare(`UPDATE photo_passes SET status = 'active' WHERE id = ? AND status = 'revoked'`).run(Number(req.params.id));
+  res.redirect('/admin/passes');
+});
+
 // --- Services & billing -----------------------------------------------------
 
 const EXTERNAL_SERVICES = [
@@ -1038,7 +1120,7 @@ const EXTERNAL_SERVICES = [
   },
   {
     name: 'Stripe',
-    purpose: 'Takes online payment for the Photo Wall add-on and unlocks it automatically.',
+    purpose: 'Takes the small online payments for Photo Passes (and the optional host-pays Photo Wall) and unlocks them automatically.',
     cost: 'No monthly fee — 2.9% + 30¢ per card payment',
     url: 'https://dashboard.stripe.com',
     status: 'Optional — set up on the Tips & Extras page',

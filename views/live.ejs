@@ -21,6 +21,8 @@
 
 <section style="padding-top: 0;">
   <div class="container">
+    <div id="pass-banner" class="alert alert-success" style="display:none; max-width: 640px; margin: 0 auto 30px;"></div>
+
     <div id="offline-notice" class="alert alert-info" style="display: <%= isLive ? 'none' : 'block' %>; max-width: 640px; margin: 0 auto 30px;">
       DJXpress isn't live right now. Check back during your event &mdash; this page updates automatically once requests open up.
     </div>
@@ -165,6 +167,23 @@
       <div class="form-card" style="max-width: 100%;">
         <h3 style="margin-top:0;">&#128248; Photo Wall</h3>
         <p class="small-muted" style="margin-bottom:14px;">Share a photo from tonight! The DJ checks every photo first, then it shows up on the Big Screen. Photos are shrunk automatically so they send fast.</p>
+
+        <div id="wall-pass-panel" class="wall-pass-panel" style="display:none;">
+          <h4 style="margin:0 0 6px;">&#127903;&#65039; Unlock uploading &mdash; <span id="wall-pass-price"></span>, one time</h4>
+          <p class="small-muted" style="margin:0 0 12px;">Pay once and <strong>you</strong> can upload photos forever &mdash; at this party and every future one. Your phone remembers you automatically. Pay with a card, Apple/Google Pay, or Cash App through Stripe's secure checkout. Everyone can still watch the wall for free.</p>
+          <button type="button" id="wall-pass-buy" class="btn btn-primary btn-block">Unlock for <span id="wall-pass-price-btn"></span></button>
+          <details style="margin-top:12px;">
+            <summary class="small-muted" style="cursor:pointer;">Already have a pass code?</summary>
+            <form id="wall-pass-code-form" style="display:flex; gap:8px; margin-top:10px;">
+              <input type="text" id="wall-pass-code-input" placeholder="PASS-AB12CD" maxlength="20" autocomplete="off" style="flex:1; text-transform:uppercase;" />
+              <button type="submit" class="btn btn-secondary">Use Code</button>
+            </form>
+          </details>
+          <p id="wall-pass-message" class="small-muted" style="margin:10px 0 0; min-height:1.4em;" role="status"></p>
+        </div>
+
+        <div id="wall-pass-have" class="small-muted" style="display:none; margin-bottom:12px;">&#9989; Photo Pass active on this phone.</div>
+
         <form id="wall-form">
           <div class="honeypot" aria-hidden="true">
             <label for="wall_company_website">Website</label>

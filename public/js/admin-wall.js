@@ -1,6 +1,6 @@
 (function () {
   const card = document.getElementById('wall-card');
-  if (!card || card.dataset.unlocked !== '1') return;
+  if (!card || card.dataset.mode === '0') return;
 
   const pendingEl = document.getElementById('wall-pending');
   const pendingEmpty = document.getElementById('wall-pending-empty');

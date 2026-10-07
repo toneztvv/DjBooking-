@@ -39,6 +39,7 @@ function recordPhotoWallPayment(inquiryId, { amountCents, ref, method }) {
 function applyPaidSession(session) {
   if (!session || session.payment_status !== 'paid') return false;
   const meta = session.metadata || {};
+  if (meta.product === 'photopass') return !!applyPaidPassSession(session);
   if (meta.product !== 'photowall') return false;
 
   const inquiryId = Number(meta.inquiry_id);
@@ -50,4 +51,79 @@ function applyPaidSession(session) {
   return true;
 }
 
-module.exports = { getPhotoWallPriceCents, formatMoney, recordPhotoWallPayment, applyPaidSession };
+// --- Photo Passes: $5-ish, one guest, unlocks photo uploads forever ---------------
+
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/L — easy to read aloud
+const crypto = require('crypto');
+
+function getPassPriceCents() {
+  const dollars = parseFloat(String(getSetting('photopass_price') || '').replace(/[$,\s]/g, ''));
+  if (!Number.isFinite(dollars)) return 0;
+  const cents = Math.round(dollars * 100);
+  return cents >= 100 && cents <= 10000 ? cents : 0;
+}
+
+function cleanPassCode(value) {
+  if (typeof value !== 'string') return '';
+  const code = value.trim().toUpperCase().replace(/\s+/g, '');
+  return /^PASS-[A-Z0-9]{6}$/.test(code) ? code : '';
+}
+
+function createPassRow({ source, name, email, status, clientId, amountCents, sessionId }) {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    let tail = '';
+    for (let i = 0; i < 6; i++) tail += CODE_CHARS[crypto.randomInt(CODE_CHARS.length)];
+    const code = `PASS-${tail}`;
+    try {
+      const result = db
+        .prepare(
+          `INSERT INTO photo_passes (code, name, email, source, status, client_id, amount_cents, stripe_session_id, activated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'active' THEN datetime('now') END)`
+        )
+        .run(code, name || null, email || null, source, status, clientId || null, amountCents || null, sessionId || null, status);
+      return db.prepare(`SELECT * FROM photo_passes WHERE id = ?`).get(result.lastInsertRowid);
+    } catch (err) {
+      if (!/UNIQUE/.test(err.message)) throw err; // only retry code collisions
+    }
+  }
+  throw new Error('Could not create a unique pass code');
+}
+
+function getActivePassByCode(code) {
+  const clean = cleanPassCode(code);
+  if (!clean) return null;
+  return db.prepare(`SELECT * FROM photo_passes WHERE code = ? AND status = 'active'`).get(clean) || null;
+}
+
+// A paid Checkout Session for a pass: activates it (once) and records who paid.
+function applyPaidPassSession(session) {
+  if (!session || session.payment_status !== 'paid') return null;
+  const meta = session.metadata || {};
+  if (meta.product !== 'photopass') return null;
+  const expected = Number(meta.amount_cents);
+  if (!expected || Number(session.amount_total) !== expected) return null;
+
+  const pass = db.prepare(`SELECT * FROM photo_passes WHERE code = ?`).get(cleanPassCode(meta.pass_code));
+  if (!pass) return null;
+  if (pass.status === 'pending') {
+    const email = (session.customer_details && session.customer_details.email) || session.customer_email || null;
+    db.prepare(
+      `UPDATE photo_passes SET status = 'active', activated_at = datetime('now'),
+              amount_cents = ?, stripe_session_id = ?, email = COALESCE(?, email)
+       WHERE id = ? AND status = 'pending'`
+    ).run(expected, session.id, email, pass.id);
+  }
+  return db.prepare(`SELECT * FROM photo_passes WHERE id = ?`).get(pass.id);
+}
+
+module.exports = {
+  getPhotoWallPriceCents,
+  formatMoney,
+  recordPhotoWallPayment,
+  applyPaidSession,
+  getPassPriceCents,
+  cleanPassCode,
+  createPassRow,
+  getActivePassByCode,
+  applyPaidPassSession,
+};

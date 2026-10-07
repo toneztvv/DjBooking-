@@ -104,6 +104,9 @@ app.use('/api/requests/upvote', formLimiter);
 const uploadLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
 const battleLimiter = rateLimit({ windowMs: 60 * 1000, max: 400, standardHeaders: true, legacyHeaders: false });
 const postOnly = (limiter) => (req, res, next) => (req.method === 'POST' ? limiter(req, res, next) : next());
+// Guessing Photo Pass codes is slowed right down.
+const passCheckLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
+app.use('/api/wall/pass/check', postOnly(passCheckLimiter));
 app.use('/api/wall', postOnly(uploadLimiter));
 app.use('/api/reviews', postOnly(formLimiter));
 app.use('/api/battles', postOnly(battleLimiter));

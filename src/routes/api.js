@@ -9,6 +9,16 @@ const { getBattleState } = require('../battles');
 const { getTipJar, getTipMethods } = require('../tips');
 const { WALL_DIR, MAX_PHOTO_BYTES, WALL_FILE_RE, looksLikeJpeg } = require('../wall');
 const { cleanReferral, getReferralInfo } = require('../referrals');
+const stripe = require('../stripe');
+const {
+  getPassPriceCents,
+  formatMoney,
+  cleanPassCode,
+  createPassRow,
+  getActivePassByCode,
+  applyPaidPassSession,
+} = require('../payments');
+const { getSiteUrl } = require('../qr');
 const { sendInquiryNotification } = require('../mail');
 const { sendSms } = require('../sms');
 const { containsBannedWord } = require('../moderation');
@@ -204,7 +214,7 @@ router.get('/live-state', (req, res) => {
     tips: isLive && features.tips ? getTipJar() : null,
     battle: battleState.active,
     battleResult: battleState.result,
-    photoWall: { enabled: isLive && features.photoWall && !!(currentEvent && currentEvent.photowall_unlocked) },
+    photoWall: { enabled: isLive && features.photoWall && getWallAccess().enabled },
     pending: getPendingBoard(eventId),
     recentlyPlayed,
   });
@@ -630,15 +640,18 @@ function wallUploadMiddleware(req, res, next) {
   });
 }
 
-// The wall only exists when it is live, switched on, AND this event has been
-// unlocked by the DJ (the paid add-on).
+// The wall only runs when the DJ has it on for the night. Mode 1 = free for
+// everyone (the host paid); mode 2 = each guest buys a Photo Pass to upload
+// (needs Stripe set up). Mode 0 = off.
 function getWallAccess() {
   const isLive = getSetting('is_live') === '1';
   const features = getFeatureFlags();
   const eventId = Number(getSetting('current_event_id') || '1');
   const event = db.prepare('SELECT photowall_unlocked FROM events WHERE id = ?').get(eventId);
-  const enabled = isLive && features.photoWall && !!(event && event.photowall_unlocked);
-  return { enabled, eventId };
+  const mode = event ? Number(event.photowall_unlocked) || 0 : 0;
+  const passReady = stripe.isConfigured() && getPassPriceCents() > 0;
+  const enabled = isLive && features.photoWall && (mode === 1 || (mode === 2 && passReady));
+  return { enabled, mode, passReady, eventId };
 }
 
 function wallUrl(filename) {
@@ -646,8 +659,8 @@ function wallUrl(filename) {
 }
 
 router.get('/wall', (req, res) => {
-  const { enabled, eventId } = getWallAccess();
-  if (!enabled) return res.json({ enabled: false, photos: [], mine: { pending: 0 } });
+  const { enabled, mode, eventId } = getWallAccess();
+  if (!enabled) return res.json({ enabled: false, canUpload: false, photos: [], mine: { pending: 0 } });
 
   const photos = db
     .prepare(
@@ -664,17 +677,33 @@ router.get('/wall', (req, res) => {
         .get(eventId, clientId).c
     : 0;
 
-  res.json({ enabled: true, photos, mine: { pending } });
+  const pass = mode === 2 ? getActivePassByCode(String(req.query.pass_code || '')) : null;
+  res.json({
+    enabled: true,
+    mode,
+    canUpload: mode === 1 || !!pass,
+    passPrice: mode === 2 ? formatMoney(getPassPriceCents()) : '',
+    photos,
+    mine: { pending },
+  });
 });
 
 router.post('/wall', wallUploadMiddleware, (req, res) => {
-  const { enabled, eventId } = getWallAccess();
+  const { enabled, mode, eventId } = getWallAccess();
   if (!enabled) {
     return res.status(409).json({ ok: false, error: 'The photo wall isn’t open right now.' });
   }
 
   const body = req.body || {};
   if (clean(body.company_website)) return res.status(201).json({ ok: true });
+
+  let pass = null;
+  if (mode === 2) {
+    pass = getActivePassByCode(String(body.pass_code || ''));
+    if (!pass) {
+      return res.status(402).json({ ok: false, needsPass: true, error: 'Unlock uploading with a Photo Pass first.' });
+    }
+  }
 
   if (!req.file || !looksLikeJpeg(req.file.buffer)) {
     return res.status(400).json({ ok: false, error: 'Please choose a photo.' });
@@ -692,9 +721,9 @@ router.post('/wall', wallUploadMiddleware, (req, res) => {
   const counts = db
     .prepare(
       `SELECT COUNT(*) AS total, SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending
-       FROM wall_photos WHERE event_id = ? AND client_id = ?`
+       FROM wall_photos WHERE event_id = ? AND (client_id = ? OR (? IS NOT NULL AND pass_id = ?))`
     )
-    .get(eventId, clientId);
+    .get(eventId, clientId, pass ? pass.id : null, pass ? pass.id : null);
   if ((counts.pending || 0) >= 3) {
     return res.status(429).json({ ok: false, error: 'You have photos waiting for the DJ — give them a minute to approve those first.' });
   }
@@ -705,10 +734,71 @@ router.post('/wall', wallUploadMiddleware, (req, res) => {
   const filename = `${crypto.randomUUID()}.jpg`;
   fs.writeFileSync(path.join(WALL_DIR, filename), req.file.buffer);
   db.prepare(
-    `INSERT INTO wall_photos (event_id, filename, uploader_name, caption, client_id) VALUES (?, ?, ?, ?, ?)`
-  ).run(eventId, filename, name || null, caption || null, clientId);
+    `INSERT INTO wall_photos (event_id, filename, uploader_name, caption, client_id, pass_id) VALUES (?, ?, ?, ?, ?, ?)`
+  ).run(eventId, filename, name || null, caption || null, clientId, pass ? pass.id : null);
 
   res.status(201).json({ ok: true });
+});
+
+// --- Photo Passes (a guest pays once, uploads forever) -------------------------------
+
+// Starts a Stripe checkout for ONE guest's pass. A pending pass (with its
+// code) is created first so the code can ride along on the Stripe receipt.
+router.post('/wall/pass/checkout', async (req, res) => {
+  const { enabled, mode, passReady } = getWallAccess();
+  if (!enabled || mode !== 2 || !passReady) {
+    return res.status(409).json({ ok: false, error: 'Photo Passes aren’t available right now.' });
+  }
+
+  const clientId = clean((req.body || {}).client_id, 100);
+  const priceCents = getPassPriceCents();
+  try {
+    const pass = createPassRow({ source: 'stripe', status: 'pending', clientId, amountCents: priceCents });
+    const base = getSiteUrl();
+    const session = await stripe.createCheckoutSession({
+      amountCents: priceCents,
+      productName: 'DJXpress Photo Pass — upload photos to the Big Screen, forever',
+      metadata: { product: 'photopass', pass_code: pass.code },
+      description: `DJXpress Photo Pass ${pass.code} — keep this code to restore your pass on another phone`,
+      successUrl: `${base}/live?pass_session={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${base}/live`,
+    });
+    res.json({ ok: true, url: session.url });
+  } catch (err) {
+    console.error('Photo Pass checkout failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Couldn’t start checkout. Please try again in a moment.' });
+  }
+});
+
+// Back from Stripe: confirm the payment directly, then hand the guest their
+// code (their browser keeps it so it remembers them from then on).
+router.post('/wall/pass/claim', async (req, res) => {
+  const sessionId = clean((req.body || {}).session_id, 120);
+  if (!stripe.isConfigured() || !/^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId)) {
+    return res.status(400).json({ ok: false, error: 'That payment link isn’t valid.' });
+  }
+  try {
+    const session = await stripe.retrieveSession(sessionId);
+    if ((session.metadata || {}).product !== 'photopass') {
+      return res.status(400).json({ ok: false, error: 'That payment link isn’t valid.' });
+    }
+    const pass = applyPaidPassSession(session);
+    if (!pass) {
+      return res.status(402).json({ ok: false, error: 'We haven’t received your payment yet. If you paid, wait a few seconds and refresh.' });
+    }
+    if (pass.status !== 'active') return res.status(403).json({ ok: false, error: 'This pass has been turned off.' });
+    res.json({ ok: true, code: pass.code });
+  } catch (err) {
+    console.error('Photo Pass claim failed:', err.message);
+    res.status(502).json({ ok: false, error: 'Couldn’t confirm your payment. Please try again.' });
+  }
+});
+
+// "I already have a code" — checks it is real and active.
+router.post('/wall/pass/check', (req, res) => {
+  const pass = getActivePassByCode(String((req.body || {}).code || ''));
+  if (!pass) return res.status(404).json({ ok: false, error: 'That code isn’t valid. Check it and try again.' });
+  res.json({ ok: true, code: pass.code });
 });
 
 // Approved photos are public (anyone with the unguessable link can see

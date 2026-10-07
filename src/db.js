@@ -187,6 +187,20 @@ function initDb() {
       UNIQUE (battle_id, client_id)
     );
 
+    CREATE TABLE IF NOT EXISTS photo_passes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT NOT NULL UNIQUE,
+      name TEXT,
+      email TEXT,
+      source TEXT NOT NULL DEFAULT 'stripe',
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'revoked')),
+      amount_cents INTEGER,
+      stripe_session_id TEXT UNIQUE,
+      client_id TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      activated_at TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS event_plans (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       inquiry_id INTEGER NOT NULL UNIQUE,
@@ -222,6 +236,7 @@ function initDb() {
     referral_offer: '',
     google_review_url: '',
     photowall_price: '',
+    photopass_price: '5',
   };
   const insert = db.prepare(
     'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)'
@@ -298,6 +313,12 @@ function initDb() {
   // Which booking a live event is for, so a paid add-on unlocks it by itself.
   if (!eventColumns.some((c) => c.name === 'inquiry_id')) {
     db.exec(`ALTER TABLE events ADD COLUMN inquiry_id INTEGER`);
+  }
+
+  // Which Photo Pass (if any) a guest used to upload a photo.
+  const wallColumns = db.prepare(`PRAGMA table_info(wall_photos)`).all();
+  if (!wallColumns.some((c) => c.name === 'pass_id')) {
+    db.exec(`ALTER TABLE wall_photos ADD COLUMN pass_id INTEGER`);
   }
 
   // Migration: "color" lets each guest's browser pick a display color for
