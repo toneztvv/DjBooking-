@@ -272,6 +272,13 @@ LIVE PHOTO WALL + PHOTO PASSES:
   - Guests send small photos; EVERY photo waits for your OK. New ones appear
     in the Photo Wall card on the dashboard (the browser tab title shows
     "(2) photos waiting"). Approve puts it on the Big Screen, Reject deletes.
+  - REVIEWING: waiting photos are held privately (guests, the Big Screen and
+    the recap can't see them) and show BLURRED in your queue so nothing
+    explicit appears on a screen others can see. Tap a photo to open it big,
+    then Approve, Reject, or "Reject & block" (deletes it and their other
+    waiting photos, blocks that phone, and turns off their Photo Pass).
+    Blocked phones are listed on /admin/passes with an Unblock button.
+    Photos nobody reviews are deleted automatically after 2 days.
   - For each event choose: OFF, "Guests unlock uploading with a Photo Pass",
     or "Free for everyone (host paid)". Set it when you press Go Live or any
     time on the Photo Wall card.

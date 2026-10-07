@@ -299,10 +299,11 @@
       // (Only if the code we actually sent is still the saved one — a pass saved
       // while this request was in flight must not be wiped by its older answer.)
       if (data.mode === 2 && !data.canUpload && sentPass && getPass() === sentPass) setPass('');
-      const needsPass = data.mode === 2 && !data.canUpload;
-      form.style.display = needsPass ? 'none' : '';
+      const needsPass = data.mode === 2 && !data.canUpload && !data.blocked;
+      form.style.display = needsPass || data.blocked ? 'none' : '';
       passPanel.style.display = needsPass ? 'block' : 'none';
       passHave.style.display = data.mode === 2 && data.canUpload ? 'block' : 'none';
+      if (data.blocked) say('Photo uploads aren’t available on this device.', 'info');
       if (needsPass) {
         document.getElementById('wall-pass-price').textContent = data.passPrice;
         document.getElementById('wall-pass-price-btn').textContent = data.passPrice;

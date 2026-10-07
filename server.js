@@ -125,6 +125,11 @@ app.use((err, req, res, next) => {
   res.status(500).render('500');
 });
 
+// Clear out photos that were never reviewed (on start, then hourly).
+const { purgeStalePending } = require('./src/wall');
+purgeStalePending();
+setInterval(purgeStalePending, 60 * 60 * 1000).unref();
+
 app.listen(PORT, () => {
   console.log(`DJXpress site running on http://localhost:${PORT}`);
 });

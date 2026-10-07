@@ -677,11 +677,13 @@ router.get('/wall', (req, res) => {
         .get(eventId, clientId).c
     : 0;
 
+  const blocked = !!(clientId && db.prepare(`SELECT 1 FROM wall_blocks WHERE client_id = ?`).get(clientId));
   const pass = mode === 2 ? getActivePassByCode(String(req.query.pass_code || '')) : null;
   res.json({
     enabled: true,
     mode,
-    canUpload: mode === 1 || !!pass,
+    blocked,
+    canUpload: !blocked && (mode === 1 || !!pass),
     passPrice: mode === 2 ? formatMoney(getPassPriceCents()) : '',
     photos,
     mine: { pending },
@@ -713,6 +715,11 @@ router.post('/wall', wallUploadMiddleware, (req, res) => {
   const name = clean(body.name, 60);
   const caption = clean(body.caption, 80);
   if (!clientId) return res.status(400).json({ ok: false, error: 'Please reload the page and try again.' });
+
+  // Someone the DJ blocked after a bad upload.
+  if (db.prepare(`SELECT 1 FROM wall_blocks WHERE client_id = ?`).get(clientId)) {
+    return res.status(403).json({ ok: false, blocked: true, error: 'Photo uploads aren’t available on this device.' });
+  }
 
   if (containsBannedWord(name) || containsBannedWord(caption)) {
     return res.status(400).json({ ok: false, error: 'That name or caption isn’t allowed. Please remove the inappropriate language and try again.' });

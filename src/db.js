@@ -201,6 +201,13 @@ function initDb() {
       activated_at TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS wall_blocks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      client_id TEXT NOT NULL UNIQUE,
+      pass_id INTEGER,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS event_plans (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       inquiry_id INTEGER NOT NULL UNIQUE,

@@ -34,6 +34,28 @@
       </form>
     </div>
 
+    <% if (blocks.length) { %>
+    <div class="card" style="margin-bottom: 30px;">
+      <h3 style="margin-top:0;">&#9940; Blocked from uploading</h3>
+      <p class="small-muted">Phones you blocked with "Reject &amp; block" on the Photo Wall. Their photo pass (if they had one) was turned off too. A block follows the phone, not the person &mdash; clearing the phone's browser data could get around it at a free-for-everyone event.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Phone ID</th><th>Pass</th><th>Blocked</th><th></th></tr></thead>
+          <tbody>
+            <% blocks.forEach(function(b) { %>
+              <tr>
+                <td><span class="small-muted"><%= b.client_id.slice(0, 8) %>…</span></td>
+                <td><%= b.code || '—' %><% if (b.name) { %> <span class="small-muted">(<%= b.name %>)</span><% } %></td>
+                <td><%= b.created_at %></td>
+                <td><form method="POST" action="/admin/passes/blocks/<%= b.id %>/unblock" onsubmit="return confirm('Let this phone upload photos again?');"><button type="submit" class="btn btn-ghost btn-sm">Unblock</button></form></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <% } %>
+
     <div class="card">
       <div class="table-wrap">
         <table>

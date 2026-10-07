@@ -858,15 +858,35 @@ router.post('/wall/:id/approve', (req, res) => {
 });
 
 // Used both to turn a pending photo down and to take an approved one off
-// the wall — either way the picture is deleted from the disk.
+// the wall — either way the picture is deleted from the disk. With
+// `block: true` ("Reject & block") the sender's phone is also barred from
+// uploading, their Photo Pass (if any) is turned off, and anything else of
+// theirs still waiting for review is deleted too.
 router.post('/wall/:id/remove', (req, res) => {
   const id = Number(req.params.id);
   const row = id && db.prepare(`SELECT * FROM wall_photos WHERE id = ?`).get(id);
-  if (row) {
+  if (!row) return res.json({ ok: false });
+
+  const filesToDelete = [row.filename];
+  db.transaction(() => {
+    if (req.body && req.body.block === true) {
+      db.prepare(`INSERT OR IGNORE INTO wall_blocks (client_id, pass_id) VALUES (?, ?)`).run(row.client_id, row.pass_id || null);
+      if (row.pass_id) db.prepare(`UPDATE photo_passes SET status = 'revoked' WHERE id = ? AND status = 'active'`).run(row.pass_id);
+      const others = db
+        .prepare(
+          `SELECT id, filename FROM wall_photos
+           WHERE status = 'pending' AND id != ? AND (client_id = ? OR (? IS NOT NULL AND pass_id = ?))`
+        )
+        .all(id, row.client_id, row.pass_id || null, row.pass_id || null);
+      others.forEach((o) => {
+        db.prepare(`DELETE FROM wall_photos WHERE id = ?`).run(o.id);
+        filesToDelete.push(o.filename);
+      });
+    }
     db.prepare(`DELETE FROM wall_photos WHERE id = ?`).run(id);
-    deleteWallFile(row.filename);
-  }
-  res.json({ ok: !!row });
+  })();
+  filesToDelete.forEach(deleteWallFile);
+  res.json({ ok: true, blocked: !!(req.body && req.body.block === true) });
 });
 
 // --- Tips & extras settings ----------------------------------------------------------
@@ -1063,9 +1083,17 @@ router.get('/passes', (req, res) => {
        FROM photo_passes WHERE status = 'active'`
     )
     .get();
+  const blocks = db
+    .prepare(
+      `SELECT b.id, b.client_id, b.created_at, p.code, p.name
+       FROM wall_blocks b LEFT JOIN photo_passes p ON p.id = b.pass_id
+       ORDER BY b.created_at DESC`
+    )
+    .all();
   res.render('admin/passes', {
     page: 'admin',
     passes,
+    blocks,
     totals,
     created: String(req.query.created || ''),
     price: getPassPriceCents() ? formatMoney(getPassPriceCents()) : '',
@@ -1083,6 +1111,11 @@ router.post('/passes', (req, res) => {
 
 router.post('/passes/:id/revoke', (req, res) => {
   db.prepare(`UPDATE photo_passes SET status = 'revoked' WHERE id = ? AND status = 'active'`).run(Number(req.params.id));
+  res.redirect('/admin/passes');
+});
+
+router.post('/passes/blocks/:id/unblock', (req, res) => {
+  db.prepare(`DELETE FROM wall_blocks WHERE id = ?`).run(Number(req.params.id));
   res.redirect('/admin/passes');
 });
 

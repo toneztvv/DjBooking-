@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const { db } = require('./db');
 
 // Guest photos live on the same persistent disk as the database so they
 // survive restarts and deploys. They are only ever served through routes
@@ -24,4 +25,17 @@ function deleteWallFile(filename) {
   fs.unlink(path.join(WALL_DIR, filename), () => {});
 }
 
-module.exports = { WALL_DIR, MAX_PHOTO_BYTES, WALL_FILE_RE, looksLikeJpeg, deleteWallFile };
+// Photos nobody reviewed within two days are deleted — unreviewed pictures
+// shouldn't sit on the disk indefinitely.
+const STALE_PENDING_SQL = `status = 'pending' AND created_at < datetime('now', '-2 days')`;
+
+function purgeStalePending() {
+  const rows = db.prepare(`SELECT id, filename FROM wall_photos WHERE ${STALE_PENDING_SQL}`).all();
+  rows.forEach((r) => {
+    db.prepare(`DELETE FROM wall_photos WHERE id = ?`).run(r.id);
+    deleteWallFile(r.filename);
+  });
+  return rows.length;
+}
+
+module.exports = { WALL_DIR, MAX_PHOTO_BYTES, WALL_FILE_RE, looksLikeJpeg, deleteWallFile, purgeStalePending };
