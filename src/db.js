@@ -208,6 +208,19 @@ function initDb() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS event_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id INTEGER NOT NULL,
+      kind TEXT NOT NULL,
+      actor TEXT NOT NULL DEFAULT 'system',
+      summary TEXT NOT NULL,
+      detail TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_event_log_event
+      ON event_log (event_id, id);
+
     CREATE TABLE IF NOT EXISTS event_plans (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       inquiry_id INTEGER NOT NULL UNIQUE,
@@ -320,6 +333,13 @@ function initDb() {
   // Which booking a live event is for, so a paid add-on unlocks it by itself.
   if (!eventColumns.some((c) => c.name === 'inquiry_id')) {
     db.exec(`ALTER TABLE events ADD COLUMN inquiry_id INTEGER`);
+  }
+
+  // One "night" can span several event rows (Clear Board starts a new row mid-gig);
+  // night_id ties them together so the timeline shows the whole night.
+  const eventCols3 = db.prepare(`PRAGMA table_info(events)`).all();
+  if (!eventCols3.some((c) => c.name === 'night_id')) {
+    db.exec(`ALTER TABLE events ADD COLUMN night_id INTEGER`);
   }
 
   // Payment bookkeeping: which Stripe payment a pass came from (so a refund or

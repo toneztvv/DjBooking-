@@ -1,0 +1,44 @@
+<%- include('../partials/header', { page, title: 'DJXpress Admin | Night Timeline' }) %>
+
+<section style="padding-top: 40px;">
+  <div class="container" id="timeline-root" data-event="<%= eventId %>" data-live="<%= night.live ? '1' : '0' %>">
+    <div class="flex-between" style="margin-bottom: 8px; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h1 style="margin:0 0 4px;">&#128220; Night Timeline</h1>
+        <p class="small-muted" style="margin:0;">
+          <strong><%= night.name %></strong>
+          &middot; <time data-utc="<%= night.startedAt %>" data-format="datetime"><%= night.startedAt %></time>
+          <% if (night.live) { %> &middot; <span class="badge badge-live">Live Now</span><% } %>
+          <% if (night.segments > 1) { %> &middot; <%= night.segments %> request boards (cleared mid-night)<% } %>
+        </p>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <a href="/admin/events/<%= eventId %>" class="btn btn-secondary btn-sm">Setlist &amp; Chat Log</a>
+        <a href="/admin/events/<%= eventId %>/timeline.csv" class="btn btn-secondary btn-sm">Download CSV</a>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
+      </div>
+    </div>
+    <p class="small-muted" style="max-width: 760px; margin: 0 0 20px;">
+      Everything that happened, in order &mdash; what guests did, what you did, photos you approved or rejected (the pictures themselves are deleted, but the decision stays here), chat messages you removed, and payments.
+    </p>
+
+    <div id="tl-stats" class="tl-stats"></div>
+
+    <div class="tl-controls no-print">
+      <div id="tl-filters" class="tl-filters" role="group" aria-label="Filter the timeline"></div>
+      <div class="tl-tools">
+        <input type="search" id="tl-search" placeholder="Search (a name, a song, a word)…" aria-label="Search the timeline" />
+        <button type="button" id="tl-order" class="btn btn-ghost btn-sm">Newest first</button>
+      </div>
+    </div>
+    <p id="tl-live-note" class="small-muted no-print" style="display:none; margin:0 0 10px;">&#128994; Live &mdash; updates by itself every 10 seconds.</p>
+
+    <div id="tl-list" class="tl-list"></div>
+    <div id="tl-empty" class="empty-state" style="display:none;">Nothing matches that filter.</div>
+  </div>
+</section>
+
+<script>window.TIMELINE_CATEGORIES = <%- JSON.stringify(categories).replace(/</g, '\\u003c') %>;</script>
+<script src="/js/admin-timeline.js"></script>
+
+<%- include('../partials/footer') %>

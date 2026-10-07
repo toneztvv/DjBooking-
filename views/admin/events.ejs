@@ -35,7 +35,8 @@
                 <td><%= ev.total_requests %></td>
                 <td><%= ev.requester_count %></td>
                 <td style="white-space:nowrap;">
-                  <a href="/admin/events/<%= ev.id %>" class="btn btn-secondary btn-sm">View Setlist</a>
+                  <a href="/admin/events/<%= ev.id %>/timeline" class="btn btn-primary btn-sm">&#128220; Timeline</a>
+                  <a href="/admin/events/<%= ev.id %>" class="btn btn-secondary btn-sm">Setlist</a>
                   <% if (ev.id !== currentEventId) { %>
                     <form method="POST" action="/admin/events/<%= ev.id %>/delete" style="display:inline;"
                       onsubmit="return confirm('Delete &quot;<%= (ev.name || 'Untitled Event').replace(/"/g, '') %>&quot; and its entire setlist? This can\'t be undone.');">

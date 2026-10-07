@@ -1,5 +1,6 @@
 const { db, getSetting } = require('./db');
 const stripe = require('./stripe');
+const { logEvent } = require('./eventlog');
 
 const MIN_CENTS = 100; // $1
 const MAX_CENTS = 200000; // $2,000
@@ -36,6 +37,13 @@ function recordPhotoWallPayment(inquiryId, { amountCents, ref, method, intent })
       )
       .run(amountCents || null, ref || null, method, intent || null, inquiryId);
     db.prepare(`UPDATE events SET photowall_unlocked = 1 WHERE inquiry_id = ?`).run(inquiryId);
+    if (result.changes > 0 && method === 'stripe') {
+      const who = db.prepare(`SELECT name FROM inquiries WHERE id = ?`).get(inquiryId);
+      logEvent('host_paid', `${who ? who.name : 'The host'} paid for the whole-party Photo Wall${amountCents ? ' ($' + (amountCents / 100).toFixed(2) + ')' : ''}`, {
+        actor: 'system',
+        detail: { amountCents: amountCents || 0 },
+      });
+    }
     return result.changes > 0;
   })();
 }
@@ -88,7 +96,8 @@ async function refundDuplicate(intent) {
 function revokeByPaymentIntent(intent) {
   if (!intent) return;
   db.transaction(() => {
-    db.prepare(`UPDATE photo_passes SET status = 'revoked' WHERE payment_intent = ? AND status = 'active'`).run(intent);
+    const turnedOff = db.prepare(`UPDATE photo_passes SET status = 'revoked' WHERE payment_intent = ? AND status = 'active'`).run(intent);
+    if (turnedOff.changes > 0) logEvent('payment_reversed', 'A Photo Pass payment was refunded or disputed \u2014 that pass was switched off', { actor: 'system' });
     const bookings = db.prepare(`SELECT id FROM inquiries WHERE photowall_pay_intent = ?`).all(intent);
     bookings.forEach((b) => {
       db.prepare(
@@ -177,12 +186,20 @@ function applyPaidPassSession(session) {
                 email = ?, payment_intent = ?
          WHERE id = ? AND status = 'pending'`
       ).run(original.id, expected, session.id, email, intent, pass.id);
+      logEvent('pass_refunded', `Duplicate Photo Pass payment (${email || 'same guest'}) refunded automatically \u2014 they keep their first pass`, {
+        actor: 'system',
+        detail: { amountCents: 0 },
+      });
     } else {
       db.prepare(
         `UPDATE photo_passes SET status = 'active', activated_at = datetime('now'),
                 amount_cents = ?, stripe_session_id = ?, email = COALESCE(?, email), payment_intent = ?
          WHERE id = ? AND status = 'pending'`
       ).run(expected, session.id, email, intent, pass.id);
+      logEvent('pass_bought', `Photo Pass bought \u2014 $${(expected / 100).toFixed(2)}${email ? ' (' + email + ')' : ''} \u00B7 code \u2026${pass.code.slice(-3)}`, {
+        actor: 'system',
+        detail: { amountCents: expected },
+      });
     }
   }
 

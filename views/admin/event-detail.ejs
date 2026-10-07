@@ -10,6 +10,7 @@
         </p>
       </div>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="/admin/events/<%= event.id %>/timeline" class="btn btn-primary btn-sm">&#128220; Full Night Timeline</a>
         <a href="/admin/events" class="btn btn-secondary btn-sm">&larr; Back to Event History</a>
         <% if (event.id !== currentEventId) { %>
           <form method="POST" action="/admin/events/<%= event.id %>/delete"

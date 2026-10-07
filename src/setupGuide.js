@@ -270,6 +270,17 @@ SAFETY — WHAT PROTECTS YOU (nothing to do, just good to know)
     guesses get locked out for 15 minutes.
   - Anything guests type is shown as plain text, never as code.
 
+THE NIGHT TIMELINE — SEE EVERYTHING THAT HAPPENED
+  Open it from the Dashboard ("Tonight's Timeline" / "Last Night's
+  Timeline") or Events -> Timeline. It lists, in order: what guests
+  requested and chatted, what you played/accepted/replied, drops and
+  shoutouts, polls and battles with results, photos sent and what you
+  decided (approved / rejected / blocked — even though rejected pictures are
+  deleted), chat messages you removed (with what they said), payments and
+  Photo Passes, and how many guests were online. Use the chips to filter,
+  the box to search, and Download CSV to keep a copy. Nothing needs turning
+  on — it records on its own from the moment you press Go Live.
+
 NEWER EXTRAS — HOW EACH ONE WORKS
 =====================================================================
 DEDICATIONS: the "Shoutout / Dedication" box on a request now shows under

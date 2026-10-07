@@ -159,6 +159,22 @@ app.use((err, req, res, next) => {
   res.status(500).render('500');
 });
 
+// Every 5 minutes of a live night, note how many guests are on the live page,
+// so the night's timeline can show attendance and the peak.
+const presence = require('./src/presence');
+const { logEvent } = require('./src/eventlog');
+const { getSetting } = require('./src/db');
+setInterval(() => {
+  try {
+    if (getSetting('is_live') !== '1') return;
+    const eventId = Number(getSetting('current_event_id') || '1');
+    const count = presence.getActiveCount(eventId);
+    if (count > 0) logEvent('presence', `${count} guest${count === 1 ? '' : 's'} on the live page`, { eventId, detail: { count } });
+  } catch (err) {
+    console.error('presence sample failed:', err.message);
+  }
+}, 5 * 60 * 1000).unref();
+
 // Clear out photos that were never reviewed (on start, then hourly).
 const { purgeStalePending } = require('./src/wall');
 purgeStalePending();

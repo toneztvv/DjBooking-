@@ -7,9 +7,12 @@
         <h1 style="margin: 0 0 6px;">DJ Control Panel</h1>
         <p class="small-muted" style="margin:0;">Run your live event, requests and bookings from one place.</p>
       </div>
-      <div class="status-chip">
-        <span class="pulse-dot <%= isLive ? '' : 'offline' %>" style="width:10px;height:10px;"></span>
-        <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <a href="/admin/events/<%= currentEventId %>/timeline" class="btn btn-secondary btn-sm">&#128220; <%= isLive ? "Tonight's Timeline" : 'Last Night’s Timeline' %></a>
+        <div class="status-chip">
+          <span class="pulse-dot <%= isLive ? '' : 'offline' %>" style="width:10px;height:10px;"></span>
+          <%= isLive ? 'LIVE NOW' : 'OFFLINE' %>
+        </div>
       </div>
     </div>
 
@@ -30,6 +33,7 @@
       <% if (features.photoWall) { %><a href="#wall-card">&#128248; Photos</a><% } %>
       <% if (features.polls) { %><a href="#sec-poll">&#128202; Poll</a><% } %>
       <a href="#sec-chat">&#128172; Chat</a>
+      <a href="/admin/events/<%= currentEventId %>/timeline">&#128220; Timeline</a>
     </nav>
     <% } %>
 

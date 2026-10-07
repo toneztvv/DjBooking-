@@ -21,6 +21,7 @@ const {
   paymentIntentOf,
 } = require('../payments');
 const { getSiteUrl } = require('../qr');
+const { logEvent, phoneTag } = require('../eventlog');
 const { sendInquiryNotification } = require('../mail');
 const { sendSms } = require('../sms');
 const { containsBannedWord } = require('../moderation');
@@ -758,6 +759,11 @@ router.post('/wall', wallUploadMiddleware, (req, res) => {
   db.prepare(
     `INSERT INTO wall_photos (event_id, filename, uploader_name, caption, client_id, pass_id) VALUES (?, ?, ?, ?, ?, ?)`
   ).run(eventId, filename, name || null, caption || null, clientId, pass ? pass.id : null);
+  logEvent('photo_uploaded', `${name || 'A guest'} ${phoneTag(clientId)} sent a photo${pass ? ` (Photo Pass …${pass.code.slice(-3)})` : ''} \u2014 waiting for your OK`.replace(/\s+/g, ' '), {
+    eventId,
+    actor: 'guest',
+    detail: caption ? { note: `Caption: \u201C${caption}\u201D` } : undefined,
+  });
 
   res.status(201).json({ ok: true });
 });
@@ -827,6 +833,7 @@ router.post('/wall/pass/checkout', async (req, res) => {
         idempotencyKey: `photopass-${pass.code}`,
       });
       db.prepare(`UPDATE photo_passes SET stripe_session_id = ? WHERE id = ?`).run(session.id, pass.id);
+      logEvent('pass_checkout', `A guest ${phoneTag(clientId)} opened the $${(priceCents / 100).toFixed(2).replace(/\.00$/, '')} Photo Pass checkout`.replace(/\s+/g, ' '), { eventId: undefined, actor: 'guest' });
       res.json({ ok: true, url: session.url });
     } catch (err) {
       db.prepare(`DELETE FROM photo_passes WHERE id = ? AND status = 'pending'`).run(pass.id); // don't leave an orphan
@@ -872,6 +879,7 @@ router.post('/wall/pass/claim', async (req, res) => {
 router.post('/wall/pass/check', (req, res) => {
   const pass = getActivePassByCode(String((req.body || {}).code || ''));
   if (!pass) return res.status(404).json({ ok: false, error: 'That code isn’t valid. Check it and try again.' });
+  logEvent('pass_restored', `A guest restored Photo Pass …${pass.code.slice(-3)}${pass.name ? ' (' + pass.name + ')' : ''} on a phone using its code`, { actor: 'guest' });
   res.json({ ok: true, code: pass.code });
 });
 

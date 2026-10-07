@@ -15,6 +15,8 @@ const { getTipMethods, VENMO_RE, CASHAPP_RE } = require('../tips');
 const { WALL_DIR, WALL_FILE_RE, deleteWallFile } = require('../wall');
 const { ensureEventReferralCode } = require('../referrals');
 const { getSiteUrl } = require('../qr');
+const { logEvent, logCoalesced, phoneTag } = require('../eventlog');
+const { buildTimeline } = require('../timeline');
 const stripe = require('../stripe');
 const {
   getPhotoWallPriceCents,
@@ -149,15 +151,19 @@ function getEventById(id) {
 
 // Photo Wall mode for an event: 0 = off, 1 = free for everyone (host paid),
 // 2 = each guest buys a Photo Pass to upload.
+const WALL_MODE_LABELS = { 0: 'off', 1: 'free for everyone (host paid)', 2: 'guests unlock with a Photo Pass' };
+
 function cleanWallMode(value) {
   const n = Number(value);
   return n === 1 || n === 2 ? n : 0;
 }
 
-function startNewEvent(name, wallMode = 0) {
+function startNewEvent(name, wallMode = 0, nightId = null) {
   const result = db
     .prepare(`INSERT INTO events (name, started_at, photowall_unlocked) VALUES (?, datetime('now'), ?)`)
     .run(name || null, cleanWallMode(wallMode));
+  // A new go-live starts a new "night"; Clear Board stays inside the same one.
+  db.prepare(`UPDATE events SET night_id = ? WHERE id = ?`).run(nightId || result.lastInsertRowid, result.lastInsertRowid);
   return result.lastInsertRowid;
 }
 
@@ -213,6 +219,7 @@ router.get('/', (req, res) => {
     energyLevel: Math.min(10, Math.max(0, Number(getSetting('energy_level')) || 0)),
     defaultPassword: !process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD === 'changeme123',
     battle: getBattleState(eventId).active,
+    currentEventId: eventId,
     wallMode: currentEvent ? cleanWallMode(currentEvent.photowall_unlocked) : 0,
     passReady: stripe.isConfigured() && getPassPriceCents() > 0,
     passPrice: getPassPriceCents() ? formatMoney(getPassPriceCents()) : '',
@@ -246,11 +253,24 @@ const TOGGLEABLE_FEATURES = {
   photowall: 'feature_photowall',
 };
 
+const FEATURE_LABELS = {
+  guest_counter: 'Guest Counter',
+  reactions: 'Live Reactions',
+  polls: 'Quick Polls',
+  guestbook: 'Guestbook',
+  effects: 'Drops & Countdowns',
+  energy: 'Energy Meter',
+  tips: 'Tip Jar',
+  battles: 'Song Battles',
+  photowall: 'Photo Wall',
+};
+
 router.post('/features/:feature/toggle', (req, res) => {
   const settingKey = TOGGLEABLE_FEATURES[req.params.feature];
   if (settingKey) {
     const isOn = getSetting(settingKey) !== '0';
     setSetting(settingKey, isOn ? '0' : '1');
+    logEvent('feature_toggle', `Switched ${FEATURE_LABELS[req.params.feature] || req.params.feature} ${isOn ? 'OFF' : 'ON'}`, { actor: 'dj' });
   }
   res.redirect('/admin');
 });
@@ -276,6 +296,7 @@ router.post('/live/toggle', (req, res) => {
     const newEventId = startNewEvent(eventName, wallMode);
     if (booking) db.prepare(`UPDATE events SET inquiry_id = ? WHERE id = ?`).run(booking.id, newEventId);
     setSetting('current_event_id', newEventId);
+    logEvent('wall_mode', `Photo Wall for tonight: ${WALL_MODE_LABELS[wallMode]}`, { eventId: newEventId, actor: 'dj' });
     setSetting('is_live', '1');
     setSetting('energy_level', '0');
     setSetting('countdown_label', '');
@@ -421,6 +442,8 @@ router.post('/requests/accept', (req, res) => {
        SET accepted = ?
        WHERE event_id = ? AND normalized_key = ? AND status = 'pending'`
     ).run(accept ? 1 : 0, eventId, key);
+    const song = db.prepare(`SELECT song_title, artist FROM song_requests WHERE event_id = ? AND normalized_key = ? LIMIT 1`).get(eventId, key);
+    if (song) logEvent('request_accepted', `${accept ? 'Accepted' : 'Un-accepted'} \u201C${song.song_title}\u201D${song.artist ? ' by ' + song.artist : ''}`, { eventId, actor: 'dj' });
   }
 
   res.redirect('/admin');
@@ -436,7 +459,8 @@ router.post('/requests/clear', (req, res) => {
   endEvent(currentEventId);
   const newEventId = startNewEvent(
     currentEvent ? currentEvent.name : null,
-    currentEvent ? currentEvent.photowall_unlocked : 0
+    currentEvent ? currentEvent.photowall_unlocked : 0,
+    currentEvent ? currentEvent.night_id || currentEvent.id : null
   );
   if (currentEvent && currentEvent.inquiry_id) {
     db.prepare(`UPDATE events SET inquiry_id = ? WHERE id = ?`).run(currentEvent.inquiry_id, newEventId);
@@ -467,7 +491,10 @@ router.get('/chat', (req, res) => {
 router.post('/chat/:id/delete', (req, res) => {
   const id = Number(req.params.id);
   if (id) {
+    const msg = db.prepare(`SELECT event_id, sender_name, message FROM chat_messages WHERE id = ?`).get(id);
     db.prepare(`DELETE FROM chat_messages WHERE id = ?`).run(id);
+    // The message itself is gone for everyone — keep a record of what it said.
+    if (msg) logEvent('chat_deleted', `You deleted a chat message from ${msg.sender_name}`, { eventId: msg.event_id, actor: 'dj', detail: { note: `\u201C${msg.message}\u201D` } });
   }
   res.json({ ok: true });
 });
@@ -589,6 +616,7 @@ router.post('/drops', (req, res) => {
 router.post('/energy', (req, res) => {
   const level = Math.min(10, Math.max(0, Math.round(Number((req.body || {}).level)) || 0));
   setSetting('energy_level', level);
+  logCoalesced('energy', `Crowd energy set to ${level}/10`, 20, { actor: 'dj' });
   res.json({ ok: true, level });
 });
 
@@ -600,12 +628,14 @@ router.post('/countdown', (req, res) => {
   }
   setSetting('countdown_label', label);
   setSetting('countdown_ends_at', Date.now() + Math.round(minutes * 60 * 1000));
+  logEvent('countdown', `Started countdown \u201C${label}\u201D (${minutes} min)`, { actor: 'dj' });
   res.json({ ok: true });
 });
 
 router.post('/countdown/clear', (req, res) => {
   setSetting('countdown_label', '');
   setSetting('countdown_ends_at', '');
+  logEvent('countdown', 'Cleared the countdown', { actor: 'dj' });
   res.json({ ok: true });
 });
 
@@ -722,6 +752,42 @@ router.get('/events/:id', (req, res) => {
   });
 });
 
+// --- Night timeline: everything that happened, in order ----------------------------
+
+router.get('/events/:id/timeline', (req, res) => {
+  const id = Number(req.params.id);
+  const data = id ? buildTimeline(id) : null;
+  if (!data) return res.status(404).render('404');
+  res.render('admin/timeline', { page: 'admin', eventId: id, night: data.night, categories: data.categories });
+});
+
+router.get('/events/:id/timeline.json', (req, res) => {
+  const data = buildTimeline(Number(req.params.id));
+  if (!data) return res.status(404).json({ ok: false });
+  res.json(data);
+});
+
+router.get('/events/:id/timeline.csv', (req, res) => {
+  const data = buildTimeline(Number(req.params.id));
+  if (!data) return res.status(404).render('404');
+  const rows = data.items.map((i) => ({
+    time_utc: i.at,
+    category: data.categories[i.cat] || i.cat,
+    what: i.text,
+    details: i.sub,
+  }));
+  const csv = toCsv(rows, [
+    { key: 'time_utc', label: 'Time (UTC)' },
+    { key: 'category', label: 'Category' },
+    { key: 'what', label: 'What happened' },
+    { key: 'details', label: 'Details' },
+  ]);
+  const safe = String(data.night.name).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'event';
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="night-timeline-${safe}.csv"`);
+  res.send(csv);
+});
+
 router.post('/events/:id/share', (req, res) => {
   const id = Number(req.params.id);
   if (id && getEventById(id)) {
@@ -729,13 +795,17 @@ router.post('/events/:id/share', (req, res) => {
     const token = crypto.randomBytes(12).toString('base64url');
     db.prepare(`UPDATE events SET share_token = ? WHERE id = ?`).run(token, id);
     ensureEventReferralCode(id);
+    logEvent('share', 'Created a shareable recap link', { eventId: id, actor: 'dj' });
   }
   res.redirect(`/admin/events/${id}`);
 });
 
 router.post('/events/:id/unshare', (req, res) => {
   const id = Number(req.params.id);
-  if (id) db.prepare(`UPDATE events SET share_token = NULL WHERE id = ?`).run(id);
+  if (id) {
+    db.prepare(`UPDATE events SET share_token = NULL WHERE id = ?`).run(id);
+    logEvent('share', 'Stopped sharing the recap link', { eventId: id, actor: 'dj' });
+  }
   res.redirect(`/admin/events/${id}`);
 });
 
@@ -755,6 +825,7 @@ router.post('/events/:id/delete', (req, res) => {
     const deleteBattleVotes = db.prepare(`DELETE FROM battle_votes WHERE battle_id IN (SELECT id FROM battles WHERE event_id = ?)`);
     const deleteBattles = db.prepare(`DELETE FROM battles WHERE event_id = ?`);
     const deleteWall = db.prepare(`DELETE FROM wall_photos WHERE event_id = ?`);
+    const deleteLog = db.prepare(`DELETE FROM event_log WHERE event_id = ?`);
     const wallFiles = db.prepare(`SELECT filename FROM wall_photos WHERE event_id = ?`).all(id);
     const deleteEvent = db.prepare(`DELETE FROM events WHERE id = ?`);
     db.transaction(() => {
@@ -769,6 +840,7 @@ router.post('/events/:id/delete', (req, res) => {
       deleteBattleVotes.run(id);
       deleteBattles.run(id);
       deleteWall.run(id);
+      deleteLog.run(id);
       deleteEvent.run(id);
     })();
     wallFiles.forEach((f) => deleteWallFile(f.filename));
@@ -856,14 +928,18 @@ router.get('/wall/photo/:file', (req, res) => {
 
 router.post('/wall/mode', (req, res) => {
   const eventId = Number(getSetting('current_event_id') || '1');
-  db.prepare(`UPDATE events SET photowall_unlocked = ? WHERE id = ?`).run(cleanWallMode(req.body.mode), eventId);
+  const mode = cleanWallMode(req.body.mode);
+  db.prepare(`UPDATE events SET photowall_unlocked = ? WHERE id = ?`).run(mode, eventId);
+  logEvent('wall_mode', `Photo Wall changed to: ${WALL_MODE_LABELS[mode]}`, { eventId, actor: 'dj' });
   res.redirect('/admin');
 });
 
 // Older shortcut: 1 = free for everyone, 0 = off.
 router.post('/wall/unlock', (req, res) => {
   const eventId = Number(getSetting('current_event_id') || '1');
-  db.prepare(`UPDATE events SET photowall_unlocked = ? WHERE id = ?`).run(req.body.unlock === '1' ? 1 : 0, eventId);
+  const unlockMode = req.body.unlock === '1' ? 1 : 0;
+  db.prepare(`UPDATE events SET photowall_unlocked = ? WHERE id = ?`).run(unlockMode, eventId);
+  logEvent('wall_mode', `Photo Wall changed to: ${WALL_MODE_LABELS[unlockMode]}`, { eventId, actor: 'dj' });
   res.redirect('/admin');
 });
 
@@ -876,8 +952,10 @@ router.post('/wall/link', (req, res) => {
     .get(Number(req.body.inquiry_id));
   if (booking) {
     db.prepare(`UPDATE events SET inquiry_id = ? WHERE id = ?`).run(booking.id, eventId);
+    logEvent('live_note', `Linked this event to booking #${booking.id}`, { eventId, actor: 'dj' });
     if (booking.photowall_paid_at) {
       db.prepare(`UPDATE events SET photowall_unlocked = 1 WHERE id = ?`).run(eventId);
+      logEvent('wall_mode', 'Photo Wall changed to: free for everyone (host paid)', { eventId, actor: 'dj' });
     }
   }
   res.redirect('/admin');
@@ -886,12 +964,16 @@ router.post('/wall/link', (req, res) => {
 router.post('/wall/:id/approve', (req, res) => {
   const id = Number(req.params.id);
   const eventId = Number(getSetting('current_event_id') || '1');
+  const photo = db.prepare(`SELECT uploader_name, client_id FROM wall_photos WHERE id = ?`).get(id);
   const result = db
     .prepare(
       `UPDATE wall_photos SET status = 'approved', approved_at = datetime('now')
        WHERE id = ? AND event_id = ? AND status = 'pending'`
     )
     .run(id, eventId);
+  if (result.changes > 0 && photo) {
+    logEvent('photo_approved', `You approved a photo from ${photo.uploader_name || 'a guest'} ${phoneTag(photo.client_id)}`.trim(), { eventId, actor: 'dj' });
+  }
   res.json({ ok: result.changes > 0 });
 });
 
@@ -906,8 +988,10 @@ router.post('/wall/:id/remove', (req, res) => {
   if (!row) return res.json({ ok: false });
 
   const filesToDelete = [row.filename];
+  const blocking = !!(req.body && req.body.block === true);
+  let alsoDeleted = 0;
   db.transaction(() => {
-    if (req.body && req.body.block === true) {
+    if (blocking) {
       db.prepare(`INSERT OR IGNORE INTO wall_blocks (client_id, pass_id) VALUES (?, ?)`).run(row.client_id, row.pass_id || null);
       if (row.pass_id) db.prepare(`UPDATE photo_passes SET status = 'revoked' WHERE id = ? AND status = 'active'`).run(row.pass_id);
       const others = db
@@ -919,12 +1003,29 @@ router.post('/wall/:id/remove', (req, res) => {
       others.forEach((o) => {
         db.prepare(`DELETE FROM wall_photos WHERE id = ?`).run(o.id);
         filesToDelete.push(o.filename);
+        alsoDeleted += 1;
       });
     }
     db.prepare(`DELETE FROM wall_photos WHERE id = ?`).run(id);
   })();
   filesToDelete.forEach(deleteWallFile);
-  res.json({ ok: true, blocked: !!(req.body && req.body.block === true) });
+
+  // The picture is deleted for good (it may have been explicit), but the fact
+  // that it happened — who, when, what you decided — stays on the timeline.
+  const who = `${row.uploader_name || 'a guest'} ${phoneTag(row.client_id)}`.trim();
+  const caption = row.caption ? `Caption: \u201C${row.caption}\u201D` : '';
+  if (blocking) {
+    logEvent('photo_blocked', `You rejected a photo from ${who} and BLOCKED that phone`, {
+      eventId: row.event_id,
+      actor: 'dj',
+      detail: { note: [caption, alsoDeleted ? `${alsoDeleted} other waiting photo${alsoDeleted === 1 ? '' : 's'} from them deleted` : '', 'Their Photo Pass (if any) was turned off'].filter(Boolean).join(' \u00B7 ') },
+    });
+  } else if (row.status === 'approved') {
+    logEvent('photo_removed', `You took down an approved photo from ${who}`, { eventId: row.event_id, actor: 'dj', detail: { note: caption } });
+  } else {
+    logEvent('photo_rejected', `You rejected a photo from ${who}`, { eventId: row.event_id, actor: 'dj', detail: { note: caption } });
+  }
+  res.json({ ok: true, blocked: blocking });
 });
 
 // --- Tips & extras settings ----------------------------------------------------------
@@ -1038,6 +1139,8 @@ router.post('/inquiries/:id/photowall-paid', (req, res) => {
   if (id && db.prepare(`SELECT 1 FROM inquiries WHERE id = ?`).get(id)) {
     if (req.body.paid === '1') {
       recordPhotoWallPayment(id, { amountCents: getPhotoWallPriceCents() || null, ref: null, method: 'manual' });
+      const who = db.prepare(`SELECT name FROM inquiries WHERE id = ?`).get(id);
+      logEvent('host_paid', `You marked the Photo Wall as paid by hand for ${who ? who.name : 'a booking'}`, { actor: 'dj' });
     } else {
       db.prepare(
         `UPDATE inquiries SET photowall_paid_at = NULL, photowall_amount_cents = NULL,
@@ -1144,21 +1247,27 @@ router.post('/passes', (req, res) => {
   const name = clean(req.body.name, 80);
   const email = clean(req.body.email, 200);
   const pass = createPassRow({ source: 'comp', status: 'active', name, email });
+  logEvent('pass_comp', `You gave a free Photo Pass to ${name || 'someone'} (…${pass.code.slice(-3)})`, { actor: 'dj' });
   res.redirect(`/admin/passes?created=${encodeURIComponent(pass.code)}`);
 });
 
 router.post('/passes/:id/revoke', (req, res) => {
+  const pass = db.prepare(`SELECT code, name FROM photo_passes WHERE id = ?`).get(Number(req.params.id));
   db.prepare(`UPDATE photo_passes SET status = 'revoked' WHERE id = ? AND status = 'active'`).run(Number(req.params.id));
+  if (pass) logEvent('pass_admin', `You turned off Photo Pass …${pass.code.slice(-3)}${pass.name ? ' (' + pass.name + ')' : ''}`, { actor: 'dj' });
   res.redirect('/admin/passes');
 });
 
 router.post('/passes/blocks/:id/unblock', (req, res) => {
   db.prepare(`DELETE FROM wall_blocks WHERE id = ?`).run(Number(req.params.id));
+  logEvent('pass_admin', 'You unblocked a phone from uploading photos', { actor: 'dj' });
   res.redirect('/admin/passes');
 });
 
 router.post('/passes/:id/restore', (req, res) => {
+  const pass = db.prepare(`SELECT code, name FROM photo_passes WHERE id = ?`).get(Number(req.params.id));
   db.prepare(`UPDATE photo_passes SET status = 'active' WHERE id = ? AND status = 'revoked'`).run(Number(req.params.id));
+  if (pass) logEvent('pass_admin', `You turned Photo Pass …${pass.code.slice(-3)}${pass.name ? ' (' + pass.name + ')' : ''} back on`, { actor: 'dj' });
   res.redirect('/admin/passes');
 });
 
