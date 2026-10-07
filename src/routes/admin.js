@@ -1,4 +1,5 @@
 const express = require('express');
+const os = require('os');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -1313,6 +1314,20 @@ const EXTERNAL_SERVICES = [
     status: 'Coming soon — built, not turned on yet (requires adding a card)',
   },
 ];
+
+// A consistent snapshot of the whole database, safe to take while the site is
+// running (SQLite's own backup API, not a raw file copy).
+router.get('/backup/download', async (req, res, next) => {
+  const tmp = path.join(os.tmpdir(), `djxpress-backup-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.sqlite`);
+  try {
+    await db.backup(tmp);
+    const name = `djxpress-backup-${new Date().toISOString().slice(0, 10)}.sqlite`;
+    res.download(tmp, name, () => fs.unlink(tmp, () => {}));
+  } catch (err) {
+    fs.unlink(tmp, () => {});
+    next(err);
+  }
+});
 
 router.get('/services', (req, res) => {
   res.render('admin/services', { page: 'admin', services: EXTERNAL_SERVICES });

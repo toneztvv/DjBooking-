@@ -74,7 +74,16 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// Short caching keeps repeat visits fast (important on party wifi) while a new
+// deploy still reaches everyone within minutes.
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    maxAge: '5m',
+    setHeaders: (res, filePath) => {
+      if (/\.(png|jpe?g|svg|ico|webp|woff2?)$/i.test(filePath)) res.setHeader('Cache-Control', 'public, max-age=86400');
+    },
+  })
+);
 app.use('/gallery-media', express.static(path.join(__dirname, 'data', 'gallery')));
 
 const formLimiter = rateLimit({

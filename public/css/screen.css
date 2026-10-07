@@ -1,23 +1,38 @@
+/*
+ * Big Screen: always fits the screen exactly. A TV can't scroll, so the page is
+ * one fixed-height grid; sizes follow the screen HEIGHT (1080p, 768p, 1440p all
+ * look right) and anything that doesn't fit is trimmed from the bottom of the
+ * lists (see trimToFit in screen.js) rather than falling off the screen.
+ */
+
+html.screen-html {
+  height: 100%;
+  font-size: clamp(12px, 1.55vh, 26px);
+}
+
 .screen-body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Poppins', sans-serif;
   margin: 0;
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .screen-wrap {
-  padding: 24px 40px 40px;
-  max-width: 1600px;
-  margin: 0 auto;
+  box-sizing: border-box;
+  height: 100vh;
+  padding: 1.8vh 2.2vw 2vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .screen-header {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 30px;
+  margin-bottom: 1.6vh;
 }
 
 .screen-brand {
@@ -26,9 +41,11 @@
 }
 
 .screen-event-name {
-  font-size: 1.6rem;
+  font-size: 1.7rem;
   font-weight: 700;
   color: var(--accent-2);
+  text-align: center;
+  padding: 0 1rem;
 }
 
 .screen-status {
@@ -40,54 +57,102 @@
 }
 
 .screen-offline {
+  flex: 1 1 auto;
   text-align: center;
-  padding: 140px 20px;
+  padding: 18vh 20px 0;
 }
 
 .screen-offline h1 {
-  font-size: 4rem;
+  font-size: 5rem;
   margin-bottom: 10px;
 }
 
 .screen-offline p {
   color: var(--muted);
-  font-size: 1.4rem;
+  font-size: 1.6rem;
 }
 
 .screen-grid {
+  flex: 1 1 0;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 2.2fr 1fr;
-  gap: 30px;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: 2.2vw;
+}
+
+.screen-col {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5vh;
+  overflow: hidden;
+}
+
+.screen-col > * {
+  flex: 0 0 auto;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* The lists take whatever room is left and are trimmed to fit it. */
+.screen-col > .screen-fill {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .screen-section-title {
-  font-size: 1.4rem;
-  margin: 30px 0 14px;
+  flex: 0 0 auto;
+  font-size: 1.35rem;
+  margin: 0 0 1vh;
+}
+
+.screen-list,
+.screen-guestbook {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+  overflow: hidden;
 }
 
 .screen-body .now-playing-card {
   max-width: none;
   margin: 0;
-  padding: 20px 26px;
+  padding: 1.4vh 1.6vw;
+  gap: 1.4vw;
 }
 
 .screen-body .now-playing-art {
-  width: 90px;
-  height: 90px;
+  width: 9vh;
+  height: 9vh;
 }
 
 .screen-body .now-playing-title {
-  font-size: 1.6rem;
+  font-size: 1.7rem;
 }
 
 .screen-body .now-playing-artist {
   font-size: 1.1rem;
 }
 
-.screen-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.screen-body .energy-card,
+.screen-body .countdown-card {
+  max-width: none;
+  margin: 0;
+  padding: 1.2vh 1.4vw;
+}
+
+.screen-body .countdown-time {
+  font-size: clamp(2.6rem, 8vh, 7rem);
+  line-height: 1.05;
+}
+
+.screen-body .energy-seg {
+  height: 2.6vh;
 }
 
 .screen-list-row {
@@ -98,7 +163,7 @@
   background: var(--card);
   border: 1px solid var(--card-border);
   border-radius: 10px;
-  padding: 14px 20px;
+  padding: 1.2vh 1.2vw;
   font-size: 1.15rem;
 }
 
@@ -113,63 +178,194 @@
 
 .screen-empty {
   color: var(--muted);
-  font-size: 1.1rem;
-  padding: 20px 0;
-}
-
-.screen-qr-card {
-  background: var(--card);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius);
-  padding: 20px;
-  text-align: center;
-}
-
-.screen-qr-card img {
-  width: 100%;
-  max-width: 200px;
-  border-radius: 10px;
-}
-
-.screen-qr-card p {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 1rem;
-}
-
-.screen-guestbook {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 420px;
-  overflow-y: auto;
+  font-size: 1.15rem;
+  padding: 1vh 0;
 }
 
 .screen-poll {
-  margin-top: 20px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 1.2vh 1.4vw;
+}
+
+.screen-poll-question {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.8vh;
+}
+
+.screen-qr-card {
+  display: flex;
+  align-items: center;
+  gap: 1.4vw;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 1.4vh 1.2vw;
+}
+
+.screen-qr-card img {
+  width: 17vh;
+  height: 17vh;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.screen-qr-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 1.05rem;
+}
+
+.screen-qr-text strong {
+  font-size: 1.3rem;
+}
+
+.screen-qr-text span {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.screen-wall {
+  flex: 2 1 0 !important;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-wall .screen-wall-frame {
+  flex: 1 1 0;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
+.screen-wall .screen-section-title {
+  margin-bottom: 0.8vh;
+}
+
+.screen-wall .screen-wall-caption {
+  flex: 0 0 auto;
+  margin-top: 0.6vh;
+}
+
+.screen-fill-guestbook {
+  flex: 1 1 0;
+}
+
+.screen-guestbook .screen-list-row {
+  padding: 1vh 1vw;
+}
+
+.screen-body .tips-card-screen {
+  margin: 0;
+  padding: 1.2vh 1.2vw;
+  text-align: left;
+}
+
+.screen-body .tips-card-screen .tips-qr {
+  width: 11vh;
+  height: 11vh;
+}
+
+.screen-body .tips-screen-body {
+  gap: 1.2vw;
+}
+
+.tips-screen-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 0.3rem;
 }
 
 @media (max-width: 1000px) {
-  .screen-grid {
-    grid-template-columns: 1fr;
-  }
-  .screen-wrap {
-    padding: 20px;
-  }
-  .screen-offline h1 {
-    font-size: 2.6rem;
-  }
+  /* Not a TV (a small window or phone): fall back to a normal scrolling page. */
+  html.screen-html { height: auto; font-size: 16px; }
+  .screen-body, .screen-wrap { height: auto; overflow: visible; }
+  .screen-wrap { display: block; }
+  .screen-grid { grid-template-columns: 1fr; flex: none; }
+  .screen-col, .screen-col > .screen-fill { overflow: visible; }
+  .screen-col > .screen-fill,
+  .screen-col-main > .screen-fill { flex: 0 0 auto; min-height: 0; }
+  .screen-list, .screen-guestbook { flex: 0 0 auto; overflow: visible; }
+  .screen-wall { flex: 0 0 auto !important; }
+  .screen-wall .screen-wall-frame { flex: 0 0 auto; aspect-ratio: 4 / 3; }
+  .screen-moments { grid-auto-flow: row; }
+  .screen-qr-card img { width: 120px; height: 120px; }
+}
+
+/* Countdown + energy meter sit side by side to save height. */
+.screen-moments {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 1.5vh 1.2vw;
+}
+
+.screen-moments > * {
+  margin: 0 !important;
+  min-width: 0;
+}
+
+.screen-body .countdown-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.screen-body .energy-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.screen-col-main > .screen-fill {
+  min-height: 21vh;
+}
+
+/* Poll: question on top, both options side by side. */
+.screen-poll {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.4vw;
+  row-gap: 0.4vh;
+}
+
+.screen-poll .screen-poll-question {
+  grid-column: 1 / -1;
+  margin-bottom: 0.2vh;
+}
+
+.screen-poll .poll-bar-row {
+  margin: 0;
 }
 
 /* Song battle, tip jar and dedications are bigger on the Big Screen. */
 .screen-body .battle-card,
 .screen-body .battle-result {
   max-width: none;
-  margin: 24px 0 0;
+  margin: 0;
+  padding: 1.2vh 1.2vw;
+}
+
+.screen-body .battle-head {
+  margin-bottom: 0.8vh;
+}
+
+.screen-body .battle-side {
+  padding: 1vh 0.9vw;
+  gap: 0.4vh;
+}
+
+.screen-body .battle-note {
+  display: none;
 }
 
 .screen-body .battle-song {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
 }
 
 .screen-body .battle-artist {
@@ -182,7 +378,19 @@
 }
 
 .screen-body .battle-result {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
+}
+
+/* Short screens (720p-ish): trim the extras so Up Next still has room. */
+@media (max-height: 800px) {
+  .screen-body .battle-artist,
+  .screen-body .now-playing-dedication,
+  .screen-qr-text span {
+    display: none;
+  }
+  .screen-body .now-playing-art {
+    display: none;
+  }
 }
 
 .screen-body .dedication-note,

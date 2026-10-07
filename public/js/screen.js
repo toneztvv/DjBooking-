@@ -69,7 +69,7 @@
         return;
       }
       guestbookList.innerHTML = data.entries
-        .slice(0, 12)
+        .slice(0, 20)
         .map(
           (e) => `<div class="screen-list-row"><div><div class="slr-song">${escapeHtml(e.name)}</div><div class="slr-artist">${escapeHtml(e.message)}</div></div></div>`
         )
@@ -152,7 +152,7 @@
         });
       }
 
-      const pending = (data.pending || []).slice(0, 6);
+      const pending = (data.pending || []).slice(0, 14);
       if (!pending.length) {
         pendingList.innerHTML = '';
         pendingEmpty.style.display = 'block';
@@ -170,7 +170,7 @@
       }
 
       if (isLive && features.polls && data.poll) {
-        pollWrap.style.display = 'block';
+        pollWrap.style.display = '';
         const total = data.poll.votesA + data.poll.votesB;
         const pctA = total ? Math.round((data.poll.votesA / total) * 100) : 0;
         const pctB = total ? Math.round((data.poll.votesB / total) * 100) : 0;
@@ -236,7 +236,7 @@
         wallPhotos = [];
         return;
       }
-      wallEl.style.display = 'block';
+      wallEl.style.display = ''; // let the stylesheet lay it out
       const newest = data.photos[0];
       const newestId = newest.id;
       if (wallSeenMax !== null && newestId > wallSeenMax) {
@@ -260,6 +260,31 @@
     wallIndex = (wallIndex + 1) % wallPhotos.length;
     showWallPhoto(wallPhotos[wallIndex], false);
   }, 7000);
+
+  // A TV can't scroll, so show only as many list rows as actually fit the space
+  // left over (hide whole rows from the bottom instead of cutting one in half).
+  function trimToFit(list) {
+    if (!list) return;
+    const rows = Array.from(list.children);
+    rows.forEach((r) => (r.style.display = ''));
+    for (let i = rows.length - 1; i > 0 && list.scrollHeight > list.clientHeight + 1; i--) {
+      rows[i].style.display = 'none';
+    }
+  }
+  // The countdown and the energy meter share one row; hide the row when neither shows.
+  const momentsEl = document.getElementById('screen-moments');
+  function syncMoments() {
+    if (!momentsEl) return;
+    const anyShown = Array.from(momentsEl.children).some((c) => getComputedStyle(c).display !== 'none');
+    momentsEl.style.display = anyShown ? '' : 'none';
+  }
+  function trimAll() {
+    syncMoments();
+    trimToFit(pendingList);
+    trimToFit(guestbookList);
+  }
+  setInterval(trimAll, 700);
+  window.addEventListener('resize', trimAll);
 
   refresh();
   setInterval(refresh, 4000);

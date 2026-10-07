@@ -42,7 +42,7 @@
       tipsSig = null;
       return;
     }
-    tipsWrap.style.display = 'block';
+    tipsWrap.style.display = '';
 
     const sig = JSON.stringify(tips);
     if (sig === tipsSig) return;

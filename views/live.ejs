@@ -79,7 +79,7 @@
     <div id="request-form-wrap" style="display: <%= isLive ? 'block' : 'none' %>;">
       <div class="form-card">
         <h3 style="margin-top:0;">Send a Request</h3>
-        <div id="form-message"></div>
+        <div id="form-message" role="status" aria-live="polite"></div>
         <form id="request-form">
           <div class="honeypot" aria-hidden="true">
             <label for="company_website">Website</label>
@@ -197,7 +197,7 @@
               <input type="text" id="wall-caption" maxlength="80" autocomplete="off" />
             </div>
           </div>
-          <div id="wall-message" style="margin-top:12px;"></div>
+          <div id="wall-message" style="margin-top:12px;" role="status" aria-live="polite"></div>
           <button type="submit" id="wall-submit" class="btn btn-primary btn-block" style="margin-top:14px;" disabled>Send to the Wall</button>
         </form>
         <div id="wall-grid" class="wall-grid"></div>

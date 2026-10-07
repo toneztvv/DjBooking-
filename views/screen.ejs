@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="screen-html">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -44,6 +44,7 @@
           </div>
         </div>
 
+        <div id="screen-moments" class="screen-moments" style="display:none;">
         <div id="countdown-wrap" class="countdown-card" style="display:none;">
           <div id="countdown-label" class="countdown-label"></div>
           <div id="countdown-time" class="countdown-time"></div>
@@ -55,6 +56,7 @@
             <span id="energy-label" class="energy-label"></span>
           </div>
           <div id="energy-bar" class="energy-bar" aria-hidden="true"></div>
+        </div>
         </div>
 
         <div id="battle-wrap" class="battle-card" data-interactive="0" style="display:none;">
@@ -81,12 +83,8 @@
         </div>
         <div id="battle-result" class="battle-result" style="display:none;"></div>
 
-        <h2 class="screen-section-title">&#127925; Up Next</h2>
-        <div id="screen-pending" class="screen-list"></div>
-        <div id="screen-pending-empty" class="screen-empty">No requests yet</div>
-
         <div id="screen-poll-wrap" class="screen-poll" style="display:none;">
-          <h2 class="screen-section-title" id="screen-poll-question"></h2>
+          <div class="screen-poll-question" id="screen-poll-question"></div>
           <div class="poll-bar-row">
             <div class="poll-bar-label" id="screen-poll-label-a"></div>
             <div class="poll-bar-track"><div class="poll-bar-fill" id="screen-poll-fill-a" style="width:0%;"></div></div>
@@ -96,12 +94,21 @@
             <div class="poll-bar-track"><div class="poll-bar-fill" id="screen-poll-fill-b" style="width:0%;"></div></div>
           </div>
         </div>
+
+        <div class="screen-fill">
+          <h2 class="screen-section-title">&#127925; Up Next</h2>
+          <div id="screen-pending" class="screen-list"></div>
+          <div id="screen-pending-empty" class="screen-empty">No requests yet &mdash; scan the QR code to be first!</div>
+        </div>
       </div>
 
       <div class="screen-col screen-col-side">
         <div class="screen-qr-card">
           <img src="/api/qrcode.png?size=300" alt="Scan to open DJXpress" />
-          <p>Scan to request a song</p>
+          <div class="screen-qr-text">
+            <strong>Scan to request a song</strong>
+            <span>Dedications, photos, voting &amp; chat &mdash; all from your phone</span>
+          </div>
         </div>
 
         <div id="screen-wall" class="screen-wall" style="display:none;">
@@ -114,18 +121,20 @@
         </div>
 
         <div id="tips-wrap" class="tips-card tips-card-screen" style="display:none;">
-          <h2 class="screen-section-title" style="margin-top:0;">&#128184; Tip the DJ</h2>
           <div class="tips-screen-body">
             <img id="tips-qr" class="tips-qr" alt="Scan to tip" />
             <div>
-              <p id="tips-message" class="small-muted" style="margin:0 0 8px;"></p>
+              <div class="tips-screen-title">&#128184; Tip the DJ</div>
+              <p id="tips-message" class="small-muted" style="margin:0 0 0.4rem;"></p>
               <div id="tips-buttons" class="tips-handles"></div>
             </div>
           </div>
         </div>
 
-        <h2 class="screen-section-title">Guestbook</h2>
-        <div id="screen-guestbook" class="screen-guestbook"></div>
+        <div class="screen-fill screen-fill-guestbook">
+          <h2 class="screen-section-title">&#128213; Guestbook</h2>
+          <div id="screen-guestbook" class="screen-guestbook"></div>
+        </div>
       </div>
     </div>
   </div>

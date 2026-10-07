@@ -2546,3 +2546,42 @@ html {
   .tl-time, .tl-sub, .tl-tag, .tl-stat-label { color: #444; }
   .tl-stat, .tl-day { background: #fff; border-color: #bbb; color: #000; }
 }
+
+
+/* --- Accessibility: keyboard focus + skip link --- */
+
+:focus-visible {
+  outline: 3px solid var(--accent-2);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 200;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  top: 10px;
+}
+
+
+/* Six cards read best as 3 + 3 (not 4 + 2), then 2 + 2 + 2, then a single column. */
+.grid-even-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .grid-even-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .grid-even-3 { grid-template-columns: 1fr; }
+}

@@ -7,6 +7,33 @@ const { getPhotoWallPriceCents, formatMoney, applyPaidSession, refundDuplicate }
 
 const router = express.Router();
 
+// Search engines: index the public pages, stay out of everything private.
+router.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(
+    [
+      'User-agent: *',
+      'Allow: /',
+      'Disallow: /admin',
+      'Disallow: /api/',
+      'Disallow: /plan/',
+      'Disallow: /recap/',
+      'Disallow: /screen',
+      `Sitemap: ${getSiteUrl()}/sitemap.xml`,
+      '',
+    ].join('\n')
+  );
+});
+
+router.get('/sitemap.xml', (req, res) => {
+  const base = getSiteUrl();
+  const urls = ['/', '/book', '/live'];
+  res.type('application/xml').send(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      urls.map((u) => `  <url><loc>${base}${u === '/' ? '/' : u}</loc></url>`).join('\n') +
+      `\n</urlset>\n`
+  );
+});
+
 router.get('/', (req, res) => {
   const testimonials = db
     .prepare(`SELECT * FROM testimonials WHERE published = 1 ORDER BY created_at DESC`)

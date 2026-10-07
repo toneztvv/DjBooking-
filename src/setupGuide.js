@@ -251,6 +251,17 @@ Log in at: ${siteUrl}/admin
                                               any time
 
 =====================================================================
+BACKING UP YOUR DATA
+  Admin -> Billing -> "Download a Backup" saves one file with everything the
+  site remembers (bookings, requests, events, timelines, reviews, passes).
+  Do it before a big event and keep it somewhere private (it has your
+  clients' contact details). Gallery photos are separate files.
+
+THE BIG SCREEN ALWAYS FITS
+  /screen sizes itself to whatever TV, projector or monitor you open it on —
+  no scrolling needed. If a lot is happening at once, the Up Next and
+  Guestbook lists just show as many rows as fit.
+
 FINDING YOUR WAY AROUND THE ADMIN
   A bar of shortcuts sits at the top of every admin page: Dashboard,
   Bookings, Events, Reviews, Guestbook, Gallery, Passes, Extras, Stats,
