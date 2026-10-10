@@ -2585,3 +2585,288 @@ html {
 @media (max-width: 560px) {
   .grid-even-3 { grid-template-columns: 1fr; }
 }
+
+
+.footer-contact {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+}
+
+.footer-contact a {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.footer-contact a:hover {
+  color: var(--accent-2);
+}
+
+
+/* --- Booking confirmation --- */
+
+.confirm-panel {
+  max-width: 680px;
+  margin: 0 auto 30px;
+  padding: 38px 30px;
+  text-align: center;
+  border-radius: var(--radius);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(51, 224, 255, 0.08));
+  animation: battle-pop 0.5s ease;
+}
+
+.confirm-check {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--success);
+  color: #06281c;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.confirm-steps {
+  text-align: left;
+  max-width: 520px;
+  margin: 0 auto;
+  padding-left: 22px;
+  line-height: 1.7;
+}
+
+.confirm-steps li {
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.confirm-steps strong {
+  color: var(--text);
+}
+
+.book-contact a {
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+/* --- FAQ --- */
+
+.faq details {
+  margin-bottom: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--card);
+  overflow: hidden;
+}
+
+.faq summary {
+  padding: 16px 20px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary::after {
+  content: '+';
+  font-size: 1.4rem;
+  color: var(--accent);
+  transition: transform 0.2s ease;
+}
+
+.faq details[open] summary::after {
+  transform: rotate(45deg);
+}
+
+.faq details p {
+  margin: 0;
+  padding: 0 20px 18px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* --- Gallery viewer --- */
+
+.gallery-zoom {
+  cursor: zoom-in;
+}
+
+.lb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.94);
+  padding: 20px;
+}
+
+.lb-overlay figure {
+  margin: 0;
+  max-width: min(94vw, 1100px);
+  text-align: center;
+}
+
+.lb-overlay img {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 10px;
+}
+
+.lb-overlay figcaption {
+  margin-top: 10px;
+  color: var(--muted);
+}
+
+.lb-btn {
+  position: absolute;
+  border: 0;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lb-btn:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.lb-close { top: 16px; right: 16px; }
+.lb-prev { left: 16px; top: 50%; transform: translateY(-50%); }
+.lb-next { right: 16px; top: 50%; transform: translateY(-50%); }
+
+/* --- Live board tables fit a phone --- */
+
+@media (max-width: 640px) {
+  #pending-body td:nth-child(3),
+  #board .card:first-child thead th:nth-child(3) {
+    display: none;
+  }
+  #played-body td:nth-child(4),
+  #board .card:nth-child(2) thead th:nth-child(4) {
+    display: none;
+  }
+  #board table th,
+  #board table td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+
+/* --- Song suggestions --- */
+
+.field {
+  position: relative;
+}
+
+.song-suggest {
+  /* In the normal flow (not floating): it pushes the form down instead of
+     covering the fields and the Request button below it. */
+  position: static;
+  margin: 6px 0 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.song-suggest li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.song-suggest li:hover,
+.song-suggest li.active {
+  background: rgba(255, 47, 191, 0.16);
+}
+
+.song-suggest img,
+.suggest-art {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  background: var(--bg-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.suggest-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.suggest-text strong,
+.suggest-text span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggest-text span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+/* --- Connection notice + offline card --- */
+
+.conn-banner {
+  position: sticky;
+  top: 61px;
+  z-index: 45;
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1a1203;
+  background: var(--warning);
+}
+
+.conn-banner[hidden] {
+  display: none;
+}
+
+.offline-card {
+  max-width: 640px;
+  margin: 0 auto 30px;
+  padding: 24px 26px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(51, 224, 255, 0.35);
+  background: linear-gradient(135deg, rgba(51, 224, 255, 0.08), rgba(124, 77, 255, 0.1));
+}
+
+.offline-list {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  line-height: 2;
+}

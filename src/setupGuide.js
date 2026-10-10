@@ -281,6 +281,12 @@ SAFETY — WHAT PROTECTS YOU (nothing to do, just good to know)
     guesses get locked out for 15 minutes.
   - Anything guests type is shown as plain text, never as code.
 
+CONTACT INFO FOR CUSTOMERS
+  On Tips & Extras you can add a phone/text number, an email and your
+  Instagram username. Whatever you fill in shows at the bottom of every page
+  and on the booking page ("Prefer to talk? Call · Text · Email"). Leave a box
+  blank to hide it.
+
 THE NIGHT TIMELINE — SEE EVERYTHING THAT HAPPENED
   Open it from the Dashboard ("Tonight's Timeline" / "Last Night's
   Timeline") or Events -> Timeline. It lists, in order: what guests

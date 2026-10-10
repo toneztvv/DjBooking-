@@ -1,4 +1,25 @@
 (function () {
+  // Never allow a date in the past, and show the form's own message right away.
+  const dateInput = document.getElementById('event_date');
+  if (dateInput) {
+    const t = new Date();
+    dateInput.min = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+  }
+
+  // One tap, one inquiry: show "Sending…" and lock the button so a double tap
+  // (or a slow connection) can't send the same booking twice.
+  const bookForm = document.querySelector('form[action="/api/inquiries"]');
+  const bookBtn = document.getElementById('book-submit');
+  if (bookForm && bookBtn) {
+    bookForm.addEventListener('submit', () => {
+      if (!bookForm.checkValidity()) return;
+      bookBtn.disabled = true;
+      bookBtn.textContent = 'Sending…';
+    });
+  }
+  const bookError = document.getElementById('book-error');
+  if (bookError) bookError.scrollIntoView({ block: 'center' });
+
   const grid = document.getElementById('calendar-grid');
   const monthLabel = document.getElementById('cal-month-label');
   const prevBtn = document.getElementById('cal-prev');

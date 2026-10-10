@@ -135,6 +135,47 @@
     }
   }
 
+  // Quietly keep a draft saved so nothing is lost if the page is closed or the
+  // phone locks while they're thinking of songs.
+  async function autoSave() {
+    if (!dirty || saveBtn.disabled) return;
+    try {
+      const res = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(collect(false)),
+      });
+      if (res.ok) {
+        dirty = false;
+        say('Draft auto-saved.', 'var(--muted)');
+      }
+    } catch (err) {
+      // the manual Save button still works
+    }
+  }
+  setInterval(autoSave, 25000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') autoSave();
+  });
+
+  // A friendly "how far along am I" counter.
+  const progressEl = document.getElementById('plan-progress');
+  function updateProgress() {
+    if (!progressEl) return;
+    const filled = [
+      document.getElementById('plan-must').value.trim(),
+      document.getElementById('plan-skip').value.trim(),
+      Array.from(timelineEl.children).some((r) => r.children[1].value.trim()),
+      document.getElementById('plan-announce').value.trim(),
+      document.getElementById('plan-notes').value.trim(),
+    ].filter(Boolean).length;
+    progressEl.textContent = `${filled} of 5 sections started`;
+  }
+  form.addEventListener('input', updateProgress);
+  timelineEl.addEventListener('click', () => setTimeout(updateProgress, 0));
+  document.getElementById('plan-chips').addEventListener('click', () => setTimeout(updateProgress, 0));
+  updateProgress();
+
   saveBtn.addEventListener('click', () => save(false));
   sendBtn.addEventListener('click', () => save(true));
 

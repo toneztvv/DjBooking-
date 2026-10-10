@@ -16,8 +16,11 @@
     <p class="lead" style="<%= isLive && eventName ? 'display:none;' : '' %>">
       Scan the QR code at the DJ booth or use this page to request a song while DJXpress is live.
     </p>
+    <button type="button" id="share-live" class="btn btn-ghost btn-sm" style="display:none; margin-top: 12px;">&#128242; Share this page with friends</button>
   </div>
 </section>
+
+<div id="conn-banner" class="conn-banner" role="status" aria-live="polite" hidden>&#128246; Connection looks slow &mdash; reconnecting&hellip; you can keep using the page.</div>
 
 <section style="padding-top: 0;">
   <div class="container">
@@ -25,8 +28,16 @@
 
     <div id="pass-banner" class="alert alert-success" style="display:none; max-width: 640px; margin: 0 auto 30px;"></div>
 
-    <div id="offline-notice" class="alert alert-info" style="display: <%= isLive ? 'none' : 'block' %>; max-width: 640px; margin: 0 auto 30px;">
-      DJXpress isn't live right now. Check back during your event &mdash; this page updates automatically once requests open up.
+    <div id="offline-notice" class="offline-card" style="display: <%= isLive ? 'none' : 'block' %>;">
+      <h3 style="margin-top:0;">&#127911; The DJ isn't live just yet</h3>
+      <p class="small-muted" style="margin-bottom:14px;">This page wakes up by itself the moment the party starts &mdash; you don't need to refresh. When it does you can:</p>
+      <ul class="offline-list">
+        <li>&#127925; Request songs and dedicate them to someone</li>
+        <li>&#9876;&#65039; Vote in song battles and polls</li>
+        <li>&#128248; Share photos on the big screen</li>
+        <li>&#128172; Chat and sign the guestbook</li>
+      </ul>
+      <a href="/book" class="btn btn-secondary btn-sm">Planning your own event? Book DJXpress</a>
     </div>
 
     <div id="now-playing" class="now-playing-card" style="display:none; margin-bottom: 30px;">
@@ -88,11 +99,12 @@
           <div class="form-grid">
             <div class="field">
               <label for="requested_by">Your Name *</label>
-              <input type="text" id="requested_by" name="requested_by" required maxlength="80" />
+              <input type="text" id="requested_by" name="requested_by" required maxlength="80" autocomplete="given-name" />
             </div>
             <div class="field">
               <label for="song_title">Song Title *</label>
-              <input type="text" id="song_title" name="song_title" required maxlength="150" />
+              <input type="text" id="song_title" name="song_title" required maxlength="150" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="song-suggest" placeholder="Start typing a song…" />
+              <ul id="song-suggest" class="song-suggest" role="listbox" hidden></ul>
             </div>
           </div>
           <div class="form-grid">

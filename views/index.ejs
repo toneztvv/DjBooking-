@@ -160,6 +160,45 @@
   </div>
 </section>
 
+<section class="reveal" id="faq">
+  <div class="container" style="max-width: 820px;">
+    <div class="section-title">
+      <h2>Good to Know</h2>
+      <p>Quick answers before you book.</p>
+    </div>
+    <div class="faq">
+      <details>
+        <summary>How do live song requests work?</summary>
+        <p>Guests scan a QR code at the event and their phone opens a simple page &mdash; they type a song, their name and an optional dedication, and watch the request board update live. No app to download.</p>
+      </details>
+      <details>
+        <summary>Can we choose songs we want played &mdash; or never played?</summary>
+        <p>Yes. Once you're booked you get a private planning page for your must-play songs, a do-not-play list, your timeline (grand entrance, first dance, cake cutting&hellip;) and how to pronounce names.</p>
+      </details>
+      <details>
+        <summary>What kinds of events do you DJ?</summary>
+        <p>Weddings, quinceañeras, sweet 16s, comidas, birthdays, back to school bashes, corporate events and club nights &mdash; any genre, blended live to read the room.</p>
+      </details>
+      <details>
+        <summary>Can guests share photos during the party?</summary>
+        <p>Yes, with the live Photo Wall: guests send photos from their phones and they show up on the big screen. Every photo is approved by your DJ first. Depending on how your night is set up, either the host covers everyone or each guest unlocks uploading with a small one-time Photo Pass.</p>
+      </details>
+      <details>
+        <summary>Is it safe for family events?</summary>
+        <p>Yes &mdash; chat, dedications and guestbook notes are language-filtered, and no photo appears anywhere until your DJ approves it.</p>
+      </details>
+      <details>
+        <summary>How do I check my date and get a quote?</summary>
+        <p>Use the availability calendar on the <a href="/book">booking page</a>, pick your date and send the short inquiry. You'll hear back with availability and pricing.</p>
+      </details>
+      <details>
+        <summary>Can I relive the night afterwards?</summary>
+        <p>Yes &mdash; after your event you can get a private recap page with the setlist, most-requested songs, reactions and approved photos, plus a link to share with family and friends.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
 <% if (typeof galleryItems !== 'undefined') { %>
 <section class="reveal">
   <div class="container">
@@ -174,7 +213,7 @@
             <% if (item.type === 'video') { %>
               <video src="/gallery-media/<%= item.filename %>" controls></video>
             <% } else { %>
-              <img src="/gallery-media/<%= item.filename %>" alt="<%= item.caption || 'DJXpress event photo' %>" />
+              <img src="/gallery-media/<%= item.filename %>" alt="<%= item.caption || 'DJXpress event photo' %>" class="gallery-zoom" tabindex="0" role="button" aria-label="Enlarge photo" />
             <% } %>
             <% if (item.caption) { %><p class="small-muted" style="margin: 8px 0 0;"><%= item.caption %></p><% } %>
           </div>

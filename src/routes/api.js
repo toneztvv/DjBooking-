@@ -9,6 +9,7 @@ const { getBattleState } = require('../battles');
 const { getTipJar, getTipMethods } = require('../tips');
 const { WALL_DIR, MAX_PHOTO_BYTES, WALL_FILE_RE, isAcceptablePhoto } = require('../wall');
 const { cleanReferral, getReferralInfo } = require('../referrals');
+const { searchSongs } = require('../albumArt');
 const stripe = require('../stripe');
 const {
   getPassPriceCents,
@@ -321,6 +322,12 @@ router.post('/requests', (req, res) => {
   }
 
   res.status(201).json({ ok: true });
+});
+
+router.get('/song-search', async (req, res) => {
+  const results = await searchSongs(req.query.q);
+  res.set('Cache-Control', 'public, max-age=60');
+  res.json({ results });
 });
 
 router.post('/requests/upvote', (req, res) => {

@@ -7,6 +7,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 
 const { initDb } = require('./src/db');
+const { getContact } = require('./src/contact');
 const { getSiteUrl } = require('./src/qr');
 const stripe = require('./src/stripe');
 const { applyPaidSession, refundDuplicate, revokeByPaymentIntent } = require('./src/payments');
@@ -34,6 +35,7 @@ app.use((req, res, next) => {
   res.locals.siteName = 'DJXpress';
   res.locals.currentYear = new Date().getFullYear();
   res.locals.siteUrl = getSiteUrl();
+  res.locals.contact = getContact();
   next();
 });
 
@@ -98,6 +100,7 @@ const formLimiter = rateLimit({
 const partyLimiter = rateLimit({ windowMs: 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false });
 app.use('/api/inquiries', formLimiter);
 app.use('/api/requests', partyLimiter);
+app.use('/api/song-search', partyLimiter);
 
 // Chat is polled via GET every few seconds, so only rate-limit the POSTs
 // (sending a message) — otherwise normal polling would trip the limiter.

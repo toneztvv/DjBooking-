@@ -2,6 +2,13 @@
   <footer>
     <div class="container">
       <p><strong>DJXpress</strong> &mdash; Bringing the energy to every event.</p>
+      <% if (typeof contact !== 'undefined' && contact.any) { %>
+      <p class="footer-contact">
+        <% if (contact.phone) { %><a href="<%= contact.phoneHref %>">&#128222; <%= contact.phone %></a><% } %>
+        <% if (contact.email) { %><a href="mailto:<%= contact.email %>">&#9993;&#65039; <%= contact.email %></a><% } %>
+        <% if (contact.instagram) { %><a href="https://instagram.com/<%= contact.instagram %>" target="_blank" rel="noopener noreferrer">&#128247; @<%= contact.instagram %></a><% } %>
+      </p>
+      <% } %>
       <p>&copy; <%= currentYear %> DJXpress. All rights reserved.</p>
     </div>
   </footer>

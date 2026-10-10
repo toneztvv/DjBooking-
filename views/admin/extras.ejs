@@ -50,6 +50,25 @@
 
     <form method="POST" action="/admin/extras" style="max-width:720px;">
       <div class="form-card" style="margin-bottom: 30px;">
+        <h3 style="margin-top:0;">&#128222; Contact Info (shown to customers)</h3>
+        <p class="small-muted">Optional. What you fill in appears in the footer of every page and on the booking page, so people can call, text, email or message you. Leave a box blank to hide it.</p>
+        <div class="form-grid">
+          <div class="field">
+            <label for="contact_phone">Phone / text number</label>
+            <input type="tel" id="contact_phone" name="contact_phone" maxlength="30" value="<%= values.contactPhone %>" placeholder="e.g. (555) 123-4567" />
+          </div>
+          <div class="field">
+            <label for="contact_email">Email</label>
+            <input type="email" id="contact_email" name="contact_email" maxlength="120" value="<%= values.contactEmail %>" placeholder="e.g. bookings@dj-xpress.com" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="contact_instagram">Instagram username</label>
+          <input type="text" id="contact_instagram" name="contact_instagram" maxlength="40" value="<%= values.contactInstagram %>" placeholder="e.g. djxpress (no @ needed)" />
+        </div>
+      </div>
+
+      <div class="form-card" style="margin-bottom: 30px;">
         <h3 style="margin-top:0;">&#127903;&#65039; Photo Pass Price (per guest)</h3>
         <p class="small-muted">What a single guest pays <strong>once</strong> to unlock photo uploading &mdash; for that person, forever, at every event. They get a short code (like <code>PASS-AB12CD</code>) that their phone remembers; if they switch phones they type the code in. Keep it small &mdash; <strong>$5</strong> is a good number. Stripe keeps about 14.5&cent; + 30&cent; of each one, so you net around $4.55 of a $5 pass. Needs Stripe connected above.</p>
         <div class="field">

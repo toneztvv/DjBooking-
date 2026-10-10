@@ -257,6 +257,9 @@ function initDb() {
     google_review_url: '',
     photowall_price: '',
     photopass_price: '5',
+    contact_phone: '',
+    contact_email: '',
+    contact_instagram: '',
   };
   const insert = db.prepare(
     'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)'

@@ -487,10 +487,145 @@
     }).catch(() => {});
   }
 
+  // --- Remember the guest's name (requests, guestbook and photos share it) ---
+  const requestNameInput = document.getElementById('requested_by');
+  if (requestNameInput) {
+    try {
+      const saved = localStorage.getItem('djxpress_guestbook_name');
+      if (saved && !requestNameInput.value) requestNameInput.value = saved;
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  // --- "Share this page" (phones open their share sheet; others copy the link) ---
+  const shareBtn = document.getElementById('share-live');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', async () => {
+      const url = `${window.location.origin}/live`;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: 'Request a song', text: 'Request songs and join in at the party:', url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          shareBtn.textContent = '\u2705 Link copied';
+          setTimeout(() => (shareBtn.innerHTML = '&#128242; Share this page with friends'), 2000);
+        }
+      } catch (err) {
+        // cancelled
+      }
+    });
+  }
+
+  // --- Song suggestions while typing ---
+  const titleInput = document.getElementById('song_title');
+  const artistInput = document.getElementById('artist');
+  const suggestBox = document.getElementById('song-suggest');
+  let suggestTimer = null;
+  let suggestAbort = null;
+  let suggestItems = [];
+  let suggestIndex = -1;
+
+  function closeSuggest() {
+    if (!suggestBox) return;
+    suggestBox.hidden = true;
+    suggestBox.innerHTML = '';
+    suggestItems = [];
+    suggestIndex = -1;
+    titleInput.setAttribute('aria-expanded', 'false');
+  }
+
+  function chooseSuggestion(i) {
+    const item = suggestItems[i];
+    if (!item) return;
+    titleInput.value = item.title;
+    if (artistInput) artistInput.value = item.artist;
+    closeSuggest();
+    const next = document.getElementById('dedication');
+    if (next) next.focus();
+  }
+
+  function paintSuggestIndex() {
+    Array.from(suggestBox.children).forEach((li, n) => li.classList.toggle('active', n === suggestIndex));
+  }
+
+  async function fetchSuggestions() {
+    const q = titleInput.value.trim();
+    if (q.length < 2) return closeSuggest();
+    if (suggestAbort) suggestAbort.abort();
+    suggestAbort = new AbortController();
+    try {
+      const res = await fetch(`/api/song-search?q=${encodeURIComponent(q)}`, { signal: suggestAbort.signal });
+      if (!res.ok) return closeSuggest();
+      const data = await res.json();
+      if (titleInput.value.trim() !== q) return; // they kept typing
+      if (document.activeElement !== titleInput) return; // they already moved on to another field
+      suggestItems = (data.results || []).slice(0, 5);
+      if (!suggestItems.length) return closeSuggest();
+      suggestBox.innerHTML = suggestItems
+        .map(
+          (r, i) =>
+            `<li role="option" data-i="${i}">${r.artwork ? `<img src="${escapeHtml(r.artwork)}" alt="" loading="lazy" />` : '<span class="suggest-art">&#127925;</span>'}<span class="suggest-text"><strong>${escapeHtml(r.title)}</strong><span>${escapeHtml(r.artist)}</span></span></li>`
+        )
+        .join('');
+      suggestBox.hidden = false;
+      suggestIndex = -1;
+      titleInput.setAttribute('aria-expanded', 'true');
+    } catch (err) {
+      // aborted or offline — typing a song by hand still works
+    }
+  }
+
+  if (titleInput && suggestBox) {
+    titleInput.addEventListener('input', () => {
+      clearTimeout(suggestTimer);
+      suggestTimer = setTimeout(fetchSuggestions, 300);
+    });
+    titleInput.addEventListener('keydown', (e) => {
+      if (suggestBox.hidden) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        suggestIndex = (suggestIndex + 1) % suggestItems.length;
+        paintSuggestIndex();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        suggestIndex = (suggestIndex - 1 + suggestItems.length) % suggestItems.length;
+        paintSuggestIndex();
+      } else if (e.key === 'Enter' && suggestIndex >= 0) {
+        e.preventDefault();
+        chooseSuggestion(suggestIndex);
+      } else if (e.key === 'Escape') {
+        closeSuggest();
+      }
+    });
+    // mousedown (not click) so the choice lands before the input loses focus
+    suggestBox.addEventListener('mousedown', (e) => {
+      const li = e.target.closest('li[data-i]');
+      if (li) {
+        e.preventDefault();
+        chooseSuggestion(Number(li.dataset.i));
+      }
+    });
+    titleInput.addEventListener('blur', () => setTimeout(closeSuggest, 150));
+  }
+
+  // --- Tell guests when their connection drops (party wifi is flaky) ---
+  const connBanner = document.getElementById('conn-banner');
+  let refreshFailures = 0;
+  function noteConnection(ok) {
+    if (!connBanner) return;
+    refreshFailures = ok ? 0 : refreshFailures + 1;
+    connBanner.hidden = refreshFailures < 3;
+  }
+
   async function refresh() {
     try {
       const res = await fetch('/api/live-state', { headers: { Accept: 'application/json' } });
-      if (!res.ok) return;
+      if (!res.ok) {
+        noteConnection(false);
+        return;
+      }
+      noteConnection(true);
       const data = await res.json();
 
       const isLive = !!data.isLive;
@@ -514,6 +649,8 @@
         guestCounterPill.style.display = showCounter ? 'inline-flex' : 'none';
         if (showCounter) guestCounterCount.textContent = data.activeGuests;
       }
+
+      if (shareBtn) shareBtn.style.display = isLive ? 'inline-flex' : 'none';
 
       if (reactionsWrap) {
         reactionsWrap.style.display = isLive && features.reactions ? 'block' : 'none';
@@ -574,7 +711,8 @@
       renderPending(data.pending || []);
       renderPlayed(data.recentlyPlayed || []);
     } catch (err) {
-      // Silently retry on next interval; avoid spamming the console on flaky mobile connections.
+      // Retry on the next interval; after a few misses the guest sees a gentle notice.
+      noteConnection(false);
     }
   }
 
@@ -599,9 +737,21 @@
         const data = await res.json();
 
         if (res.ok && data.ok) {
+          try {
+            if (payload.requested_by) localStorage.setItem('djxpress_guestbook_name', payload.requested_by.trim());
+          } catch (err) {
+            // ignore
+          }
           formMessage.textContent = 'Request sent! Keep an eye on the board below.';
           formMessage.className = 'alert alert-success';
           requestForm.reset();
+          if (requestNameInput) {
+            try {
+              requestNameInput.value = localStorage.getItem('djxpress_guestbook_name') || '';
+            } catch (err) {
+              // ignore
+            }
+          }
           refresh();
         } else {
           formMessage.textContent = data.error || 'Something went wrong. Please try again.';

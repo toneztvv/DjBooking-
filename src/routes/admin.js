@@ -18,6 +18,7 @@ const { ensureEventReferralCode } = require('../referrals');
 const { getSiteUrl } = require('../qr');
 const { logEvent, logCoalesced, phoneTag } = require('../eventlog');
 const { buildTimeline } = require('../timeline');
+const { PHONE_RE, EMAIL_RE, INSTAGRAM_RE } = require('../contact');
 const stripe = require('../stripe');
 const {
   getPhotoWallPriceCents,
@@ -1043,6 +1044,9 @@ router.get('/extras', (req, res) => {
       googleReviewUrl: getSetting('google_review_url') || '',
       photowallPrice: getSetting('photowall_price') || '',
       photopassPrice: getSetting('photopass_price') || '',
+      contactPhone: getSetting('contact_phone') || '',
+      contactEmail: getSetting('contact_email') || '',
+      contactInstagram: getSetting('contact_instagram') || '',
     },
     stripeStatus: {
       configured: stripe.isConfigured(),
@@ -1067,6 +1071,9 @@ router.post('/extras', (req, res) => {
   const googleReviewUrl = clean(req.body.google_review_url, 300);
   const photowallPrice = clean(req.body.photowall_price, 12).replace(/^\$/, '');
   const photopassPrice = clean(req.body.photopass_price, 12).replace(/^\$/, '');
+  const contactPhone = clean(req.body.contact_phone, 30);
+  const contactEmail = clean(req.body.contact_email, 120);
+  const contactInstagram = clean(req.body.contact_instagram, 40).replace(/^@+/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/\/+$/, '');
 
   const fail = (msg) => res.redirect(`/admin/extras?error=${encodeURIComponent(msg)}`);
   if (venmo && !VENMO_RE.test(venmo)) return fail('Venmo username can only use letters, numbers, dots, dashes and underscores.');
@@ -1081,6 +1088,9 @@ router.post('/extras', (req, res) => {
   if (photopassPrice && !(/^\d{1,3}(\.\d{1,2})?$/.test(photopassPrice) && Number(photopassPrice) >= 1 && Number(photopassPrice) <= 100)) {
     return fail('The Photo Pass price should be a dollar amount between 1 and 100, like 5 or 7.50.');
   }
+  if (contactPhone && !PHONE_RE.test(contactPhone)) return fail('The phone number can only use digits, spaces, dashes, dots, + and parentheses.');
+  if (contactEmail && !EMAIL_RE.test(contactEmail)) return fail('That contact email doesn’t look right.');
+  if (contactInstagram && !INSTAGRAM_RE.test(contactInstagram)) return fail('Instagram should be just your username, like djxpress.');
   if (googleReviewUrl && !/^https:\/\/[^\s<>"']+$/.test(googleReviewUrl)) {
     return fail('The Google review link must start with https:// and have no spaces.');
   }
@@ -1093,6 +1103,9 @@ router.post('/extras', (req, res) => {
   setSetting('google_review_url', googleReviewUrl);
   setSetting('photowall_price', photowallPrice);
   setSetting('photopass_price', photopassPrice);
+  setSetting('contact_phone', contactPhone);
+  setSetting('contact_email', contactEmail);
+  setSetting('contact_instagram', contactInstagram);
   res.redirect('/admin/extras?saved=1');
 });
 

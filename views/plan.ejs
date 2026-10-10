@@ -75,6 +75,7 @@
       <div class="plan-savebar">
         <button type="button" id="plan-save" class="btn btn-secondary">Save Draft</button>
         <button type="button" id="plan-send" class="btn btn-primary">Send to My DJ &#10003;</button>
+        <span id="plan-progress" class="small-muted" style="font-weight:700;"></span>
         <span id="plan-status" class="small-muted" role="status">
           <% if (plan.submitted_at) { %>&#9989; You sent this to your DJ. You can still make changes and send again.<% } else if (plan.updated_at) { %>Draft saved earlier.<% } %>
         </span>
