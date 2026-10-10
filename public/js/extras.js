@@ -62,7 +62,7 @@
         tipsQr.style.display = 'none';
       }
       tipsButtons.innerHTML = tips.methods
-        .map((m) => `<div class="tips-handle"><strong>${esc(m.label)}</strong> ${esc(m.display)}</div>`)
+        .map((m) => `<div class="tips-handle" translate="no"><strong>${esc(m.label)}</strong> ${esc(m.display)}</div>`)
         .join('');
       return;
     }
@@ -70,7 +70,7 @@
     tipsButtons.innerHTML = tips.methods
       .map((m) =>
         m.url
-          ? `<a class="btn btn-primary" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">${esc(m.label)} ${esc(m.display)}</a>`
+          ? `<a class="btn btn-primary" translate="no" href="${esc(m.url)}" target="_blank" rel="noopener noreferrer">${esc(m.label)} ${esc(m.display)}</a>`
           : `<button type="button" class="btn btn-secondary" data-copy="${esc(m.display)}">${esc(m.label)}: ${esc(m.display)} &mdash; tap to copy</button>`
       )
       .join('');

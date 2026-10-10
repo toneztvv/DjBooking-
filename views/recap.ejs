@@ -3,7 +3,7 @@
 <section class="hero" style="padding: 70px 0 40px;">
   <div class="container">
     <span class="eyebrow">Night Recap</span>
-    <h1 style="font-size: clamp(2rem, 6vw, 3.4rem);"><%= event.name || 'The Night' %></h1>
+    <h1 translate="no" style="font-size: clamp(2rem, 6vw, 3.4rem);"><%= event.name || 'The Night' %></h1>
     <p class="lead" style="margin-bottom: 8px;">
       <time data-utc="<%= event.started_at %>" data-format="date"><%= event.started_at.slice(0, 10) %></time>
     </p>
@@ -56,8 +56,8 @@
           <span class="recap-rank"><%= i + 1 %></span>
           <% if (s.artwork_url) { %><img class="recap-art" src="<%= s.artwork_url %>" alt="" loading="lazy" /><% } else { %><span class="recap-art recap-art-empty">&#127925;</span><% } %>
           <div class="recap-meta">
-            <strong><%= s.song_title %></strong>
-            <% if (s.artist) { %><span class="small-muted"><%= s.artist %></span><% } %>
+            <strong translate="no"><%= s.song_title %></strong>
+            <% if (s.artist) { %><span class="small-muted" translate="no"><%= s.artist %></span><% } %>
           </div>
           <span class="count-pill"><%= s.total %>x</span>
         </div>
@@ -80,8 +80,8 @@
           <span class="recap-rank"><%= i + 1 %></span>
           <% if (s.artwork_url) { %><img class="recap-art" src="<%= s.artwork_url %>" alt="" loading="lazy" /><% } else { %><span class="recap-art recap-art-empty">&#127925;</span><% } %>
           <div class="recap-meta">
-            <strong><%= s.song_title %></strong>
-            <% if (s.artist) { %><span class="small-muted"><%= s.artist %></span><% } %>
+            <strong translate="no"><%= s.song_title %></strong>
+            <% if (s.artist) { %><span class="small-muted" translate="no"><%= s.artist %></span><% } %>
           </div>
           <time class="small-muted" data-utc="<%= s.played_at %>" data-format="time"></time>
         </div>
@@ -117,13 +117,13 @@
         <% const total = p.votesA + p.votesB; %>
         <% const pctA = total ? Math.round((p.votesA / total) * 100) : 0; %>
         <% const pctB = total ? Math.round((p.votesB / total) * 100) : 0; %>
-        <p style="color: var(--text); margin-bottom: 8px;"><strong><%= p.question %></strong></p>
+        <p style="color: var(--text); margin-bottom: 8px;"><strong translate="no"><%= p.question %></strong></p>
         <div class="poll-bar-row">
-          <div class="poll-bar-label"><%= p.option_a %> &mdash; <%= pctA %>%</div>
+          <div class="poll-bar-label" translate="no"><%= p.option_a %> &mdash; <%= pctA %>%</div>
           <div class="poll-bar-track"><div class="poll-bar-fill" style="width: <%= pctA %>%;"></div></div>
         </div>
         <div class="poll-bar-row" style="margin-bottom: 22px;">
-          <div class="poll-bar-label"><%= p.option_b %> &mdash; <%= pctB %>%</div>
+          <div class="poll-bar-label" translate="no"><%= p.option_b %> &mdash; <%= pctB %>%</div>
           <div class="poll-bar-track"><div class="poll-bar-fill" style="width: <%= pctB %>%;"></div></div>
         </div>
       <% }); %>
@@ -141,8 +141,8 @@
     <div class="recap-notes">
       <% notes.forEach(function(n) { %>
         <div class="guestbook-entry">
-          <div class="gb-name<% if (n.color) { %> guest-colored<% } %>"<% if (n.color) { %> style="--guest-color: <%= n.color %>;"<% } %>><%= n.name %></div>
-          <div class="gb-message"><%= n.message %></div>
+          <div class="gb-name<% if (n.color) { %> guest-colored<% } %>"<% if (n.color) { %> style="--guest-color: <%= n.color %>;"<% } %> translate="no"><%= n.name %></div>
+          <div class="gb-message" translate="no"><%= n.message %></div>
         </div>
       <% }); %>
     </div>
@@ -161,7 +161,7 @@
       <% photos.forEach(function(ph) { %>
         <figure class="wall-thumb">
           <img src="<%= ph.url %>" alt="Photo from the night<%= ph.name ? ' by ' + ph.name : '' %>" loading="lazy" />
-          <% if (ph.name) { %><figcaption><%= ph.name %></figcaption><% } %>
+          <% if (ph.name) { %><figcaption translate="no"><%= ph.name %></figcaption><% } %>
         </figure>
       <% }); %>
     </div>
@@ -220,7 +220,7 @@
         <% if (referralOffer) { %><strong><%= referralOffer %></strong><br><% } %>
         Send them this link (or have them mention the code when they book) so we know you sent them.
       </p>
-      <div class="referral-code" id="referral-code"><%= referralCode %></div>
+      <div class="referral-code" id="referral-code" translate="no"><%= referralCode %></div>
       <div class="hero-actions" style="justify-content:center;">
         <button type="button" id="referral-share" class="btn btn-primary" data-url="<%= referralUrl %>" data-text="<%= (event.name || 'This party') + ' had the best DJ — DJXpress. Book through this link:' %>">Share With a Friend</button>
       </div>

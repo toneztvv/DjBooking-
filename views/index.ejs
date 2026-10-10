@@ -215,7 +215,7 @@
             <% } else { %>
               <img src="/gallery-media/<%= item.filename %>" alt="<%= item.caption || 'DJXpress event photo' %>" class="gallery-zoom" tabindex="0" role="button" aria-label="Enlarge photo" />
             <% } %>
-            <% if (item.caption) { %><p class="small-muted" style="margin: 8px 0 0;"><%= item.caption %></p><% } %>
+            <% if (item.caption) { %><p class="small-muted" style="margin: 8px 0 0;" translate="no"><%= item.caption %></p><% } %>
           </div>
         <% }); %>
       </div>
@@ -237,8 +237,8 @@
       <% testimonials.forEach(function(t) { %>
         <div class="card">
           <div class="star-rating" style="margin-bottom:10px;"><% for (let i = 0; i < 5; i++) { %><%- i < t.rating ? '&#9733;' : '&#9734;' %><% } %></div>
-          <p style="margin:0 0 14px;">&ldquo;<%= t.quote %>&rdquo;</p>
-          <p class="small-muted" style="margin:0;"><strong><%= t.client_name %></strong><% if (t.event_type) { %> &mdash; <%= t.event_type %><% } %></p>
+          <p style="margin:0 0 14px;" translate="no">&ldquo;<%= t.quote %>&rdquo;</p>
+          <p class="small-muted" style="margin:0;" translate="no"><strong><%= t.client_name %></strong><% if (t.event_type) { %> &mdash; <%= t.event_type %><% } %></p>
         </div>
       <% }); %>
     </div>

@@ -320,7 +320,7 @@
         grid.innerHTML = data.photos
           .map(
             (p) =>
-              `<figure class="wall-thumb"><img src="${esc(p.url)}" alt="${esc(p.caption || 'Photo from the party')}" loading="lazy" />${p.name || p.caption ? `<figcaption>${esc(p.caption || p.name)}</figcaption>` : ''}</figure>`
+              `<figure class="wall-thumb"><img src="${esc(p.url)}" alt="${esc(p.caption || 'Photo from the party')}" loading="lazy" />${p.name || p.caption ? `<figcaption translate="no">${esc(p.caption || p.name)}</figcaption>` : ''}</figure>`
           )
           .join('');
       }

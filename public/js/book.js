@@ -27,10 +27,16 @@
   const eventDateInput = document.getElementById('event_date');
   if (!grid) return;
 
-  const MONTH_NAMES = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
+  const MONTHS = {
+    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    es: ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
+  };
+  const WEEKDAYS = { en: ['S', 'M', 'T', 'W', 'T', 'F', 'S'], es: ['D', 'L', 'M', 'M', 'J', 'V', 'S'] };
+  const curLang = () => (window.DJXI18n && window.DJXI18n.lang() === 'es' ? 'es' : 'en');
+  const monthName = (m) => {
+    const n = MONTHS[curLang()][m];
+    return curLang() === 'es' ? n.charAt(0).toUpperCase() + n.slice(1) : n;
+  };
 
   let bookedDates = new Set();
   const today = new Date();
@@ -55,10 +61,10 @@
   }
 
   function render() {
-    monthLabel.textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+    monthLabel.textContent = `${monthName(viewMonth)} ${viewYear}`;
     grid.innerHTML = '';
 
-    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach((d) => {
+    WEEKDAYS[curLang()].forEach((d) => {
       const cell = document.createElement('div');
       cell.className = 'cal-weekday';
       cell.textContent = d;
@@ -90,7 +96,9 @@
         cell.classList.add('cal-pickable');
         cell.setAttribute('role', 'button');
         cell.setAttribute('tabindex', '0');
-        cell.setAttribute('aria-label', `Pick ${MONTH_NAMES[viewMonth]} ${day}, ${viewYear} as your event date`);
+        cell.setAttribute('aria-label', curLang() === 'es'
+          ? `Elegir ${day} de ${MONTHS.es[viewMonth]} de ${viewYear} como fecha del evento`
+          : `Pick ${MONTHS.en[viewMonth]} ${day}, ${viewYear} as your event date`);
         cell.addEventListener('click', () => selectDate(key, cell));
         cell.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -121,6 +129,8 @@
     }
     render();
   });
+
+  document.addEventListener('djx:lang', render);
 
   fetch('/api/booked-dates', { headers: { Accept: 'application/json' } })
     .then((res) => res.json())

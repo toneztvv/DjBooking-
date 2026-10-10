@@ -1,14 +1,19 @@
 (function () {
   // SQLite stores UTC; show dates/times in the viewer's own timezone.
-  document.querySelectorAll('time[data-utc]').forEach((el) => {
-    const iso = el.dataset.utc.replace(' ', 'T') + 'Z';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return;
-    el.textContent =
-      el.dataset.format === 'time'
-        ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-        : d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-  });
+  function showTimes() {
+    const loc = window.DJXI18n ? window.DJXI18n.locale() : [];
+    document.querySelectorAll('time[data-utc]').forEach((el) => {
+      const iso = el.dataset.utc.replace(' ', 'T') + 'Z';
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return;
+      el.textContent =
+        el.dataset.format === 'time'
+          ? d.toLocaleTimeString(loc, { hour: 'numeric', minute: '2-digit' })
+          : d.toLocaleDateString(loc, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    });
+  }
+  showTimes();
+  document.addEventListener('djx:lang', showTimes);
 
   // If a cover image fails to load, show the music-note tile instead of a
   // broken-image icon. Checks images that already failed before this ran.

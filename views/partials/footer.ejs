@@ -13,5 +13,9 @@
     </div>
   </footer>
   <script src="/js/main.js"></script>
+  <% if (typeof page === 'undefined' || page !== 'admin') { %>
+  <script src="/js/i18n-es.js"></script>
+  <script src="/js/i18n.js"></script>
+  <% } %>
 </body>
 </html>

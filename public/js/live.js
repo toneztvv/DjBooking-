@@ -121,7 +121,7 @@
   // "For Maria's 15th" notes people attach to a request, shown under the song.
   function dedicationHtml(r) {
     if (!r.dedication) return '';
-    return `<br><span class="dedication-note">&#128140; ${escapeHtml(r.dedication)}${r.dedication_by ? ` <span class="small-muted">&mdash; ${escapeHtml(r.dedication_by)}</span>` : ''}</span>`;
+    return `<br><span class="dedication-note" translate="no">&#128140; ${escapeHtml(r.dedication)}${r.dedication_by ? ` <span class="small-muted">&mdash; ${escapeHtml(r.dedication_by)}</span>` : ''}</span>`;
   }
 
   function renderPending(rows) {
@@ -136,8 +136,8 @@
       .map(
         (r) => `
       <tr>
-        <td><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}${r.accepted ? '<br><span class="badge badge-booked">&#10003; Accepted</span>' : ''}${dedicationHtml(r)}</td>
-        <td>${escapeHtml(r.requesters)}</td>
+        <td><span translate="no"><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}</span>${r.accepted ? '<br><span class="badge badge-booked">&#10003; Accepted</span>' : ''}${dedicationHtml(r)}</td>
+        <td translate="no">${escapeHtml(r.requesters)}</td>
         <td>${formatTime(r.first_requested_at)}</td>
         <td><span class="count-pill">${r.times_requested}</span></td>
         <td><button type="button" class="btn btn-ghost btn-sm upvote-btn" data-key="${escapeHtml(r.normalized_key)}" ${upvoted.has(r.normalized_key) ? 'disabled' : ''}>&#128077; ${r.upvotes || 0}</button></td>
@@ -181,8 +181,8 @@
       .map(
         (r) => `
       <tr>
-        <td><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}${dedicationHtml(r)}</td>
-        <td>${escapeHtml(r.requesters)}</td>
+        <td><span translate="no"><strong>${escapeHtml(r.song_title)}</strong>${r.artist ? `<br><span class="small-muted">${escapeHtml(r.artist)}</span>` : ''}</span>${dedicationHtml(r)}</td>
+        <td translate="no">${escapeHtml(r.requesters)}</td>
         <td>${formatTime(r.played_at)}</td>
         <td><span class="count-pill">${r.times_requested}</span></td>
       </tr>`
@@ -214,8 +214,8 @@
       bubble.className = 'chat-bubble' + (m.is_dj ? ' chat-bubble-dj' : '');
       bubble.dataset.id = m.id;
       bubble.innerHTML = `
-        <span class="chat-sender${!m.is_dj && m.color ? ' guest-colored' : ''}"${senderStyle}>${escapeHtml(m.is_dj ? 'DJ' : m.sender_name)}</span>
-        <span class="chat-text">${escapeHtml(m.message)}</span>
+        <span translate="no" class="chat-sender${!m.is_dj && m.color ? ' guest-colored' : ''}"${senderStyle}>${escapeHtml(m.is_dj ? 'DJ' : m.sender_name)}</span>
+        <span class="chat-text" translate="no">${escapeHtml(m.message)}</span>
         <span class="chat-time">${formatTime(m.created_at)}</span>`;
       chatLog.appendChild(bubble);
     });
@@ -415,8 +415,8 @@
       .map(
         (e) => `
       <div class="guestbook-entry">
-        <div class="gb-name${e.color ? ' guest-colored' : ''}"${e.color ? ` style="--guest-color: ${escapeHtml(e.color)};"` : ''}>${escapeHtml(e.name)}</div>
-        <div class="gb-message">${escapeHtml(e.message)}</div>
+        <div translate="no" class="gb-name${e.color ? ' guest-colored' : ''}"${e.color ? ` style="--guest-color: ${escapeHtml(e.color)};"` : ''}>${escapeHtml(e.name)}</div>
+        <div class="gb-message" translate="no">${escapeHtml(e.message)}</div>
         <div class="gb-time">${formatTime(e.created_at)}</div>
       </div>`
       )
@@ -565,7 +565,7 @@
       suggestBox.innerHTML = suggestItems
         .map(
           (r, i) =>
-            `<li role="option" data-i="${i}">${r.artwork ? `<img src="${escapeHtml(r.artwork)}" alt="" loading="lazy" />` : '<span class="suggest-art">&#127925;</span>'}<span class="suggest-text"><strong>${escapeHtml(r.title)}</strong><span>${escapeHtml(r.artist)}</span></span></li>`
+            `<li role="option" data-i="${i}" translate="no">${r.artwork ? `<img src="${escapeHtml(r.artwork)}" alt="" loading="lazy" />` : '<span class="suggest-art">&#127925;</span>'}<span class="suggest-text"><strong>${escapeHtml(r.title)}</strong><span>${escapeHtml(r.artist)}</span></span></li>`
         )
         .join('');
       suggestBox.hidden = false;
